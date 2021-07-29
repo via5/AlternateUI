@@ -373,7 +373,9 @@ namespace VUI
 						if (!w.Visible)
 							continue;
 
-						w.Bounds = wr;
+						// a widget's size can never change again when uniform,
+						// unless the grid itself changes size
+						w.SetBounds(wr, uniformWidth_ && uniformHeight_);
 					}
 
 					x += uniformWidth + extraWidth[colIndex];

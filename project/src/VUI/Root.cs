@@ -37,7 +37,7 @@ namespace VUI
 
 		public Overlay(Rectangle b)
 		{
-			Bounds = b;
+			SetBounds(b);
 		}
 
 		protected override void DoCreate()
@@ -277,8 +277,8 @@ namespace VUI
 				Style.SetupRoot(support_.ScriptUI);
 			}
 
-			content_.Bounds = new Rectangle(bounds_);
-			floating_.Bounds = new Rectangle(bounds_);
+			content_.SetBounds(bounds_);
+			floating_.SetBounds(bounds_);
 		}
 
 		private void CheckScriptUIReady()

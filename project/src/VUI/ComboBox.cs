@@ -233,8 +233,8 @@ namespace VUI
 			var r = rt.rect;
 			var h = filter_.GetRealPreferredSize(DontCare, DontCare).Height;
 
-			filter_.Bounds = Rectangle.FromPoints(
-				0, r.height, r.width, r.height + h);
+			filter_.SetBounds(Rectangle.FromPoints(
+				0, r.height, r.width, r.height + h));
 
 			filter_.UpdateBounds();
 		}

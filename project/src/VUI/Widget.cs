@@ -156,6 +156,7 @@ namespace VUI
 		private Rectangle bounds_ = new Rectangle();
 		private Size minSize_ = new Size(DontCare, DontCare);
 		private Size maxSize_ = new Size(DontCare, DontCare);
+		private bool fixedBounds_ = false;
 
 		private GameObject mainObject_ = null;
 		private GameObject widgetObject_ = null;
@@ -526,7 +527,19 @@ namespace VUI
 		public Rectangle Bounds
 		{
 			get { return new Rectangle(bounds_); }
-			set { bounds_ = value; }
+		}
+
+		public bool FixedBounds()
+		{
+			if (fixedBounds_)
+				return true;
+
+			return parent_?.FixedBounds() ?? false;
+		}
+
+		public bool StrictlyFixedBounds
+		{
+			get { return fixedBounds_; }
 		}
 
 		public Rectangle AbsoluteClientBounds
@@ -568,6 +581,12 @@ namespace VUI
 
 				return r;
 			}
+		}
+
+		public void SetBounds(Rectangle r, bool isFixed = false)
+		{
+			bounds_ = r;
+			fixedBounds_ = isFixed;
 		}
 
 		public List<Widget> Children

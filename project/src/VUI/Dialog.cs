@@ -48,10 +48,10 @@
 			root_.OverlayVisible = true;
 
 			var ps = GetRealPreferredSize(root_.Bounds.Width, root_.Bounds.Height);
-			Bounds = new Rectangle(
+			SetBounds(new Rectangle(
 				root_.Bounds.Center.X - (ps.Width / 2),
 				root_.Bounds.Center.Y - (ps.Height / 2),
-				ps);
+				ps));
 
 			DoLayout();
 			Create();

@@ -51,7 +51,7 @@ namespace VUI
 				{
 					text_ = value;
 
-					if (IsVisibleOnScreen() && TextTooLong())
+					if (NeedsLayoutForTextChanged())
 						NeedsLayout($"text changed");
 
 					if (textObject_ != null)
@@ -61,6 +61,41 @@ namespace VUI
 					}
 				}
 			}
+		}
+
+		private bool NeedsLayoutForTextChanged()
+		{
+			// optimization to avoid a relayout every time the text changes; a
+			// relayout occurs when:
+			//
+			//  1) the label is visible,
+			//  2) the bounds of the label are not fixed (like in a grid layout
+			//     with uniform sizes),
+			//  3) the text is too long
+			//
+			// for 3), another optimization is for the ellipsis clip: if the
+			// ellipsis is already present, the text is already too long, so
+			// don't bother checking it and assume the label can't grow anymore
+
+			// not visible
+			if (!IsVisibleOnScreen())
+				return false;
+
+			// can't grow anymore
+			if (FixedBounds())
+				return false;
+
+			// text already too long
+			if (wrap_ == ClipEllipsis && EllipsisVisible())
+				return false;
+
+			// check if text is longer than current bounds
+			return TextTooLong();
+		}
+
+		private bool EllipsisVisible()
+		{
+			return (ellipsis_?.gameObject?.activeInHierarchy ?? false);
 		}
 
 		public int Alignment

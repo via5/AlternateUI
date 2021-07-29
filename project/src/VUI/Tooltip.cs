@@ -147,7 +147,7 @@ namespace VUI
 				p.Y = mp.Y - size.Height;
 			}
 
-			widget_.Bounds = new Rectangle(p.X, p.Y, size);
+			widget_.SetBounds(new Rectangle(p.X, p.Y, size));
 			widget_.Visible = true;
 			widget_.BringToTop();
 			widget_.DoLayout();
