@@ -13,7 +13,7 @@ namespace VUI
 		public event Callback Opened;
 
 		private GameObject arrowObject_ = null;
-		private BorderGraphics borders_ = null;
+		private WidgetBorderGraphics borders_ = null;
 		private TextBox filter_ = null;
 		private bool filterable_ = false;
 		private bool accuratePreferredSize_ = true;
@@ -162,7 +162,7 @@ namespace VUI
 			var go = new GameObject("ComboBoxBorders");
 			go.transform.SetParent(Popup.popup.popupPanel.transform, false);
 
-			borders_ = go.AddComponent<BorderGraphics>();
+			borders_ = go.AddComponent<WidgetBorderGraphics>();
 			borders_.Borders = new Insets(2);
 			borders_.Color = BorderColor;
 

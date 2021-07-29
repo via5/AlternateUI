@@ -6,12 +6,12 @@ using UnityEngine.UI;
 
 namespace VUI
 {
-	class BorderGraphics : MaskableGraphic
+	class WidgetBorderGraphics : MaskableGraphic
 	{
 		private Insets borders_ = new Insets();
 		private Color color_ = new Color(0, 0, 0, 0);
 
-		public BorderGraphics()
+		public WidgetBorderGraphics()
 		{
 			raycastTarget = false;
 		}
@@ -47,6 +47,9 @@ namespace VUI
 		protected override void OnPopulateMesh(VertexHelper vh)
 		{
 			vh.Clear();
+
+			if (!gameObject.activeSelf)
+				return;
 
 			var rt = rectTransform;
 
@@ -157,8 +160,9 @@ namespace VUI
 		private GameObject mainObject_ = null;
 		private GameObject widgetObject_ = null;
 		private GameObject graphicsObject_ = null;
-		private BorderGraphics borderGraphics_ = null;
+		private WidgetBorderGraphics borderGraphics_ = null;
 
+		private bool render_ = true;
 		private bool visible_ = true;
 		private bool enabled_ = true;
 		private Insets margins_ = new Insets();
@@ -301,6 +305,23 @@ namespace VUI
 			get { return widgetObject_; }
 		}
 
+		public bool Render
+		{
+			get
+			{
+				return render_;
+			}
+
+			set
+			{
+				if (render_ != value)
+				{
+					render_ = value;
+					UpdateActiveState();
+				}
+			}
+		}
+
 		public bool Visible
 		{
 			get
@@ -313,20 +334,28 @@ namespace VUI
 				if (visible_ != value)
 				{
 					visible_ = value;
+					UpdateActiveState();
+				}
+			}
+		}
 
-					if (mainObject_ != null)
-						mainObject_.SetActive(visible_);
+		private void UpdateActiveState()
+		{
+			if (mainObject_ != null)
+			{
+				mainObject_.SetActive(render_ && visible_);
+				borderGraphics_.gameObject.SetActive(render_ && visible_);
+				borderGraphics_.SetVerticesDirty();
+			}
 
-					if (visible_)
-					{
-						var dirtyChild = AnyDirtyChild();
-						if (dirtyChild != null)
-						{
-							NeedsLayout(
-								"visibility changed, dirty child:\n" +
-								dirtyChild.DebugLine);
-						}
-					}
+			if (render_ && visible_)
+			{
+				var dirtyChild = AnyDirtyChild();
+				if (dirtyChild != null)
+				{
+					NeedsLayout(
+						"visibility changed, dirty child:\n" +
+						dirtyChild.DebugLine);
 				}
 			}
 		}
@@ -352,7 +381,7 @@ namespace VUI
 		public bool IsVisibleOnScreen()
 		{
 			if (mainObject_ == null)
-				return visible_;
+				return render_ && visible_;
 			else
 				return mainObject_.activeInHierarchy;
 		}
@@ -654,6 +683,7 @@ namespace VUI
 				list.Add("rb=" + RelativeBounds.ToString());
 				list.Add("ps=" + GetRealPreferredSize(DontCare, DontCare).ToString());
 				list.Add("ly=" + (Layout?.TypeName ?? "none"));
+				list.Add("r=" + render_.ToString());
 				list.Add("v=" + visible_.ToString());
 				list.Add("d=" + dirty_.ToString());
 
@@ -728,7 +758,7 @@ namespace VUI
 
 			foreach (var w in children_)
 			{
-				if (w.Visible)
+				if (w.IsVisibleOnScreen())
 					w.DoLayout();
 			}
 
@@ -743,7 +773,6 @@ namespace VUI
 				mainObject_.AddComponent<RectTransform>();
 				mainObject_.AddComponent<LayoutElement>();
 				mainObject_.AddComponent<MouseCallbacks>().Widget = this;
-				mainObject_.SetActive(visible_);
 
 				if (parent_?.MainObject == null)
 					mainObject_.transform.SetParent(GetRoot().WidgetParentTransform, false);
@@ -760,10 +789,11 @@ namespace VUI
 				graphicsObject_ = new GameObject("WidgetBorders");
 				graphicsObject_.transform.SetParent(mainObject_.transform, false);
 
-				borderGraphics_ = graphicsObject_.AddComponent<BorderGraphics>();
+				borderGraphics_ = graphicsObject_.AddComponent<WidgetBorderGraphics>();
 				borderGraphics_.Borders = borders_;
 				borderGraphics_.Color = borderColor_;
 
+				UpdateActiveState();
 				SetBackground();
 			}
 
@@ -816,7 +846,7 @@ namespace VUI
 			foreach (var w in children_)
 				w.UpdateBounds();
 
-			mainObject_.SetActive(visible_);
+			UpdateActiveState();
 		}
 
 		public void NeedsLayout(string why)
@@ -824,7 +854,7 @@ namespace VUI
 			if (parent_ != null && parent_.Layout is AbsoluteLayout)
 				return;
 
-			if (Visible)
+			if (IsVisibleOnScreen())
 				NeedsLayoutImpl(TypeName + ": " + why);
 			else
 				SetDirty(true, TypeName + ": " + why);

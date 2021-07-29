@@ -55,7 +55,10 @@ namespace VUI
 						NeedsLayout($"text changed");
 
 					if (textObject_ != null)
+					{
 						textObject_.text = value;
+						UpdateClip();
+					}
 				}
 			}
 		}
@@ -138,6 +141,20 @@ namespace VUI
 			UpdateClip();
 		}
 
+		private Rect MakeClipRect()
+		{
+			var root = GetRoot();
+			if (root == null)
+				return Rect.zero;
+
+			var ar = AbsoluteClientBounds;
+
+			return new Rect(
+				ar.Left - root.Bounds.Width / 2 - 1,
+				root.Bounds.Height - ar.Top + ar.Height - 1,
+				ar.Width, ar.Height + 3);
+		}
+
 		private void UpdateClip()
 		{
 			if (textObject_ == null)
@@ -154,19 +171,7 @@ namespace VUI
 
 				case Clip:
 				{
-					var ar = AbsoluteClientBounds;
-					var root = GetRoot();
-
-					if (root != null)
-					{
-						var r = new Rect(
-							ar.Left - root.Bounds.Width / 2,
-							root.Bounds.Height - ar.Top + ar.Height,
-							ar.Width, ar.Height);
-
-						textObject_.SetClipRect(r, true);
-					}
-
+					textObject_.SetClipRect(MakeClipRect(), true);
 					break;
 				}
 
@@ -174,38 +179,37 @@ namespace VUI
 				{
 					if (TextTooLong())
 					{
-						var ar = AbsoluteClientBounds;
-						var root = GetRoot();
+						var ellipsisSize = Root.TextSize(Font, FontSize, "...");
 
-						if (root != null)
-						{
-							var ellipsisSize = Root.TextSize(Font, FontSize, "...");
+						var cr = MakeClipRect();
+						cr.width -= (ellipsisSize.Width + 5);
 
-							var cr = new Rect(
-								ar.Left - root.Bounds.Width / 2,
-								root.Bounds.Height - ar.Top + ar.Height,
-								ar.Width - ellipsisSize.Width - 5, ar.Height);
+						textObject_.SetClipRect(cr, true);
 
-							textObject_.SetClipRect(cr, true);
+						if (ellipsis_ == null)
+							CreateEllipsis();
 
-							if (ellipsis_ == null)
-								CreateEllipsis();
+						var r = Rectangle.FromSize(
+							RelativeBounds.Width - ellipsisSize.Width,
+							RelativeBounds.Top,
+							ellipsisSize.Width, ellipsisSize.Height);
 
-							var r = Rectangle.FromSize(
-								RelativeBounds.Width - ellipsisSize.Width,
-								RelativeBounds.Top,
-								ellipsisSize.Width, ellipsisSize.Height);
+						ellipsis_.gameObject.SetActive(true);
 
-							Utilities.SetRectTransform(ellipsis_, r);
+						Utilities.SetRectTransform(ellipsis_, r);
 
-							if (autoTooltip_)
-								Tooltip.Text = text_;
-						}
+						if (autoTooltip_)
+							Tooltip.Text = text_;
 					}
 					else
 					{
 						if (autoTooltip_)
 							Tooltip.Text = "";
+
+						if (ellipsis_ != null)
+							ellipsis_.gameObject.SetActive(false);
+
+						textObject_.SetClipRect(Rect.zero, false);
 					}
 
 					break;
@@ -250,7 +254,8 @@ namespace VUI
 		private bool TextTooLong()
 		{
 			// todo: wrap mode
-			return (Root.TextLength(Font, FontSize, text_) > Bounds.Width);
+			var tl = Root.TextLength(Font, FontSize, text_);
+			return (tl > Bounds.Width);
 		}
 
 		public static TextAnchor ToTextAnchor(int a)

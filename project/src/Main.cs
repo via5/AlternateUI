@@ -4,7 +4,7 @@
 	{
 		static private AlternateUI instance_ = null;
 
-		private MorphUI mui_ = new MorphUI();
+		private MorphUI.MorphUI mui_ = new MorphUI.MorphUI();
 		private bool inited_ = false;
 
 		public AlternateUI()

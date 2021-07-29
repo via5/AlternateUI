@@ -1,7 +1,46 @@
 ﻿using System.Collections.Generic;
 
-namespace AUI
+namespace AUI.MorphUI
 {
+	class Controls : VUI.Panel
+	{
+		private readonly MorphUI ui_;
+		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
+		private VUI.IgnoreFlag ignore_ = new VUI.IgnoreFlag();
+
+		public Controls(MorphUI ui)
+		{
+			ui_ = ui;
+
+			var p = new VUI.Panel(new VUI.HorizontalFlow());
+
+			p.Add(new VUI.Label("Page: "));
+			p.Add(page_);
+			p.Add(new VUI.ToolButton("<", () => ui_.PreviousPage()));
+			p.Add(new VUI.ToolButton(">", () => ui_.NextPage()));
+
+			Layout = new VUI.BorderLayout();
+			Add(p, VUI.BorderLayout.Center);
+
+			page_.ValueChanged += OnPageChanged;
+		}
+
+		public void Update()
+		{
+			ignore_.Do(() =>
+			{
+				page_.Set(ui_.CurrentPage + 1, 1, ui_.PageCount);
+			});
+		}
+
+		private void OnPageChanged(int p)
+		{
+			if (ignore_) return;
+			ui_.CurrentPage = page_.Value - 1;
+		}
+	}
+
+
 	class MorphPanel : VUI.Panel
 	{
 		private DAZMorph morph_ = null;
@@ -57,11 +96,19 @@ namespace AUI
 		{
 			morph_ = m;
 
-			name_.Text = m.displayName;
-			name_.Tooltip.Text =
-				$"{m.displayName}\n\n" +
-				$"{m.uid}\n\n" +
-				$"{m.metaLoadPath}";
+			if (morph_ == null)
+			{
+				Render = false;
+			}
+			else
+			{
+				Render = true;
+				name_.Text = m.displayName;
+				name_.Tooltip.Text =
+					$"{m.displayName}\n\n" +
+					$"{m.uid}\n\n" +
+					$"{m.metaLoadPath}";
+			}
 
 			Update();
 		}
@@ -79,39 +126,39 @@ namespace AUI
 
 		private void OnValue(float f)
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			morph_.morphValue = f;
 		}
 
 		private void OnReset()
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			morph_.ResetRange();
 			slider_.Set(morph_.startValue, morph_.min, morph_.max);
 		}
 
 		private void OnDefault()
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			slider_.Value = morph_.startValue;
 		}
 
 		private void OnAddRange()
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			slider_.SetRange(slider_.Minimum - 1, slider_.Maximum + 1);
 		}
 
 		private void OnResetRange()
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			morph_.ResetRange();
 			slider_.SetRange(morph_.min, morph_.max);
 		}
 
 		private void OnFavorite(bool b)
 		{
-			if (ignore_) return;
+			if (ignore_ || morph_ == null) return;
 			morph_.favorite = b;
 		}
 	}
@@ -119,15 +166,21 @@ namespace AUI
 
 	class MorphUI
 	{
+		private const int Columns = 3;
+		private const int Rows = 5;
+
 		private bool inited_ = false;
 		private VUI.Root root_ = null;
-		private VUI.Panel panel_ = new VUI.Panel();
+		private Controls controls_;
+		private VUI.Panel grid_ = new VUI.Panel();
 		private List<MorphPanel> panels_ = new List<MorphPanel>();
 		private List<DAZMorph> morphs_ = new List<DAZMorph>();
 		private List<DAZMorph> filtered_ = new List<DAZMorph>();
+		private int page_ = 0;
 
 		public MorphUI()
 		{
+			controls_ = new Controls(this);
 		}
 
 		public void Update()
@@ -151,25 +204,89 @@ namespace AUI
 			}
 		}
 
+		public int PerPage
+		{
+			get { return Columns * Rows; }
+		}
+
+		public int PageCount
+		{
+			get { return filtered_.Count / PerPage + 1; }
+		}
+
+		public int CurrentPage
+		{
+			get
+			{
+				return page_;
+			}
+
+			set
+			{
+				page_ = value;
+				PageChanged();
+			}
+		}
+
+		public List<DAZMorph> Filtered
+		{
+			get { return filtered_; }
+		}
+
+		public void PreviousPage()
+		{
+			if (page_ > 0)
+			{
+				--page_;
+				PageChanged();
+			}
+		}
+
+		public void NextPage()
+		{
+			if (page_ < (PageCount - 1))
+			{
+				++page_;
+				PageChanged();
+			}
+		}
+
+		private void PageChanged()
+		{
+			SetPanels();
+			controls_.Update();
+		}
+
+		private void SetPanels()
+		{
+			for (int i = 0; i < panels_.Count; ++i)
+			{
+				int mi = (page_ * PerPage) + i;
+
+				if (mi < filtered_.Count)
+					panels_[i].SetMorph(filtered_[mi]);
+				else
+					panels_[i].SetMorph(null);
+			}
+		}
+
 		private void DoInit()
 		{
 			root_ = new VUI.Root(AlternateUI.Instance.UITransform.GetComponentInChildren<MVRScriptUI>());
 			root_.ContentPanel.Layout = new VUI.BorderLayout();
-			root_.ContentPanel.Add(panel_, VUI.BorderLayout.Center);
+			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
+			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
-			int cols = 3;
-			int rows = 5;
-
-			var gl = new VUI.GridLayout(cols);
+			var gl = new VUI.GridLayout(Columns);
 			gl.UniformWidth = true;
 			gl.Spacing = 5;
-			panel_.Layout = gl;
+			grid_.Layout = gl;
 
-			for (int i = 0; i < cols * rows; ++i)
+			for (int i = 0; i < Columns * Rows; ++i)
 			{
 				var p = new MorphPanel();
 				panels_.Add(p);
-				panel_.Add(p);
+				grid_.Add(p);
 			}
 		}
 
@@ -195,16 +312,14 @@ namespace AUI
 				}
 				else
 				{
-					Log.Error($"filtered {m.uid}");
+					Log.Verbose($"filtered {m.uid}");
 				}
-
 			}
 
-			Log.Error($"filtered {morphs_.Count - filtered_.Count} morphs");
 
-
-			for (int i = 0; i < panels_.Count; ++i)
-				panels_[i].SetMorph(filtered_[i]);
+			Log.Verbose($"filtered {morphs_.Count - filtered_.Count} morphs");
+			controls_.Update();
+			SetPanels();
 		}
 
 		private bool ShouldShow(DAZMorph m, Dictionary<string, int> set)
@@ -218,7 +333,7 @@ namespace AUI
 			var file = GetFilename(m);
 			if (set.ContainsKey(file))
 			{
-				Log.Error($"dupe {m.uid} {file}");
+				Log.Verbose($"dupe {m.uid} {file}");
 				return false;
 			}
 			else

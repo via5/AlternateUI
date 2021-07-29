@@ -441,6 +441,10 @@ namespace VUI
 			var ts = ts_;
 			ts.font = font ?? Style.Theme.DefaultFont;
 			ts.fontSize = (fontSize < 0 ? Style.Theme.DefaultFontSize : fontSize);
+			ts.horizontalOverflow = HorizontalWrapMode.Overflow;
+			ts.verticalOverflow = VerticalWrapMode.Overflow;
+			ts.generateOutOfBounds = false;
+			ts.resizeTextForBestFit = false;
 
 			return tg_.GetPreferredWidth(s, ts);
 		}

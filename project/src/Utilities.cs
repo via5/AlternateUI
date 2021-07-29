@@ -366,7 +366,7 @@ namespace AUI
 
 		public static void Verbose(string s)
 		{
-			Out(VerboseLevel, s);
+			//Out(VerboseLevel, s);
 		}
 
 		public static void Info(string s)
