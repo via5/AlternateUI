@@ -14,6 +14,7 @@ namespace AUI.MorphUI
 		private List<MorphPanel> panels_ = new List<MorphPanel>();
 		private List<DAZMorph> morphs_ = new List<DAZMorph>();
 		private List<DAZMorph> filtered_ = new List<DAZMorph>();
+		private Filter filter_ = new Filter();
 		private int page_ = 0;
 
 		public MorphUI()
@@ -132,75 +133,16 @@ namespace AUI.MorphUI
 		{
 			var a = SuperController.singleton.GetAtomByUid("A");
 			var mui = GetMUI(a);
+
 			morphs_ = mui.GetMorphs();
-
-			filtered_.Clear();
-			filtered_.Capacity = morphs_.Count;
-
-			// ghetto set
-			var set = new Dictionary<string, int>();
-
-			for (int i = 0; i < morphs_.Count; ++i)
-			{
-				var m = morphs_[i];
-
-				if (ShouldShow(m, set))
-				{
-					filtered_.Add(m);
-				}
-				else
-				{
-					Log.Verbose($"filtered {m.uid}");
-				}
-			}
-
-
+			filtered_ = filter_.Process(morphs_);
 			Log.Verbose($"filtered {morphs_.Count - filtered_.Count} morphs");
+
 			controls_.Update();
 			SetPanels();
 		}
 
-		private bool ShouldShow(DAZMorph m, Dictionary<string, int> set)
-		{
-			if (m.morphValue != m.startValue)
-				return true;
-
-			if (!m.isLatestVersion)
-				return false;
-
-			var file = GetFilename(m);
-			if (set.ContainsKey(file))
-			{
-				Log.Verbose($"dupe {m.uid} {file}");
-				return false;
-			}
-			else
-			{
-				set.Add(file, 0);
-			}
-
-			return true;
-		}
-
-		private string GetFilename(DAZMorph m)
-		{
-			if (m.isInPackage)
-			{
-				var pos = m.uid.IndexOf(":/");
-				if (pos == -1)
-				{
-					Log.Error($"{m.uid} has no :/");
-				}
-				else
-				{
-					return m.uid.Substring(pos + 2);
-				}
-			}
-
-			return m.uid;
-		}
-
-		public GenerateDAZMorphsControlUI GetMUI(Atom atom)
+		private GenerateDAZMorphsControlUI GetMUI(Atom atom)
 		{
 			if (atom == null)
 				return null;

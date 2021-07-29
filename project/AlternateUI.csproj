@@ -96,6 +96,7 @@
   <ItemGroup>
     <Compile Include="src\Main.cs" />
     <Compile Include="src\MorphUI\Controls.cs" />
+    <Compile Include="src\MorphUI\Filter.cs" />
     <Compile Include="src\MorphUI\MorphPanel.cs" />
     <Compile Include="src\MorphUI\MorphUI.cs" />
     <Compile Include="src\Utilities.cs" />

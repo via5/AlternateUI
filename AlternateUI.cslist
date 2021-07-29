@@ -1,6 +1,7 @@
 project\src\Main.cs
 project\src\Utilities.cs
 project\src\MorphUI\Controls.cs
+project\src\MorphUI\Filter.cs
 project\src\MorphUI\MorphPanel.cs
 project\src\MorphUI\MorphUI.cs
 project\src\VUI\BorderLayout.cs
