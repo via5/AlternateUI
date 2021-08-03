@@ -14,6 +14,11 @@ namespace AUI
 			return ((flag & bits) == bits);
 		}
 
+		public static bool IsAnySet(int flag, int bits)
+		{
+			return ((flag & bits) != 0);
+		}
+
 		public static int Bit(int pos)
 		{
 			return (1 << pos);

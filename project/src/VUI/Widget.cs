@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -95,7 +96,8 @@ namespace VUI
 
 
 	class MouseCallbacks : MonoBehaviour,
-		IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
+		IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
+		IScrollHandler
 	{
 		private Widget widget_ = null;
 
@@ -110,7 +112,7 @@ namespace VUI
 			Utilities.Handler(() =>
 			{
 				if (widget_ != null)
-					widget_.OnPointerEnter(d);
+					widget_.OnPointerEnterInternal(d);
 			});
 		}
 
@@ -119,7 +121,7 @@ namespace VUI
 			Utilities.Handler(() =>
 			{
 				if (widget_ != null)
-					widget_.OnPointerExit(d);
+					widget_.OnPointerExitInternal(d);
 			});
 		}
 
@@ -128,8 +130,20 @@ namespace VUI
 			Utilities.Handler(() =>
 			{
 				if (widget_ != null)
-					widget_.OnPointerDown(d);
+					widget_.OnPointerDownInternal(d);
 			});
+		}
+
+		public void OnScroll(PointerEventData d)
+		{
+			if (d.scrollDelta != Vector2.zero)
+			{
+				Utilities.Handler(() =>
+				{
+					if (widget_ != null)
+						widget_.OnWheelInternal(d);
+				});
+			}
 		}
 	}
 
@@ -344,9 +358,7 @@ namespace VUI
 		{
 			if (mainObject_ != null)
 			{
-				mainObject_.SetActive(render_ && visible_);
-				borderGraphics_.gameObject.SetActive(render_ && visible_);
-				borderGraphics_.SetVerticesDirty();
+				SuperController.singleton.StartCoroutine(UpdateActiveStateCo());
 			}
 
 			if (render_ && visible_)
@@ -359,6 +371,12 @@ namespace VUI
 						dirtyChild.DebugLine);
 				}
 			}
+		}
+
+		private IEnumerator UpdateActiveStateCo()
+		{
+			yield return new WaitForEndOfFrame();
+			mainObject_.SetActive(render_ && visible_);
 		}
 
 		private Widget AnyDirtyChild()
@@ -960,19 +978,29 @@ namespace VUI
 			return new Size(DontCare, DontCare);
 		}
 
-		public virtual void OnPointerEnter(PointerEventData d)
+		public void OnPointerEnterInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetEntered(this);
 		}
 
-		public virtual void OnPointerExit(PointerEventData d)
+		public void OnPointerExitInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetExited(this);
 		}
 
-		public virtual void OnPointerDown(PointerEventData d)
+		public void OnPointerDownInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.Hide();
+		}
+
+		public void OnWheelInternal(PointerEventData d)
+		{
+			OnWheel(new Point(d.scrollDelta.x / 100.0f, d.scrollDelta.y / 100.0f));
+		}
+
+		protected virtual void OnWheel(Point p)
+		{
+			// no-op
 		}
 	}
 

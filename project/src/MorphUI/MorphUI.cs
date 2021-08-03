@@ -12,7 +12,7 @@ namespace AUI.MorphUI
 		private Controls controls_;
 		private VUI.Panel grid_ = new VUI.Panel();
 		private List<MorphPanel> panels_ = new List<MorphPanel>();
-		private List<DAZMorph> morphs_ = new List<DAZMorph>();
+		private List<DAZMorph> all_ = new List<DAZMorph>();
 		private List<DAZMorph> filtered_ = new List<DAZMorph>();
 		private Filter filter_ = new Filter();
 		private int page_ = 0;
@@ -24,9 +24,21 @@ namespace AUI.MorphUI
 			filter_.Sort = Filter.SortName;
 		}
 
+		public Filter Filter
+		{
+			get { return filter_; }
+		}
+
 		public void SetAtom(Atom a)
 		{
 			atom_ = a;
+
+			if (atom_ == null)
+				all_ = new List<DAZMorph>();
+			else
+				all_ = GetMUI(atom_).GetMorphs();
+
+			filter_.Set(all_);
 			Refilter();
 		}
 
@@ -42,6 +54,9 @@ namespace AUI.MorphUI
 
 			if (root_.Visible)
 			{
+				if (filter_.IsDirty)
+					Refilter();
+
 				for (int i = 0; i < panels_.Count; ++i)
 					panels_[i].Update();
 
@@ -139,19 +154,9 @@ namespace AUI.MorphUI
 
 		private void Refilter()
 		{
-			if (atom_ == null)
-			{
-				morphs_ = new List<DAZMorph>();
-				filtered_ = new List<DAZMorph>();
-			}
-			else
-			{
-				var mui = GetMUI(atom_);
-
-				morphs_ = mui.GetMorphs();
-				filtered_ = filter_.Process(morphs_);
-				Log.Verbose($"filtered {morphs_.Count - filtered_.Count} morphs");
-			}
+			filtered_ = filter_.Process();
+			Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
+			PageChanged();
 		}
 
 		private GenerateDAZMorphsControlUI GetMUI(Atom atom)

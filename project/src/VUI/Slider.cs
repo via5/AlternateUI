@@ -1,5 +1,4 @@
-﻿using Leap.Unity.Query;
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace VUI
@@ -13,14 +12,17 @@ namespace VUI
 
 		protected UIDynamicSlider slider_ = null;
 
-		// used before creation
 		private T value_ = default(T);
 		private T min_ = default(T);
 		private T max_ = default(T);
+		private T tickValue_ = default(T);
+		private T pageValue_ = default(T);
 
-		public BasicSlider(ValueCallback changed = null)
+		public BasicSlider(T tickValue, T pageValue, ValueCallback changed = null)
 		{
 			Borders = new Insets(2);
+			tickValue_ = tickValue;
+			pageValue_ = pageValue;
 
 			if (changed != null)
 				ValueChanged += changed;
@@ -86,6 +88,18 @@ namespace VUI
 			}
 		}
 
+		public T TickValue
+		{
+			get { return tickValue_; }
+			set { tickValue_ = value; }
+		}
+
+		public T PageValue
+		{
+			get { return pageValue_; }
+			set { pageValue_ = value; }
+		}
+
 		public bool Set(T value, T min, T max)
 		{
 			return DoSet(value, min, max);
@@ -95,6 +109,16 @@ namespace VUI
 		{
 			Minimum = min;
 			Maximum = max;
+		}
+
+		public void Tick(int d)
+		{
+			DoTick(d);
+		}
+
+		public void Page(int d)
+		{
+			DoPage(d);
 		}
 
 		protected override GameObject CreateGameObject()
@@ -145,6 +169,17 @@ namespace VUI
 			ValueChanged?.Invoke(value_);
 		}
 
+		protected override void OnWheel(Point p)
+		{
+			base.OnWheel(p);
+			HandleWheelInternal(p);
+		}
+
+		public void HandleWheelInternal(Point p)
+		{
+			DoTick((int)Math.Round(p.Y));
+		}
+
 		protected abstract T GetValue();
 		protected abstract void SetValue(T v);
 
@@ -155,15 +190,17 @@ namespace VUI
 		protected abstract void SetMaximum(T v);
 
 		protected abstract bool DoSet(T value, T min, T max);
+		protected abstract void DoTick(int d);
+		protected abstract void DoPage(int d);
 	}
 
 
-	class Slider : BasicSlider<float>
+	class FloatSlider : BasicSlider<float>
 	{
 		private bool wholeNumbers_ = false;
 
-		public Slider(ValueCallback changed = null)
-			: base(changed)
+		public FloatSlider(ValueCallback changed = null)
+			: base(0.1f, 1, changed)
 		{
 		}
 
@@ -230,57 +267,15 @@ namespace VUI
 
 			return false;
 		}
-	}
 
-
-	class FloatSlider : BasicSlider<float>
-	{
-		public FloatSlider(ValueCallback changed = null)
-			: base(changed)
+		protected override void DoTick(int d)
 		{
+			SetValue(GetValue() + TickValue * d);
 		}
 
-		protected override float GetValue()
+		protected override void DoPage(int d)
 		{
-			return slider_.slider.value;
-		}
-
-		protected override void SetValue(float v)
-		{
-			slider_.slider.value = v;
-		}
-
-		protected override float GetMinimum()
-		{
-			return slider_.slider.minValue;
-		}
-
-		protected override void SetMinimum(float v)
-		{
-			slider_.slider.minValue = v;
-		}
-
-		protected override float GetMaximum()
-		{
-			return slider_.slider.maxValue;
-		}
-
-		protected override void SetMaximum(float v)
-		{
-			slider_.slider.maxValue = v;
-		}
-
-		protected override bool DoSet(float value, float min, float max)
-		{
-			if (min != Minimum || max != Maximum || value != Value || value < min || value > max)
-			{
-				Minimum = min;
-				Maximum = max;
-				Value = value;
-				return true;
-			}
-
-			return false;
+			SetValue(GetValue() + PageValue * d);
 		}
 	}
 
@@ -288,7 +283,7 @@ namespace VUI
 	class IntSlider : BasicSlider<int>
 	{
 		public IntSlider(ValueCallback changed = null)
-			: base(changed)
+			: base(1, 10, changed)
 		{
 		}
 
@@ -340,6 +335,33 @@ namespace VUI
 
 			return false;
 		}
+
+		protected override void DoTick(int d)
+		{
+			SetValue(GetValue() + TickValue * d);
+		}
+
+		protected override void DoPage(int d)
+		{
+			SetValue(GetValue() + PageValue * d);
+		}
+	}
+
+
+	class SliderTextBox<T> : TextBox
+	{
+		private readonly BasicTextSlider<T> slider_;
+
+		public SliderTextBox(BasicTextSlider<T> s)
+		{
+			slider_ = s;
+		}
+
+		protected override void OnWheel(Point p)
+		{
+			base.OnWheel(p);
+			slider_.Slider.HandleWheelInternal(p);
+		}
 	}
 
 
@@ -351,7 +373,7 @@ namespace VUI
 		public event ValueCallback ValueChanged;
 
 		protected readonly BasicSlider<T> slider_;
-		protected readonly TextBox text_ = new TextBox();
+		protected readonly SliderTextBox<T> text_;
 
 		private bool changingText_ = false;
 
@@ -361,6 +383,7 @@ namespace VUI
 			ValueCallback valueChanged = null)
 		{
 			slider_ = s;
+			text_ = new SliderTextBox<T>(this);
 
 			Layout = new BorderLayout(5);
 			Add(slider_, BorderLayout.Center);
@@ -375,6 +398,16 @@ namespace VUI
 
 			if (valueChanged != null)
 				ValueChanged += valueChanged;
+		}
+
+		public BasicSlider<T> Slider
+		{
+			get { return slider_; }
+		}
+
+		public SliderTextBox<T> TextBox
+		{
+			get { return text_; }
 		}
 
 		public T Value
@@ -444,14 +477,14 @@ namespace VUI
 		}
 
 		public TextSlider(float value, float min, float max, ValueCallback valueChanged = null)
-			: base(new Slider(), value, min, max, valueChanged)
+			: base(new FloatSlider(), value, min, max, valueChanged)
 		{
 		}
 
 		public bool WholeNumbers
 		{
-			get { return ((Slider)slider_).WholeNumbers; }
-			set { ((Slider)slider_).WholeNumbers = value; }
+			get { return ((FloatSlider)slider_).WholeNumbers; }
+			set { ((FloatSlider)slider_).WholeNumbers = value; }
 		}
 
 		protected override float FromString(string s)
