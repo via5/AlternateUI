@@ -300,6 +300,11 @@ namespace VUI
 			return new Size(100, DontCare);
 		}
 
+		protected override void DoSetRender(bool b)
+		{
+			WidgetObject.gameObject.SetActive(b);
+		}
+
 		private void OnMouseDown(PointerEventData data)
 		{
 			Utilities.Handler(() =>

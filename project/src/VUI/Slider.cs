@@ -163,6 +163,11 @@ namespace VUI
 			Style.Polish(this);
 		}
 
+		protected override void DoSetRender(bool b)
+		{
+			slider_.slider.gameObject.SetActive(b);
+		}
+
 		private void OnChanged(float v)
 		{
 			value_ = GetValue();
@@ -469,14 +474,22 @@ namespace VUI
 	}
 
 
-	class TextSlider : BasicTextSlider<float>
+	class FloatTextSlider : BasicTextSlider<float>
 	{
-		public TextSlider(ValueCallback valueChanged = null)
+		private string format_ = "0.00";
+
+		public FloatTextSlider(string format)
+			: this()
+		{
+			format_ = format;
+		}
+
+		public FloatTextSlider(ValueCallback valueChanged = null)
 			: this(0, 0, 1, valueChanged)
 		{
 		}
 
-		public TextSlider(float value, float min, float max, ValueCallback valueChanged = null)
+		public FloatTextSlider(float value, float min, float max, ValueCallback valueChanged = null)
 			: base(new FloatSlider(), value, min, max, valueChanged)
 		{
 		}
@@ -501,43 +514,7 @@ namespace VUI
 			if (WholeNumbers)
 				return ((int)Math.Round(v)).ToString();
 			else
-				return v.ToString("0.00");
-		}
-	}
-
-
-	class FloatTextSlider : BasicTextSlider<float>
-	{
-		private string format_ = "0.00";
-
-		public FloatTextSlider(string format)
-			: this()
-		{
-			format_ = format;
-		}
-
-		public FloatTextSlider(ValueCallback valueChanged = null)
-			: this(0, 0, 1, valueChanged)
-		{
-		}
-
-		public FloatTextSlider(float value, float min, float max, ValueCallback valueChanged = null)
-			: base(new FloatSlider(), value, min, max, valueChanged)
-		{
-		}
-
-		protected override float FromString(string s)
-		{
-			float f;
-			if (float.TryParse(s, out f))
-				return Utilities.Clamp(f, Minimum, Maximum);
-
-			return 0;
-		}
-
-		protected override string ToString(float v)
-		{
-			return v.ToString(format_);
+				return v.ToString(format_);
 		}
 	}
 

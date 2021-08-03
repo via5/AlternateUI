@@ -649,6 +649,11 @@ namespace VUI
 			get { return new Size(Left + Right, Top + Bottom); }
 		}
 
+		public bool Empty
+		{
+			get { return Left == 0 && Top == 0 && Right == 0 && Bottom == 0; }
+		}
+
 		public static Insets operator +(Insets a, Insets b)
 		{
 			return new Insets(

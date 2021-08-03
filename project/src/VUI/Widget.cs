@@ -332,7 +332,7 @@ namespace VUI
 				if (render_ != value)
 				{
 					render_ = value;
-					UpdateActiveState();
+					SetRender(render_);
 				}
 			}
 		}
@@ -357,9 +357,7 @@ namespace VUI
 		private void UpdateActiveState()
 		{
 			if (mainObject_ != null)
-			{
-				SuperController.singleton.StartCoroutine(UpdateActiveStateCo());
-			}
+				mainObject_.SetActive(render_ && visible_);
 
 			if (render_ && visible_)
 			{
@@ -837,7 +835,25 @@ namespace VUI
 			foreach (var w in children_)
 				w.Create();
 
+			SetRender(render_);
 			Created?.Invoke();
+		}
+
+		private void SetRender(bool b)
+		{
+			if (!borders_.Empty)
+				borderGraphics_.gameObject.SetActive(b);
+
+			DoSetRender(b);
+
+			foreach (var c in children_)
+				c.SetRender(b);
+		}
+
+		protected virtual void DoSetRender(bool b)
+		{
+			foreach (var cr in widgetObject_.GetComponentsInChildren<CanvasRenderer>())
+				cr.cull = !b;
 		}
 
 		private void SetMainObjectBounds()

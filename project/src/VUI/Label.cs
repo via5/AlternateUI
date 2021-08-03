@@ -286,6 +286,14 @@ namespace VUI
 			return Root.TextSize(Font, FontSize, text_) + new Size(0, 5);
 		}
 
+		protected override void DoSetRender(bool b)
+		{
+			base.DoSetRender(b);
+
+			if (ellipsis_ != null)
+				ellipsis_.GetComponent<CanvasRenderer>().cull = !b;
+		}
+
 		private bool TextTooLong()
 		{
 			// todo: wrap mode

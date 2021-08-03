@@ -113,6 +113,7 @@ namespace AUI.MorphUI
 
 		private void PageChanged()
 		{
+			page_ = U.Clamp(page_, 0, PageCount - 1);
 			SetPanels();
 			controls_.Update();
 		}
