@@ -7,7 +7,7 @@ namespace AUI.MorphUI
 		private const int Columns = 3;
 		private const int Rows = 5;
 
-		private bool inited_ = false;
+		private Atom atom_ = null;
 		private VUI.Root root_ = null;
 		private Controls controls_;
 		private VUI.Panel grid_ = new VUI.Panel();
@@ -20,26 +20,32 @@ namespace AUI.MorphUI
 		public MorphUI()
 		{
 			controls_ = new Controls(this);
+			filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
+			filter_.Sort = Filter.SortName;
+		}
+
+		public void SetAtom(Atom a)
+		{
+			atom_ = a;
+			Refilter();
 		}
 
 		public void Update()
 		{
-			if (!inited_ && AlternateUI.Instance.UITransform != null)
+			if (root_ == null)
 			{
-				DoInit();
-				inited_ = true;
-				DoUpdate();
+				if (AlternateUI.Instance.UITransform == null)
+					return;
+
+				CreateUI();
 			}
 
-			if (root_ != null)
+			if (root_.Visible)
 			{
-				if (root_.Visible)
-				{
-					for (int i = 0; i < panels_.Count; ++i)
-						panels_[i].Update();
-				}
+				for (int i = 0; i < panels_.Count; ++i)
+					panels_[i].Update();
 
-				root_?.Update();
+				root_.Update();
 			}
 		}
 
@@ -109,7 +115,7 @@ namespace AUI.MorphUI
 			}
 		}
 
-		private void DoInit()
+		private void CreateUI()
 		{
 			root_ = new VUI.Root(AlternateUI.Instance.UITransform.GetComponentInChildren<MVRScriptUI>());
 			root_.ContentPanel.Layout = new VUI.BorderLayout();
@@ -127,19 +133,25 @@ namespace AUI.MorphUI
 				panels_.Add(p);
 				grid_.Add(p);
 			}
+
+			PageChanged();
 		}
 
-		private void DoUpdate()
+		private void Refilter()
 		{
-			var a = SuperController.singleton.GetAtomByUid("A");
-			var mui = GetMUI(a);
+			if (atom_ == null)
+			{
+				morphs_ = new List<DAZMorph>();
+				filtered_ = new List<DAZMorph>();
+			}
+			else
+			{
+				var mui = GetMUI(atom_);
 
-			morphs_ = mui.GetMorphs();
-			filtered_ = filter_.Process(morphs_);
-			Log.Verbose($"filtered {morphs_.Count - filtered_.Count} morphs");
-
-			controls_.Update();
-			SetPanels();
+				morphs_ = mui.GetMorphs();
+				filtered_ = filter_.Process(morphs_);
+				Log.Verbose($"filtered {morphs_.Count - filtered_.Count} morphs");
+			}
 		}
 
 		private GenerateDAZMorphsControlUI GetMUI(Atom atom)

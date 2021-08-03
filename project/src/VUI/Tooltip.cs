@@ -1,20 +1,41 @@
-﻿using UnityEngine.UI;
+﻿using System;
+using UnityEngine.UI;
 
 namespace VUI
 {
 	class Tooltip
 	{
 		private string text_ = "";
+		private Func<string> textFunc_ = null;
 
 		public Tooltip(string text = "")
 		{
 			text_ = text;
 		}
 
+		public bool HasValue
+		{
+			get { return textFunc_ != null || text_ != ""; }
+		}
+
+		public Func<string> TextFunc
+		{
+			get { return textFunc_; }
+			set { textFunc_ = value; }
+		}
+
 		public string Text
 		{
 			get { return text_; }
 			set { text_ = value; }
+		}
+
+		public string GetText()
+		{
+			if (textFunc_ != null)
+				return textFunc_();
+			else
+				return text_;
 		}
 	}
 
@@ -89,7 +110,7 @@ namespace VUI
 			if (active_ == w)
 				return;
 
-			if (w.Tooltip.Text != "")
+			if (w.Tooltip.HasValue)
 			{
 				Hide();
 				active_ = w;
@@ -117,7 +138,7 @@ namespace VUI
 				return;
 
 			active_ = w;
-			widget_.Text = w.Tooltip.Text;
+			widget_.Text = w.Tooltip.GetText();
 
 			// size of text
 			var size = Root.FitText(null, -1, widget_.Text, new Size(

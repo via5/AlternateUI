@@ -30,6 +30,9 @@
 						(s) => Log.Info(s),
 						(s) => Log.Warning(s),
 						(s) => Log.Error(s));
+
+					mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
+					inited_ = true;
 				}
 
 				mui_.Update();

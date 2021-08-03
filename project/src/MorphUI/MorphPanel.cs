@@ -1,4 +1,6 @@
-﻿namespace AUI.MorphUI
+﻿using System;
+
+namespace AUI.MorphUI
 {
 	class MorphPanel : VUI.Panel
 	{
@@ -63,13 +65,22 @@
 			{
 				Render = true;
 				name_.Text = m.displayName;
-				name_.Tooltip.Text =
-					$"{m.displayName}\n\n" +
-					$"{m.uid}\n\n" +
-					$"{m.metaLoadPath}";
+				name_.Tooltip.TextFunc = GetTooltip;
 			}
 
 			Update();
+		}
+
+		private string GetTooltip()
+		{
+			var s =
+				$"{morph_.uid}\n\n" +
+				$"{morph_.morphName}\n\n" +
+				$"{morph_.numDeltas} {morph_.min} {morph_.max} {morph_.isPoseControl} {morph_.group} {morph_.region}\n\n" +
+				$"{Filter.GetPath(morph_)}";
+
+
+			return s;
 		}
 
 		public void Update()
