@@ -76,7 +76,7 @@ namespace AUI.MorphUI
 			var s =
 				$"{morph_.uid}\n\n" +
 				$"{morph_.morphName}\n\n" +
-				$"{morph_.numDeltas} {morph_.min} {morph_.max} {morph_.isPoseControl} {morph_.group} {morph_.region}\n\n" +
+				$"{morph_.overrideRegion} {morph_.group} {morph_.region}\n\n" +
 				$"{Filter.GetPath(morph_)}";
 
 

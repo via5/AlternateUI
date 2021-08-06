@@ -137,6 +137,17 @@ namespace AUI
 				return val;
 		}
 
+		public static void TimeThis(string s, Action f)
+		{
+			var sw = new Stopwatch();
+			sw.Reset();
+			sw.Start();
+			f();
+			sw.Stop();
+			var ms = ((((double)sw.ElapsedTicks) / Stopwatch.Frequency) * 1000);
+			Log.Info($"{s} {ms:0.000}ms");
+		}
+
 		public static void NatSort(List<string> list)
 		{
 			list.Sort(new NaturalStringComparer());

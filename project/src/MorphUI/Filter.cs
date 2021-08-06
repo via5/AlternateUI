@@ -4,6 +4,7 @@ namespace AUI.MorphUI
 {
 	class MorphComparer : IComparer<DAZMorph>
 	{
+		private NaturalStringComparer nat_ = new NaturalStringComparer();
 		private readonly int sort_;
 		private readonly int sortDir_;
 
@@ -27,7 +28,7 @@ namespace AUI.MorphUI
 				case Filter.SortName:
 				default:
 				{
-					return (x.displayName.CompareTo(y.displayName));
+					return nat_.Compare(x.displayName, y.displayName);
 				}
 			}
 		}
@@ -79,6 +80,9 @@ namespace AUI.MorphUI
 
 		private Dictionary<int, List<DAZMorph>> similar_ =
 			new Dictionary<int, List<DAZMorph>>();
+
+		private List<string> cats_ = new List<string>();
+
 
 		public Filter()
 		{
@@ -132,7 +136,9 @@ namespace AUI.MorphUI
 
 		private void DupesChanged()
 		{
-			dirty_ |= DirtyDupes | DirtySearch | DirtyDupesSort | DirtySearchedSort;
+			dirty_ |=
+				DirtyDupes | DirtySearch |
+				DirtyDupesSort | DirtySearchedSort;
 		}
 
 		private void SearchChanged()

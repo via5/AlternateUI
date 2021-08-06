@@ -17,6 +17,7 @@ namespace VUI
 		private T max_ = default(T);
 		private T tickValue_ = default(T);
 		private T pageValue_ = default(T);
+		private bool hor_ = true;
 
 		public BasicSlider(T tickValue, T pageValue, ValueCallback changed = null)
 		{
@@ -26,6 +27,23 @@ namespace VUI
 
 			if (changed != null)
 				ValueChanged += changed;
+		}
+
+		public bool Horizontal
+		{
+			get
+			{
+				return hor_;
+			}
+
+			set
+			{
+				if (value != hor_)
+				{
+					hor_ = value;
+					SetDirection();
+				}
+			}
 		}
 
 		public T Value
@@ -133,6 +151,7 @@ namespace VUI
 			slider_.quickButtonsEnabled = false;
 			slider_.defaultButtonEnabled = false;
 			slider_.rangeAdjustEnabled = false;
+			SetDirection();
 
 			Set(value_, min_, max_);
 
@@ -149,6 +168,18 @@ namespace VUI
 				rt.offsetMax.x + 12, rt.offsetMax.y - 30);
 
 			Style.Setup(this);
+		}
+
+		private void SetDirection()
+		{
+			if (slider_?.slider != null)
+			{
+				var d = hor_ ?
+					UnityEngine.UI.Slider.Direction.LeftToRight :
+					UnityEngine.UI.Slider.Direction.BottomToTop;
+
+				slider_.slider.SetDirection(d, false);
+			}
 		}
 
 		protected override Size DoGetPreferredSize(

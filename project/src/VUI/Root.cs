@@ -389,29 +389,31 @@ namespace VUI
 			}
 		}
 
+		public Point ToLocal(Vector2 v)
+		{
+			if (canvas_ == null)
+			{
+				canvas_ = support_.Canvas;
+				if (canvas_ == null)
+					return NoMousePos;
+			}
+
+			Vector2 pp;
+			RectTransformUtility.ScreenPointToLocalPointInRectangle(
+				canvas_.transform as RectTransform, v,
+				canvas_.worldCamera, out pp);
+
+			pp.x = bounds_.Left + bounds_.Width / 2 + pp.x;
+			pp.y = bounds_.Top + (bounds_.Height - pp.y + topOffset_);
+
+			return new Point(pp.x, pp.y);
+		}
+
 		public Point MousePosition
 		{
 			get
 			{
-				if (canvas_ == null)
-				{
-					canvas_ = support_.Canvas;
-					if (canvas_ == null)
-						return NoMousePos;
-				}
-
-
-				var mp = Input.mousePosition;
-
-				Vector2 pp;
-				RectTransformUtility.ScreenPointToLocalPointInRectangle(
-					canvas_.transform as RectTransform, mp,
-					canvas_.worldCamera, out pp);
-
-				pp.x = bounds_.Left + bounds_.Width / 2 + pp.x;
-				pp.y = bounds_.Top + (bounds_.Height - pp.y + topOffset_);
-
-				return new Point(pp.x, pp.y);
+				return ToLocal(Input.mousePosition);
 			}
 		}
 

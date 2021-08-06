@@ -4,7 +4,7 @@
 	{
 		static private AlternateUI instance_ = null;
 
-		private MorphUI.MorphUI mui_ = new MorphUI.MorphUI();
+		private MorphUI.MorphUI mui_ = null;
 		private bool inited_ = false;
 
 		public AlternateUI()
@@ -30,6 +30,8 @@
 						(s) => Log.Info(s),
 						(s) => Log.Warning(s),
 						(s) => Log.Error(s));
+
+					mui_ = new MorphUI.MorphUI();
 
 					mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
 					inited_ = true;

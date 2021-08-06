@@ -96,8 +96,9 @@ namespace VUI
 
 
 	class MouseCallbacks : MonoBehaviour,
-		IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
-		IScrollHandler
+		IPointerEnterHandler, IPointerExitHandler,
+		IPointerDownHandler, IPointerUpHandler,
+		IScrollHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		private Widget widget_ = null;
 
@@ -134,6 +135,15 @@ namespace VUI
 			});
 		}
 
+		public void OnPointerUp(PointerEventData d)
+		{
+			Utilities.Handler(() =>
+			{
+				if (widget_ != null)
+					widget_.OnPointerUpInternal(d);
+			});
+		}
+
 		public void OnScroll(PointerEventData d)
 		{
 			if (d.scrollDelta != Vector2.zero)
@@ -144,6 +154,33 @@ namespace VUI
 						widget_.OnWheelInternal(d);
 				});
 			}
+		}
+
+		public void OnBeginDrag(PointerEventData d)
+		{
+			Utilities.Handler(() =>
+			{
+				if (widget_ != null)
+					widget_.OnBeginDragInternal(d);
+			});
+		}
+
+		public void OnDrag(PointerEventData d)
+		{
+			Utilities.Handler(() =>
+			{
+				if (widget_ != null)
+					widget_.OnDragInternal(d);
+			});
+		}
+
+		public void OnEndDrag(PointerEventData d)
+		{
+			Utilities.Handler(() =>
+			{
+				if (widget_ != null)
+					widget_.OnEndDragInternal(d);
+			});
 		}
 	}
 
@@ -841,13 +878,16 @@ namespace VUI
 
 		private void SetRender(bool b)
 		{
-			if (!borders_.Empty)
-				borderGraphics_.gameObject.SetActive(b);
+			if (widgetObject_ != null)
+			{
+				if (!borders_.Empty)
+					borderGraphics_?.gameObject?.SetActive(b);
 
-			DoSetRender(b);
+				DoSetRender(b);
 
-			foreach (var c in children_)
-				c.SetRender(b);
+				foreach (var c in children_)
+					c.SetRender(b);
+			}
 		}
 
 		protected virtual void DoSetRender(bool b)
@@ -994,22 +1034,38 @@ namespace VUI
 			return new Size(DontCare, DontCare);
 		}
 
-		public void OnPointerEnterInternal(PointerEventData d)
+		public virtual void OnPointerEnterInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetEntered(this);
 		}
 
-		public void OnPointerExitInternal(PointerEventData d)
+		public virtual void OnPointerExitInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetExited(this);
 		}
 
-		public void OnPointerDownInternal(PointerEventData d)
+		public virtual void OnPointerDownInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.Hide();
 		}
 
-		public void OnWheelInternal(PointerEventData d)
+		public virtual void OnPointerUpInternal(PointerEventData d)
+		{
+		}
+
+		public virtual void OnBeginDragInternal(PointerEventData d)
+		{
+		}
+
+		public virtual void OnDragInternal(PointerEventData d)
+		{
+		}
+
+		public virtual void OnEndDragInternal(PointerEventData d)
+		{
+		}
+
+		public virtual void OnWheelInternal(PointerEventData d)
 		{
 			OnWheel(new Point(d.scrollDelta.x / 100.0f, d.scrollDelta.y / 100.0f));
 		}
@@ -1026,7 +1082,9 @@ namespace VUI
 		public override string TypeName { get { return "Panel"; } }
 
 		private GameObject bgObject_ = null;
+		private Image bgImage_ = null;
 		private Color bgColor_ = new Color(0, 0, 0, 0);
+		private bool clickthrough_ = true;
 
 		public Panel(string name = "")
 			: base(name)
@@ -1036,6 +1094,24 @@ namespace VUI
 		public Panel(Layout ly)
 		{
 			Layout = ly;
+		}
+
+		public bool Clickthrough
+		{
+			get
+			{
+				return clickthrough_;
+			}
+
+			set
+			{
+				if (value != clickthrough_)
+				{
+					clickthrough_ = value;
+					if (bgImage_ != null)
+						bgImage_.raycastTarget = !value;
+				}
+			}
 		}
 
 		public Color BackgroundColor
@@ -1085,9 +1161,8 @@ namespace VUI
 
 			bgObject_.transform.SetAsFirstSibling();
 
-			var image = bgObject_.GetComponent<Image>();
-			image.color = bgColor_;
-			image.raycastTarget = false;
+			bgImage_.color = bgColor_;
+			bgImage_.raycastTarget = !clickthrough_;
 
 			var r = new Rectangle(0, 0, Bounds.Size);
 			r.Deflate(Margins);
@@ -1104,7 +1179,7 @@ namespace VUI
 			{
 				bgObject_ = new GameObject("WidgetBackground");
 				bgObject_.transform.SetParent(MainObject.transform, false);
-				bgObject_.AddComponent<Image>();
+				bgImage_ = bgObject_.AddComponent<Image>();
 			}
 		}
 	}
