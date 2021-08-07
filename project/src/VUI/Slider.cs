@@ -27,6 +27,8 @@ namespace VUI
 
 			if (changed != null)
 				ValueChanged += changed;
+
+			Events.Wheel += HandleWheelInternal;
 		}
 
 		public bool Horizontal
@@ -205,15 +207,10 @@ namespace VUI
 			ValueChanged?.Invoke(value_);
 		}
 
-		protected override void OnWheel(Point p)
+		public bool HandleWheelInternal(WheelEvent e)
 		{
-			base.OnWheel(p);
-			HandleWheelInternal(p);
-		}
-
-		public void HandleWheelInternal(Point p)
-		{
-			DoTick((int)Math.Round(p.Y));
+			DoTick((int)Math.Round(e.Delta.Y));
+			return false;
 		}
 
 		protected abstract T GetValue();
@@ -391,12 +388,7 @@ namespace VUI
 		public SliderTextBox(BasicTextSlider<T> s)
 		{
 			slider_ = s;
-		}
-
-		protected override void OnWheel(Point p)
-		{
-			base.OnWheel(p);
-			slider_.Slider.HandleWheelInternal(p);
+			Events.Wheel += (e) => slider_.Slider.HandleWheelInternal(e);
 		}
 	}
 

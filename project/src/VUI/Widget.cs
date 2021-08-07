@@ -191,6 +191,87 @@ namespace VUI
 	}
 
 
+	interface IEvent
+	{
+	}
+
+	abstract class MouseEvent : IEvent
+	{
+		private readonly Widget w_;
+		private readonly PointerEventData d_;
+
+		protected MouseEvent(Widget w, PointerEventData d)
+		{
+			w_ = w;
+			d_ = d;
+		}
+
+		public Point Mouse
+		{
+			get { return w_?.GetRoot()?.ToLocal(d_.position) ?? Point.Zero; }
+		}
+	}
+
+	class WheelEvent : MouseEvent
+	{
+		private readonly Point d_;
+
+		public WheelEvent(Widget w, PointerEventData d)
+			: base(w, d)
+		{
+			d_ = new Point(d.scrollDelta.x / 100.0f, d.scrollDelta.y / 100.0f);
+		}
+
+		public Point Delta
+		{
+			get { return d_; }
+		}
+	}
+
+	class DragEvent : MouseEvent
+	{
+		public DragEvent(Widget w, PointerEventData d)
+			: base(w, d)
+		{
+		}
+	}
+
+	class PointerEvent : MouseEvent
+	{
+		public PointerEvent(Widget w, PointerEventData d)
+			: base(w, d)
+		{
+		}
+	}
+
+
+	class Events
+	{
+		public delegate bool DragHandler(DragEvent e);
+		public event DragHandler DragStart, Drag, DragEnd;
+
+		public bool? FireDragStart(DragEvent e) { return DragStart?.Invoke(e); }
+		public bool? FireDrag(DragEvent e) { return Drag?.Invoke(e); }
+		public bool? FireDragEnd(DragEvent e) { return DragEnd?.Invoke(e); }
+
+
+		public delegate bool WheelHandler(WheelEvent e);
+		public event WheelHandler Wheel;
+
+		public bool? FireWheel(WheelEvent e) { return Wheel?.Invoke(e); }
+
+
+		public delegate bool PointerHandler(PointerEvent e);
+		public event PointerHandler PointerDown, PointerUp;
+		public event PointerHandler PointerEnter, PointerExit;
+
+		public bool? FirePointerDown(PointerEvent e) { return PointerDown?.Invoke(e); }
+		public bool? FirePointerUp(PointerEvent e) { return PointerUp?.Invoke(e); }
+		public bool? FirePointerEnter(PointerEvent e) { return PointerEnter?.Invoke(e); }
+		public bool? FirePointerExit(PointerEvent e) { return PointerExit?.Invoke(e); }
+	}
+
+
 	abstract class Widget : IDisposable, IWidget
 	{
 		public virtual string TypeName { get { return "Widget"; } }
@@ -226,6 +307,7 @@ namespace VUI
 		private int fontSize_ = -1;
 		private Color textColor_ = Style.Theme.TextColor;
 		private readonly Tooltip tooltip_;
+		private Events events_ = new Events();
 
 		private bool dirty_ = true;
 
@@ -355,6 +437,11 @@ namespace VUI
 		public GameObject WidgetObject
 		{
 			get { return widgetObject_; }
+		}
+
+		public Events Events
+		{
+			get { return events_; }
 		}
 
 		public bool Render
@@ -1034,45 +1121,72 @@ namespace VUI
 			return new Size(DontCare, DontCare);
 		}
 
-		public virtual void OnPointerEnterInternal(PointerEventData d)
+
+		private void Bubble<Data>(Func<Data, bool?> f, Data d)
+		{
+			bool bubble = f(d) ?? true;
+		}
+
+		public void OnPointerEnterInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetEntered(this);
+
+			bool? bubble = events_.FirePointerEnter(new PointerEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnPointerEnterInternal(d);
 		}
 
-		public virtual void OnPointerExitInternal(PointerEventData d)
+		public void OnPointerExitInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetExited(this);
+
+			bool? bubble = events_.FirePointerExit(new PointerEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnPointerExitInternal(d);
 		}
 
-		public virtual void OnPointerDownInternal(PointerEventData d)
+		public void OnPointerDownInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.Hide();
+
+			bool? bubble = events_.FirePointerDown(new PointerEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnPointerDownInternal(d);
 		}
 
-		public virtual void OnPointerUpInternal(PointerEventData d)
+		public void OnPointerUpInternal(PointerEventData d)
 		{
+			bool? bubble = events_.FirePointerUp(new PointerEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnPointerUpInternal(d);
 		}
 
-		public virtual void OnBeginDragInternal(PointerEventData d)
+		public void OnBeginDragInternal(PointerEventData d)
 		{
+			bool? bubble = events_.FireDragStart(new DragEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnBeginDragInternal(d);
 		}
 
-		public virtual void OnDragInternal(PointerEventData d)
+		public void OnDragInternal(PointerEventData d)
 		{
+			bool? bubble = events_.FireDrag(new DragEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnDragInternal(d);
 		}
 
-		public virtual void OnEndDragInternal(PointerEventData d)
+		public void OnEndDragInternal(PointerEventData d)
 		{
+			bool? bubble = events_.FireDragEnd(new DragEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnEndDragInternal(d);
 		}
 
-		public virtual void OnWheelInternal(PointerEventData d)
+		public void OnWheelInternal(PointerEventData d)
 		{
-			OnWheel(new Point(d.scrollDelta.x / 100.0f, d.scrollDelta.y / 100.0f));
-		}
-
-		protected virtual void OnWheel(Point p)
-		{
-			// no-op
+			bool? bubble = events_.FireWheel(new WheelEvent(this, d));
+			if (bubble ?? true && parent_ != null)
+				parent_.OnWheelInternal(d);
 		}
 	}
 
@@ -1175,7 +1289,7 @@ namespace VUI
 			if (MainObject == null)
 				return;
 
-			if (bgObject_ == null && bgColor_.a > 0)
+			if (bgObject_ == null && (bgColor_.a > 0 || !clickthrough_))
 			{
 				bgObject_ = new GameObject("WidgetBackground");
 				bgObject_.transform.SetParent(MainObject.transform, false);

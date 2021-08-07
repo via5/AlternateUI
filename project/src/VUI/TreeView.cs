@@ -14,25 +14,27 @@ namespace VUI
 		private Rectangle initialBounds_;
 		private bool dragging_ = false;
 
-		private Point MakePoint(PointerEventData d)
+		public ScrollBarHandle()
 		{
-			//return new Point(d.position.x, d.position.y);
-			return GetRoot().ToLocal(d.position);
+			Events.DragStart += OnDragStart;
+			Events.Drag += OnDrag;
+			Events.DragEnd += OnDragEnd;
 		}
 
-		public override void OnBeginDragInternal(PointerEventData d)
+		public bool OnDragStart(DragEvent e)
 		{
 			dragging_ = true;
-			dragStart_ = MakePoint(d);
+			dragStart_ = e.Mouse;
 			initialBounds_ = AbsoluteClientBounds;
+			return false;
 		}
 
-		public override void OnDragInternal(PointerEventData d)
+		public bool OnDrag(DragEvent e)
 		{
 			if (!dragging_)
-				return;
+				return false;
 
-			var p = MakePoint(d);
+			var p = e.Mouse;
 			var delta = p - dragStart_;
 
 			var r = Rectangle.FromSize(
@@ -53,11 +55,14 @@ namespace VUI
 			UpdateBounds();
 
 			Moved?.Invoke();
+
+			return false;
 		}
 
-		public override void OnEndDragInternal(PointerEventData d)
+		public bool OnDragEnd(DragEvent e)
 		{
 			dragging_ = false;
+			return false;
 		}
 	}
 
@@ -73,10 +78,12 @@ namespace VUI
 
 		public ScrollBar()
 		{
-			Borders = new Insets(1);
+			Borders = new Insets(1, 0, 0, 0);
 			Layout = new AbsoluteLayout();
+			Clickthrough = false;
 			Add(handle_);
 
+			Events.PointerDown += OnPointerDown;
 			handle_.Moved += OnHandleMoved;
 		}
 
@@ -101,7 +108,7 @@ namespace VUI
 
 			var cb = ClientBounds;
 			var avh = cb.Height - handle_.ClientBounds.Height;
-			var p = (value_ / range_);
+			var p = range_ == 0 ? 0 : (value_ / range_);
 			r.Top += Borders.Top + p * avh;
 			r.Bottom = r.Top + h;
 
@@ -122,6 +129,12 @@ namespace VUI
 			value_ = p * range_;
 			ValueChanged?.Invoke(value_);
 			//Glue.LogInfo($"{top} {p} {value_}");
+		}
+
+		private bool OnPointerDown(PointerEvent e)
+		{
+			Glue.LogInfo("!");
+			return false;
 		}
 	}
 
@@ -318,12 +331,15 @@ namespace VUI
 		private const int ItemHeight = 35;
 		private const int ItemPadding = 2;
 		private const int IndentSize = 50;
-		private const int ScrollBarWidth = 50;
+		private const int ScrollBarWidth = 40;
 
 		private readonly InternalRootItem root_;
 		private List<Node> nodes_ = new List<Node>();
-		private ScrollBar hsb_ = new ScrollBar();
+		private ScrollBar vsb_ = new ScrollBar();
 		private int topItemIndex_ = 0;
+		private int itemCount_ = 0;
+		private int visibleCount_ = 0;
+		private IgnoreFlag ignoreVScroll_ = new IgnoreFlag();
 
 		public TreeView()
 		{
@@ -331,15 +347,33 @@ namespace VUI
 
 			Borders = new Insets(1);
 			Layout = new AbsoluteLayout();
+			Clickthrough = false;
 
-			Add(hsb_);
+			Add(vsb_);
 
-			hsb_.ValueChanged += OnHorizontalScroll;
+			Events.Wheel += OnWheel;
+			vsb_.ValueChanged += OnVerticalScroll;
 		}
 
-		private void OnHorizontalScroll(float v)
+		private void OnVerticalScroll(float v)
 		{
-			topItemIndex_ = (int)(v / (ItemHeight + ItemPadding));
+			if (ignoreVScroll_) return;
+			SetTopItem((int)(v / (ItemHeight + ItemPadding)), false);
+		}
+
+		private void SetTopItem(int index, bool updateSb)
+		{
+			topItemIndex_ = Utilities.Clamp(index, 0, itemCount_ - visibleCount_);
+
+			if (updateSb)
+			{
+				float v = topItemIndex_ * (ItemHeight + ItemPadding);
+				if (v + (ItemHeight + ItemPadding) > vsb_.Range)
+					v = vsb_.Range;
+
+				vsb_.Value = v;
+			}
+
 			UpdateNodes();
 			base.UpdateBounds();
 		}
@@ -381,9 +415,21 @@ namespace VUI
 
 			DoLayout();
 
-			float requiredHeight = (cx.itemIndex + 1) * (ItemHeight + ItemPadding);
+			itemCount_ = cx.itemIndex;
+			visibleCount_ = (int)(cx.av.Height / (ItemHeight + ItemPadding));
+
+			float requiredHeight = (itemCount_ + 1) * (ItemHeight + ItemPadding);
 			float missingHeight = requiredHeight - cx.av.Height;
-			hsb_.Range = missingHeight;
+
+			if (missingHeight <= 0)
+			{
+				vsb_.Visible = false;
+			}
+			else
+			{
+				vsb_.Visible = true;
+				vsb_.Range = missingHeight;
+			}
 
 			//Glue.LogInfo(
 			//	$"{nodes_.Count} nodes, {root_.Children.Count} items, " +
@@ -443,7 +489,7 @@ namespace VUI
 		{
 			var r = AbsoluteClientBounds;
 			r.Left = r.Right - ScrollBarWidth;
-			hsb_.SetBounds(r);
+			vsb_.SetBounds(r);
 			//hsb_.Set(0, 0, 10);
 
 			UpdateNodes();
@@ -465,6 +511,16 @@ namespace VUI
 		protected override void DoSetRender(bool b)
 		{
 			base.DoSetRender(b);
+		}
+
+		private bool OnWheel(WheelEvent e)
+		{
+			ignoreVScroll_.Do(() =>
+			{
+				SetTopItem(topItemIndex_ + (int)-e.Delta.Y, true);
+			});
+
+			return false;
 		}
 
 		public override string DebugLine
