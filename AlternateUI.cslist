@@ -10,11 +10,14 @@ project\src\VUI\CheckBox.cs
 project\src\VUI\ColorPicker.cs
 project\src\VUI\ComboBox.cs
 project\src\VUI\Dialog.cs
+project\src\VUI\Events.cs
 project\src\VUI\Glue.cs
 project\src\VUI\GridLayout.cs
 project\src\VUI\Label.cs
 project\src\VUI\Layout.cs
 project\src\VUI\ListView.cs
+project\src\VUI\Misc.cs
+project\src\VUI\Panel.cs
 project\src\VUI\Root.cs
 project\src\VUI\Slider.cs
 project\src\VUI\Style.cs

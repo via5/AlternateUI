@@ -1,8 +1,97 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace VUI
 {
+	class WidgetBorderGraphics : MaskableGraphic
+	{
+		private Insets borders_ = new Insets();
+		private Color color_ = new Color(0, 0, 0, 0);
+
+		public WidgetBorderGraphics()
+		{
+			raycastTarget = false;
+		}
+
+		public Insets Borders
+		{
+			get
+			{
+				return borders_;
+			}
+
+			set
+			{
+				borders_ = value;
+				SetVerticesDirty();
+			}
+		}
+
+		public Color Color
+		{
+			get
+			{
+				return color_;
+			}
+
+			set
+			{
+				color_ = value;
+				SetVerticesDirty();
+			}
+		}
+
+		protected override void OnPopulateMesh(VertexHelper vh)
+		{
+			vh.Clear();
+
+			if (!gameObject.activeSelf)
+				return;
+
+			var rt = rectTransform;
+
+			// left
+			Line(vh,
+				new Point(rt.rect.xMin, -rt.rect.yMin),
+				new Point(rt.rect.xMin + borders_.Left, -rt.rect.yMax),
+				color_);
+
+			// top
+			Line(vh,
+				new Point(rt.rect.xMin, -rt.rect.yMin),
+				new Point(rt.rect.xMax, -rt.rect.yMin - borders_.Top),
+				color_);
+
+			// right
+			Line(vh,
+				new Point(rt.rect.xMax - borders_.Right, -rt.rect.yMin),
+				new Point(rt.rect.xMax, -rt.rect.yMax),
+				color_);
+
+			// bottom
+			Line(vh,
+				new Point(rt.rect.xMin, -rt.rect.yMax + borders_.Bottom),
+				new Point(rt.rect.xMax, -rt.rect.yMax),
+				color_);
+		}
+
+		private void Line(VertexHelper vh, Point a, Point b, Color c)
+		{
+			Color32 c32 = c;
+			var i = vh.currentVertCount;
+
+			vh.AddVert(new Vector3(a.X, a.Y), c32, new Vector2(0f, 0f));
+			vh.AddVert(new Vector3(a.X, b.Y), c32, new Vector2(0f, 1f));
+			vh.AddVert(new Vector3(b.X, b.Y), c32, new Vector2(1f, 1f));
+			vh.AddVert(new Vector3(b.X, a.Y), c32, new Vector2(1f, 0f));
+
+			vh.AddTriangle(i + 0, i + 1, i + 2);
+			vh.AddTriangle(i + 2, i + 3, i + 0);
+		}
+	}
+
+
 	class Bits
 	{
 		public static bool IsSet(int flag, int bits)

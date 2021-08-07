@@ -106,11 +106,14 @@
     <Compile Include="src\VUI\ColorPicker.cs" />
     <Compile Include="src\VUI\ComboBox.cs" />
     <Compile Include="src\VUI\Dialog.cs" />
+    <Compile Include="src\VUI\Events.cs" />
     <Compile Include="src\VUI\Glue.cs" />
     <Compile Include="src\VUI\GridLayout.cs" />
     <Compile Include="src\VUI\Label.cs" />
     <Compile Include="src\VUI\Layout.cs" />
     <Compile Include="src\VUI\ListView.cs" />
+    <Compile Include="src\VUI\Misc.cs" />
+    <Compile Include="src\VUI\Panel.cs" />
     <Compile Include="src\VUI\Root.cs" />
     <Compile Include="src\VUI\Slider.cs" />
     <Compile Include="src\VUI\Style.cs" />
