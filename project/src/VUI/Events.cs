@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace VUI
 {
-
 	class MouseCallbacks : MonoBehaviour,
 		IPointerEnterHandler, IPointerExitHandler,
 		IPointerDownHandler, IPointerUpHandler,
@@ -102,6 +101,7 @@ namespace VUI
 
 	interface IEvent
 	{
+		BaseEventData EventData { get; }
 	}
 
 	abstract class MouseEvent : IEvent
@@ -113,6 +113,11 @@ namespace VUI
 		{
 			w_ = w;
 			d_ = d;
+		}
+
+		public BaseEventData EventData
+		{
+			get { return d_; }
 		}
 
 		public Point Mouse

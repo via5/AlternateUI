@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -19,10 +20,13 @@ namespace VUI
 			Events.DragStart += OnDragStart;
 			Events.Drag += OnDrag;
 			Events.DragEnd += OnDragEnd;
+
+			Events.PointerUp += (d) => { Glue.LogInfo("up"); return false; };
 		}
 
 		public bool OnDragStart(DragEvent e)
 		{
+			Glue.LogInfo("drag start");
 			dragging_ = true;
 			dragStart_ = e.Mouse;
 			initialBounds_ = AbsoluteClientBounds;
@@ -31,6 +35,8 @@ namespace VUI
 
 		public bool OnDrag(DragEvent e)
 		{
+			Glue.LogInfo("drag");
+
 			if (!dragging_)
 				return false;
 
@@ -61,6 +67,7 @@ namespace VUI
 
 		public bool OnDragEnd(DragEvent e)
 		{
+			Glue.LogInfo("drag end");
 			dragging_ = false;
 			return false;
 		}
@@ -102,8 +109,6 @@ namespace VUI
 		public override void UpdateBounds()
 		{
 			var r = AbsoluteClientBounds;
-			//Glue.LogInfo($"sb: h={r.Height} r={range_} nh={r.Height - range_}");
-
 			var h = r.Height - range_;
 
 			var cb = ClientBounds;
@@ -112,7 +117,6 @@ namespace VUI
 			r.Top += Borders.Top + p * avh;
 			r.Bottom = r.Top + h;
 
-			//Glue.LogInfo($"{r.Top} {p} {avh}");
 			handle_.SetBounds(r);
 			DoLayout();
 
@@ -128,13 +132,71 @@ namespace VUI
 			var p = (top / h);
 			value_ = p * range_;
 			ValueChanged?.Invoke(value_);
-			//Glue.LogInfo($"{top} {p} {value_}");
 		}
 
 		private bool OnPointerDown(PointerEvent e)
 		{
-			Glue.LogInfo("!");
+			Glue.LogInfo("pointer down");
+
+			var r = AbsoluteClientBounds;
+			var p = e.Mouse - r.TopLeft;
+			var y = ClientBounds.Top + p.Y - handle_.ClientBounds.Height / 2;
+
+			if (y < 0)
+				y = 0;
+			else if (y + handle_.ClientBounds.Height > ClientBounds.Height)
+				y = ClientBounds.Height - handle_.ClientBounds.Height;
+
+			var cb = handle_.AbsoluteClientBounds;
+			var h = cb.Height;
+			cb.Top = y;
+			cb.Bottom = y + h;
+
+			handle_.SetBounds(cb);
+			DoLayout();
+			base.UpdateBounds();
+
+			OnHandleMoved();
+
+			var d = e.EventData as PointerEventData;
+			SuperController.singleton.StartCoroutine(StartDrag(d));
+
 			return false;
+		}
+
+		private IEnumerator StartDrag(PointerEventData d)
+		{
+			yield return new WaitForEndOfFrame();
+
+			var o = handle_.WidgetObject.gameObject;
+
+			d.pointerPress = o;
+			d.pointerDrag = o;
+			d.rawPointerPress = o;
+			d.pointerEnter = o;
+			d.selectedObject = o;
+			d.hovered.Clear();
+
+			List<RaycastResult> rc = new List<RaycastResult>();
+			EventSystem.current.RaycastAll(d, rc);
+
+			foreach (var r in rc)
+			{
+				d.hovered.Add(r.gameObject);
+
+				if (r.gameObject == o)
+				{
+					d.pointerCurrentRaycast = r;
+					d.pointerPressRaycast = r;
+					break;
+				}
+			}
+
+			ExecuteEvents.Execute(
+				handle_.WidgetObject.gameObject, d, ExecuteEvents.pointerEnterHandler);
+
+			ExecuteEvents.Execute(
+				handle_.WidgetObject.gameObject, d, ExecuteEvents.pointerDownHandler);
 		}
 	}
 
@@ -296,7 +358,6 @@ namespace VUI
 					if (label_ == null)
 					{
 						label_ = new Label();
-						//label_.BackgroundColor = UnityEngine.Color.red;
 						tree_.Add(label_);
 						label_.Create();
 					}
@@ -430,10 +491,6 @@ namespace VUI
 				vsb_.Visible = true;
 				vsb_.Range = missingHeight;
 			}
-
-			//Glue.LogInfo(
-			//	$"{nodes_.Count} nodes, {root_.Children.Count} items, " +
-			//	$"avh={cx.av.Height}, rh={requiredHeight}, mh={missingHeight}");
 		}
 
 		private void UpdateNode(Item item, NodeContext cx)

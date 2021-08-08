@@ -857,64 +857,42 @@ namespace VUI
 		}
 
 
-		private void Bubble<Data>(Func<Data, bool?> f, Data d)
-		{
-			bool bubble = f(d) ?? true;
-		}
-
 		public void OnPointerEnterInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetEntered(this);
-
-			bool? bubble = events_.FirePointerEnter(new PointerEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnPointerEnterInternal(d);
+			events_.FirePointerEnter(new PointerEvent(this, d));
 		}
 
 		public void OnPointerExitInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.WidgetExited(this);
-
-			bool? bubble = events_.FirePointerExit(new PointerEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnPointerExitInternal(d);
+			events_.FirePointerExit(new PointerEvent(this, d));
 		}
 
 		public void OnPointerDownInternal(PointerEventData d)
 		{
 			GetRoot()?.Tooltips.Hide();
-
-			bool? bubble = events_.FirePointerDown(new PointerEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnPointerDownInternal(d);
+			events_.FirePointerDown(new PointerEvent(this, d));
 		}
 
 		public void OnPointerUpInternal(PointerEventData d)
 		{
-			bool? bubble = events_.FirePointerUp(new PointerEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnPointerUpInternal(d);
+			events_.FirePointerUp(new PointerEvent(this, d));
 		}
 
 		public void OnBeginDragInternal(PointerEventData d)
 		{
-			bool? bubble = events_.FireDragStart(new DragEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnBeginDragInternal(d);
+			events_.FireDragStart(new DragEvent(this, d));
 		}
 
 		public void OnDragInternal(PointerEventData d)
 		{
-			bool? bubble = events_.FireDrag(new DragEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnDragInternal(d);
+			events_.FireDrag(new DragEvent(this, d));
 		}
 
 		public void OnEndDragInternal(PointerEventData d)
 		{
-			bool? bubble = events_.FireDragEnd(new DragEvent(this, d));
-			if (bubble ?? true && parent_ != null)
-				parent_.OnEndDragInternal(d);
+			events_.FireDragEnd(new DragEvent(this, d));
 		}
 
 		public void OnWheelInternal(PointerEventData d)
