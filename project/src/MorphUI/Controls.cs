@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-
-namespace AUI.MorphUI
+﻿namespace AUI.MorphUI
 {
 	class CategoriesWidget
 	{
 		private VUI.Button button_;
 		private VUI.Panel panel_;
+		private VUI.TreeView tree_;
 
 		public CategoriesWidget(VUI.Root root)
 		{
@@ -14,6 +13,7 @@ namespace AUI.MorphUI
 			button_ = new VUI.Button("Categories", Toggle);
 
 			panel_ = new VUI.Panel();
+			panel_.Layout = new VUI.BorderLayout();
 			panel_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
 			panel_.BorderColor = VUI.Style.Theme.BorderColor;
 			panel_.Borders = new VUI.Insets(1);
@@ -25,6 +25,9 @@ namespace AUI.MorphUI
 				root.FloatingPanel.RelativeBounds.Top + 50,
 				s.Width, s.Height));
 
+			tree_ = new VUI.TreeView();
+			panel_.Add(tree_, VUI.BorderLayout.Center);
+
 			root.FloatingPanel.Add(panel_);
 		}
 
@@ -35,6 +38,29 @@ namespace AUI.MorphUI
 
 		public void Set(Categories cats)
 		{
+			tree_.RootItem.Clear();
+			AddCategories(tree_.RootItem, cats.Root);
+		}
+
+		private void AddCategories(
+			VUI.TreeView.Item parentItem, Categories.Node parentCat)
+		{
+			if (parentCat.Children != null)
+			{
+				foreach (var c in parentCat.Children)
+				{
+					var item = new VUI.TreeView.Item(c.Name);
+					parentItem.Add(item);
+					AddCategories(item, c);
+				}
+			}
+
+			//foreach (var c in cats.All)
+			//	tree_.RootItem.Add(new VUI.TreeView.Item(c));
+
+			//if (tree_.WidgetObject != null)
+			//	tree_.UpdateBounds();
+			//Log.Info($"{cats.All.Count}");
 		}
 
 		public void Toggle()

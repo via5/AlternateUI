@@ -185,7 +185,7 @@ namespace VUI
 			var ar = AbsoluteClientBounds;
 
 			return new Rect(
-				ar.Left - root.Bounds.Width / 2 - 1,
+				ar.Left - root.Bounds.Width / 2 - 2,
 				root.Bounds.Height - ar.Top + ar.Height - 1,
 				ar.Width, ar.Height + 3);
 		}

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -20,13 +21,10 @@ namespace VUI
 			Events.DragStart += OnDragStart;
 			Events.Drag += OnDrag;
 			Events.DragEnd += OnDragEnd;
-
-			Events.PointerUp += (d) => { Glue.LogInfo("up"); return false; };
 		}
 
 		public bool OnDragStart(DragEvent e)
 		{
-			Glue.LogInfo("drag start");
 			dragging_ = true;
 			dragStart_ = e.Mouse;
 			initialBounds_ = AbsoluteClientBounds;
@@ -35,8 +33,6 @@ namespace VUI
 
 		public bool OnDrag(DragEvent e)
 		{
-			Glue.LogInfo("drag");
-
 			if (!dragging_)
 				return false;
 
@@ -67,7 +63,6 @@ namespace VUI
 
 		public bool OnDragEnd(DragEvent e)
 		{
-			Glue.LogInfo("drag end");
 			dragging_ = false;
 			return false;
 		}
@@ -109,7 +104,7 @@ namespace VUI
 		public override void UpdateBounds()
 		{
 			var r = AbsoluteClientBounds;
-			var h = r.Height - range_;
+			var h = Math.Max(r.Height - range_, 50);
 
 			var cb = ClientBounds;
 			var avh = cb.Height - handle_.ClientBounds.Height;
@@ -136,8 +131,6 @@ namespace VUI
 
 		private bool OnPointerDown(PointerEvent e)
 		{
-			Glue.LogInfo("pointer down");
-
 			var r = AbsoluteClientBounds;
 			var p = e.Mouse - r.TopLeft;
 			var y = ClientBounds.Top + p.Y - handle_.ClientBounds.Height / 2;
@@ -278,6 +271,17 @@ namespace VUI
 				children_.Add(child);
 				child.Parent = this;
 			}
+
+			public void Clear()
+			{
+				if (children_ != null)
+				{
+					for (int i=0; i<children_.Count; ++i)
+						children_[i].Parent = null;
+
+					children_.Clear();
+				}
+			}
 		}
 
 
@@ -332,21 +336,9 @@ namespace VUI
 					if (item_.HasChildren)
 					{
 						if (toggle_ == null)
-						{
-							toggle_ = new ToolButton("", OnToggle);
-							tree_.Add(toggle_);
-							toggle_.Create();
-						}
+							CreateToggle(r);
 
-						if (item_.Expanded)
-							toggle_.Text = "-";
-						else
-							toggle_.Text = "+";
-
-						var tr = r;
-						tr.Width = 30;
-						toggle_.SetBounds(tr);
-						toggle_.Render = true;
+						UpdateToggle(r);
 					}
 					else
 					{
@@ -356,18 +348,59 @@ namespace VUI
 
 
 					if (label_ == null)
-					{
-						label_ = new Label();
-						tree_.Add(label_);
-						label_.Create();
-					}
+						CreateLabel(r);
 
-					var lr = r;
-					lr.Left += 35;
-					label_.Text = item_.Text;
-					label_.SetBounds(lr);
-					label_.Render = true;
+					UpdateLabel(r);
 				}
+			}
+
+			private void CreateToggle(Rectangle r)
+			{
+				if (toggle_ == null)
+				{
+					toggle_ = new ToolButton("", OnToggle);
+					tree_.Add(toggle_);
+					toggle_.Create();
+				}
+			}
+
+			private void UpdateToggle(Rectangle r)
+			{
+				if (item_ == null)
+					return;
+
+				if (item_.Expanded)
+					toggle_.Text = "-";
+				else
+					toggle_.Text = "+";
+
+				var tr = r;
+				tr.Width = 30;
+				toggle_.SetBounds(tr);
+				toggle_.Render = true;
+			}
+
+			private void CreateLabel(Rectangle r)
+			{
+				if (label_ == null)
+				{
+					label_ = new Label();
+					label_.WrapMode = VUI.Label.Clip;
+					tree_.Add(label_);
+					label_.Create();
+				}
+			}
+
+			private void UpdateLabel(Rectangle r)
+			{
+				if (item_ == null)
+					return;
+
+				var lr = r;
+				lr.Left += 35;
+				label_.Text = item_.Text;
+				label_.SetBounds(lr);
+				label_.Render = true;
 			}
 
 			private void OnToggle()
@@ -495,7 +528,7 @@ namespace VUI
 
 		private void UpdateNode(Item item, NodeContext cx)
 		{
-			for (int i = 0; i < item.Children.Count; ++i)
+			for (int i = 0; i < item.Children?.Count; ++i)
 			{
 				var child = item.Children[i];
 

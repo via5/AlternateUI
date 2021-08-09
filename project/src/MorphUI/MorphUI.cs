@@ -1,7 +1,266 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace AUI.MorphUI
 {
+	class Categories
+	{
+		public class Node
+		{
+			private Node parent_;
+			private string name_;
+			private List<Node> children_ = null;
+			private List<DAZMorph> morphs_ = null;
+
+			public Node(Node parent, string name)
+			{
+				parent_ = parent;
+				name_ = name;
+			}
+
+			public string Name
+			{
+				get { return name_; }
+			}
+
+			public string Path
+			{
+				get
+				{
+					string s = name_;
+					Node p = parent_;
+
+					while (p != null)
+					{
+						s = $"{p.Name}/{s}";
+						p = p.parent_;
+					}
+
+					return s;
+				}
+			}
+
+			public void AddNode(Node n)
+			{
+				if (children_ == null)
+					children_ = new List<Node>();
+
+				children_.Add(n);
+			}
+
+			public void RemoveNodeAt(int i)
+			{
+				if (children_ != null)
+					children_.RemoveAt(i);
+			}
+
+			public void AddMorph(DAZMorph m)
+			{
+				if (morphs_ == null)
+					morphs_ = new List<DAZMorph>();
+
+				morphs_.Add(m);
+			}
+
+			public void Clear()
+			{
+				if (children_ != null)
+					children_.Clear();
+
+				if (morphs_ != null)
+					morphs_.Clear();
+			}
+
+			public List<Node> NodesRecursive()
+			{
+				var list = new List<Node>();
+				NodesRecursive(list);
+				return list;
+			}
+
+			private void NodesRecursive(List<Node> list)
+			{
+				if (children_ != null)
+				{
+					foreach (var c in children_)
+					{
+						list.Add(c);
+						c.NodesRecursive(list);
+					}
+				}
+			}
+
+			public List<Node> Children
+			{
+				get { return children_; }
+			}
+
+			public List<DAZMorph> Morphs
+			{
+				get { return morphs_; }
+			}
+
+			public void Sort()
+			{
+				if (children_ != null)
+				{
+					U.NatSort(children_);
+
+					foreach (var c in children_)
+						c.Sort();
+				}
+			}
+
+			public override string ToString()
+			{
+				return name_;
+			}
+
+			public void Dump(int indent = 0)
+			{
+				if (children_ == null)
+					return;
+
+				foreach (var c in children_)
+				{
+					Log.Info(new string(' ', indent * 4) + c.name_);
+					c.Dump(indent + 1);
+				}
+			}
+		}
+
+		private Node root_ = new Node(null, "");
+		private Dictionary<string, string> override_;
+
+		public Categories()
+		{
+			override_ = new Dictionary<string, string>();
+		}
+
+		public Node Root
+		{
+			get { return root_; }
+		}
+
+		public void Update(List<DAZMorph> all)
+		{
+			root_.Clear();
+
+			var nodes = new Dictionary<string, Node>();
+
+			for (int i = 0; i < all.Count; ++i)
+			{
+				HandleMorph(nodes, all[i]);
+			}
+
+
+			if (root_.Children != null)
+			{
+				int i = 0;
+
+				List<Node> morphs = null;
+
+				{
+					Node n;
+					if (nodes.TryGetValue("morph", out n))
+						morphs = n.NodesRecursive();
+				}
+
+				if (morphs != null)
+				{
+					//foreach (var m in morphs)
+					//	Log.Info(m);
+				}
+
+
+				while (i < root_.Children.Count)
+				{
+					var n = root_.Children[i];
+					bool removed = false;
+
+					foreach (var nn in morphs)
+					{
+						if (n.Name == nn.Name)
+						{
+							root_.RemoveNodeAt(i);
+
+							foreach (var m in n.Morphs)
+							{
+								//Log.Info($"moving {m.displayName} from {n.Path} to {nn.Path}");
+								nn.AddMorph(m);
+							}
+
+							removed = true;
+							break;
+						}
+					}
+
+					if (!removed)
+						++i;
+				}
+			}
+
+
+
+			root_.Sort();
+			//root_.Dump();
+
+
+			//if (set.Add(lcName))
+			//	cats_.Add(name);
+
+			//Log.Info($"{cats_.Count}");
+			//foreach (var c in cats_)
+			//	Log.Info(c);
+		}
+
+		private void HandleMorph(Dictionary<string, Node> map, DAZMorph m)
+		{
+			var name = m.group;
+			name = name.Replace('\\', '/');
+			name = name.Trim(new char[] { '/' });
+
+			var lcName = name.ToLower();
+
+			int start = 0;
+			int slash = -1;
+			string fullName = "";
+			Node parent = root_;
+
+			do
+			{
+				slash = name.IndexOf('/', start);
+				if (slash == -1)
+					slash = name.Length;
+
+				var cn = name.Substring(start, slash - start);
+
+				if (cn.Length > 0 || fullName == "")
+				{
+					if (fullName != "")
+						fullName += "/";
+
+					fullName += cn.ToLower();
+
+					Node n;
+					if (!map.TryGetValue(fullName, out n))
+					{
+						n = new Node(parent, cn);
+						map.Add(fullName, n);
+						parent.AddNode(n);
+					}
+
+					n.AddMorph(m);
+
+					parent = n;
+				}
+
+				start = slash + 1;
+			} while (slash < name.Length);
+		}
+	}
+
+
 	class MorphUI
 	{
 		private const int Columns = 3;
@@ -15,13 +274,18 @@ namespace AUI.MorphUI
 		private List<DAZMorph> all_ = new List<DAZMorph>();
 		private List<DAZMorph> filtered_ = new List<DAZMorph>();
 		private Filter filter_ = new Filter();
+		private Categories cats_;
 		private int page_ = 0;
 
 		public MorphUI()
 		{
-			controls_ = new Controls(this);
 			filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
 			filter_.Sort = Filter.SortName;
+		}
+
+		public VUI.Root Root
+		{
+			get { return root_; }
 		}
 
 		public Filter Filter
@@ -40,6 +304,8 @@ namespace AUI.MorphUI
 
 			filter_.Set(all_);
 			Refilter();
+			cats_?.Update(all_);
+			controls_?.UpdateCategories();
 		}
 
 		public void Update()
@@ -93,6 +359,11 @@ namespace AUI.MorphUI
 			get { return filtered_; }
 		}
 
+		public Categories Categories
+		{
+			get { return cats_; }
+		}
+
 		public void PreviousPage()
 		{
 			if (page_ > 0)
@@ -115,7 +386,7 @@ namespace AUI.MorphUI
 		{
 			page_ = U.Clamp(page_, 0, PageCount - 1);
 			SetPanels();
-			controls_.Update();
+			controls_?.UpdatePage();
 		}
 
 		private void SetPanels()
@@ -134,7 +405,42 @@ namespace AUI.MorphUI
 		private void CreateUI()
 		{
 			root_ = new VUI.Root(AlternateUI.Instance.UITransform.GetComponentInChildren<MVRScriptUI>());
-			root_.ContentPanel.Layout = new VUI.BorderLayout();
+			controls_ = new Controls(this);
+			cats_ = new Categories();
+			cats_.Update(all_);
+			controls_?.UpdateCategories();
+
+			root_.ContentPanel.Layout = new VUI.BorderLayout(5);
+
+
+
+			//var t = new VUI.TreeView();
+			//
+			//for (int i=0; i<25; ++i)
+			//	t.RootItem.Add(new VUI.TreeView.Item($"{i}"));
+			//
+			//for (int i=0; i<10; ++i)
+			//	t.RootItem.Children[0].Add(new VUI.TreeView.Item($"0-{i}"));
+			//
+			//for (int i = 0; i < 20; ++i)
+			//	t.RootItem.Children[2].Add(new VUI.TreeView.Item($"2-{i}"));
+			//
+			//
+			//root_.ContentPanel.Add(t, VUI.BorderLayout.Center);
+
+
+
+			//var cb = new VUI.ComboBox<string>();
+			//for (int i=0; i<50; ++i)
+			//	cb.AddItem($"{i}");
+			//
+			//root_.ContentPanel.Add(cb, VUI.BorderLayout.Top);
+			//VUI.TimerManager.Instance.CreateTimer(
+			//	1, () => { VUI.Utilities.DumpComponentsAndDown(cb.MainObject); });
+
+
+
+
 			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
 			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
@@ -157,6 +463,7 @@ namespace AUI.MorphUI
 		{
 			filtered_ = filter_.Process();
 			Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
+
 			PageChanged();
 		}
 

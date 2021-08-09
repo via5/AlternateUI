@@ -63,16 +63,40 @@ namespace VUI
 		public override string TypeName { get { return "RootPanel"; } }
 
 		private readonly Root root_;
+		private bool dirty_ = true;
 
-		public RootPanel(Root r)
+		public RootPanel(Root r, string name)
+			: base(name)
 		{
 			root_ = r;
 			Margins = new Insets(5);
 		}
 
+		public void Update(bool forceLayout)
+		{
+			if (dirty_ || forceLayout)
+			{
+				var start = Time.realtimeSinceStartup;
+
+				DoLayout();
+				Create();
+				UpdateBounds();
+
+				var t = Time.realtimeSinceStartup - start;
+
+				Glue.LogInfo($"layout {Name}: {t:0.000:}s");
+
+				dirty_ = false;
+			}
+		}
+
 		protected override void NeedsLayoutImpl(string why)
 		{
-			root_.SetDirty(why);
+			if (!dirty_)
+			{
+				Glue.LogInfo($"{Name} needs layout: {why}");
+				dirty_ = true;
+			}
 		}
 
 		public override Root GetRoot()
@@ -155,7 +179,6 @@ namespace VUI
 		private Overlay overlay_ = null;
 		private readonly TooltipManager tooltips_;
 		private float topOffset_ = 0;
-		private bool dirty_ = true;
 		private Canvas canvas_;
 
 		private UIPopup openedPopup_ = null;
@@ -187,8 +210,8 @@ namespace VUI
 			if (TimerManager.Instance == null)
 				ownTm_ = new TimerManager();
 
-			content_ = new RootPanel(this);
-			floating_ = new RootPanel(this);
+			content_ = new RootPanel(this, "content");
+			floating_ = new RootPanel(this, "floating");
 			tooltips_ = new TooltipManager(this);
 
 			AttachTo(support);
@@ -349,33 +372,8 @@ namespace VUI
 				ownTm_.CheckTimers();
 			}
 
-			if (dirty_ || forceLayout)
-			{
-				var start = Time.realtimeSinceStartup;
-
-				content_.DoLayout();
-				content_.Create();
-				content_.UpdateBounds();
-
-				floating_.DoLayout();
-				floating_.Create();
-				floating_.UpdateBounds();
-
-				var t = Time.realtimeSinceStartup - start;
-
-				Glue.LogVerbose("layout: " + t.ToString("0.000") + "s");
-
-				dirty_ = false;
-			}
-		}
-
-		public void SetDirty(string why)
-		{
-			if (!dirty_)
-			{
-				Glue.LogVerbose("needs layout: " + why);
-				dirty_ = true;
-			}
+			content_.Update(forceLayout);
+			floating_.Update(forceLayout);
 		}
 
 		public bool OverlayVisible
