@@ -463,7 +463,6 @@ namespace AUI.MorphUI
 		{
 			filtered_ = filter_.Process();
 			Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
-
 			PageChanged();
 		}
 

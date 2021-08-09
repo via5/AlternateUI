@@ -4,7 +4,6 @@ namespace AUI.MorphUI
 {
 	class MorphComparer : IComparer<DAZMorph>
 	{
-		private NaturalStringComparer nat_ = new NaturalStringComparer();
 		private readonly int sort_;
 		private readonly int sortDir_;
 
@@ -28,7 +27,7 @@ namespace AUI.MorphUI
 				case Filter.SortName:
 				default:
 				{
-					return nat_.Compare(x.displayName, y.displayName);
+					return U.CompareNatural(x.displayName, y.displayName);
 				}
 			}
 		}
@@ -51,9 +50,8 @@ namespace AUI.MorphUI
 		private const int Clean = 0x00;
 		private const int DirtyParams = 0x01;
 		private const int DirtyDupes = 0x02;
-		private const int DirtySearch = 0x04;
-		private const int DirtyDupesSort = 0x08;
-		private const int DirtySearchedSort = 0x10;
+		private const int DirtySort = 0x04;
+		private const int DirtySearch = 0x08;
 		private const int DirtyAll = 0xff;
 
 		private bool alwaysShowModified_ = true;
@@ -68,9 +66,8 @@ namespace AUI.MorphUI
 		private List<DAZMorph> all_ = new List<DAZMorph>();
 		private List<DAZMorph> checked_ = new List<DAZMorph>();
 		private List<DAZMorph> deduped_ = new List<DAZMorph>();
+		private List<DAZMorph> sorted_ = new List<DAZMorph>();
 		private List<DAZMorph> searched_ = new List<DAZMorph>();
-		private List<DAZMorph> dedupedSorted_ = new List<DAZMorph>();
-		private List<DAZMorph> searchedSorted_ = new List<DAZMorph>();
 
 		private Dictionary<string, DAZMorph> paths_ =
 			new Dictionary<string, DAZMorph>();
@@ -136,19 +133,17 @@ namespace AUI.MorphUI
 
 		private void DupesChanged()
 		{
-			dirty_ |=
-				DirtyDupes | DirtySearch |
-				DirtyDupesSort | DirtySearchedSort;
-		}
-
-		private void SearchChanged()
-		{
-			dirty_ |= DirtySearch| DirtySearchedSort;
+			dirty_ |= DirtyDupes | DirtySort | DirtySearch;
 		}
 
 		private void SortChanged()
 		{
-			dirty_ |= DirtyDupesSort | DirtySearchedSort;
+			dirty_ |= DirtySort | DirtySearch;
+		}
+
+		private void SearchChanged()
+		{
+			dirty_ |= DirtySearch;
 		}
 
 		public void Set(List<DAZMorph> all)
@@ -159,27 +154,37 @@ namespace AUI.MorphUI
 
 		public List<DAZMorph> Process()
 		{
-			if (Bits.IsAnySet(dirty_, DirtyParams))
-				ProcessParams();
+			U.TimeThis("ProcessParams", () =>
+			{
+				if (Bits.IsAnySet(dirty_, DirtyParams))
+					ProcessParams();
+			});
 
-			if (Bits.IsAnySet(dirty_, DirtyDupes))
-				ProcessDupes();
+			U.TimeThis("ProcessDupes", () =>
+			{
+				if (Bits.IsAnySet(dirty_, DirtyDupes))
+					ProcessDupes();
+			});
 
-			if (Bits.IsAnySet(dirty_, DirtySearch))
-				ProcessSearch();
+			U.TimeThis("ProcessSort", () =>
+			{
+				if (Bits.IsSet(dirty_, DirtySort))
+					ProcessSort();
+			});
 
-			if (Bits.IsSet(dirty_, DirtyDupesSort))
-				ProcessDupesSort();
+			U.TimeThis("ProcessSearch", () =>
+			{
+				if (Bits.IsAnySet(dirty_, DirtySearch))
+					ProcessSearch();
+			});
 
-			if (Bits.IsSet(dirty_, DirtySearchedSort) && search_ != "")
-				ProcessSearchedSort();
 
 			dirty_ = Clean;
 
 			if (search_ == "")
-				return dedupedSorted_;
+				return sorted_;
 			else
-				return searchedSorted_;
+				return searched_;
 		}
 
 		private void ProcessParams()
@@ -222,63 +227,48 @@ namespace AUI.MorphUI
 			}
 		}
 
+		private void ProcessSort()
+		{
+			Log.Info("process sort");
+
+			if (sort_ == NoSort)
+			{
+				sorted_ = deduped_;
+			}
+			else
+			{
+				sorted_ = new List<DAZMorph>(deduped_);
+				sorted_.Sort(new MorphComparer(sort_, sortDir_));
+			}
+		}
+
 		private void ProcessSearch()
 		{
 			Log.Info($"process search '{search_}'");
 
 			if (search_ == "")
 			{
-				searched_ = deduped_;
+				searched_ = sorted_;
 			}
 			else
 			{
-				if (searched_ == deduped_)
+				if (searched_ == sorted_)
 				{
-					searched_ = new List<DAZMorph>(deduped_.Count);
+					searched_ = new List<DAZMorph>(sorted_.Count);
 				}
 				else
 				{
 					searched_.Clear();
-					searched_.Capacity = deduped_.Count;
+					searched_.Capacity = sorted_.Count;
 				}
 
 				var searchLc = search_.ToLower();
 
-				for (int i = 0; i < deduped_.Count; ++i)
+				for (int i = 0; i < sorted_.Count; ++i)
 				{
-					if (deduped_[i].displayName.ToLower().Contains(searchLc))
-						searched_.Add(deduped_[i]);
+					if (sorted_[i].displayName.ToLower().Contains(searchLc))
+						searched_.Add(sorted_[i]);
 				}
-			}
-		}
-
-		private void ProcessDupesSort()
-		{
-			Log.Info("process dupes sort");
-
-			if (sort_ == NoSort)
-			{
-				dedupedSorted_ = deduped_;
-			}
-			else
-			{
-				dedupedSorted_ = new List<DAZMorph>(searched_);
-				dedupedSorted_.Sort(new MorphComparer(sort_, sortDir_));
-			}
-		}
-
-		private void ProcessSearchedSort()
-		{
-			Log.Info("process searched sort");
-
-			if (sort_ == NoSort)
-			{
-				searchedSorted_ = searched_;
-			}
-			else
-			{
-				searchedSorted_ = new List<DAZMorph>(searched_);
-				searchedSorted_.Sort(new MorphComparer(sort_, sortDir_));
 			}
 		}
 
