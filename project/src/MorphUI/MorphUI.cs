@@ -62,6 +62,28 @@ namespace AUI.MorphUI
 				morphs_.Add(m);
 			}
 
+			public List<DAZMorph> MorphsRecursive()
+			{
+				var list = new List<DAZMorph>();
+				MorphsRecursive(list);
+				return list;
+			}
+
+			private void MorphsRecursive(List<DAZMorph> list)
+			{
+				if (morphs_ != null)
+				{
+					foreach (var m in morphs_)
+						list.Add(m);
+				}
+
+				if (children_ != null)
+				{
+					foreach (var c in children_)
+						c.MorphsRecursive(list);
+				}
+			}
+
 			public void Clear()
 			{
 				if (children_ != null)

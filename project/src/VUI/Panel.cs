@@ -34,8 +34,7 @@ namespace VUI
 				if (value != clickthrough_)
 				{
 					clickthrough_ = value;
-					if (bgImage_ != null)
-						bgImage_.raycastTarget = !value;
+					SetBackground();
 				}
 			}
 		}
@@ -50,7 +49,7 @@ namespace VUI
 			set
 			{
 				bgColor_ = value;
-				SetBackgroundColor();
+				SetBackground();
 			}
 		}
 
@@ -63,7 +62,7 @@ namespace VUI
 		public override void UpdateBounds()
 		{
 			base.UpdateBounds();
-			SetBackgroundBounds();
+			SetBackground();
 		}
 
 		protected override void Destroy()
@@ -76,17 +75,20 @@ namespace VUI
 
 		private void SetBackground()
 		{
-			SetBackgroundBounds();
-			SetBackgroundColor();
-		}
-
-		private void SetBackgroundBounds()
-		{
-			if (bgObject_ == null)
+			if (MainObject == null)
 				return;
 
-			bgObject_.transform.SetAsFirstSibling();
+			if (bgColor_.a == 0 && clickthrough_)
+				return;
 
+			if (bgObject_ == null)
+			{
+				bgObject_ = new GameObject("WidgetBackground");
+				bgObject_.transform.SetParent(MainObject.transform, false);
+				bgImage_ = bgObject_.AddComponent<Image>();
+			}
+
+			bgObject_.transform.SetAsFirstSibling();
 			bgImage_.color = bgColor_;
 			bgImage_.raycastTarget = !clickthrough_;
 
@@ -94,19 +96,6 @@ namespace VUI
 			r.Deflate(Margins);
 
 			Utilities.SetRectTransform(bgObject_, r);
-		}
-
-		private void SetBackgroundColor()
-		{
-			if (MainObject == null)
-				return;
-
-			if (bgObject_ == null && (bgColor_.a > 0 || !clickthrough_))
-			{
-				bgObject_ = new GameObject("WidgetBackground");
-				bgObject_.transform.SetParent(MainObject.transform, false);
-				bgImage_ = bgObject_.AddComponent<Image>();
-			}
 		}
 	}
 }

@@ -5,7 +5,7 @@ namespace VUI
 {
 	class MouseCallbacks : MonoBehaviour,
 		IPointerEnterHandler, IPointerExitHandler,
-		IPointerDownHandler, IPointerUpHandler,
+		IPointerDownHandler, IPointerUpHandler, IPointerClickHandler,
 		IScrollHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		private Widget widget_ = null;
@@ -52,16 +52,25 @@ namespace VUI
 			});
 		}
 
+		public void OnPointerClick(PointerEventData d)
+		{
+			Utilities.Handler(() =>
+			{
+				if (widget_ != null)
+					widget_.OnPointerClickInternal(d);
+			});
+		}
+
 		public void OnScroll(PointerEventData d)
 		{
-			if (d.scrollDelta != Vector2.zero)
+			Utilities.Handler(() =>
 			{
-				Utilities.Handler(() =>
+				if (d.scrollDelta != Vector2.zero)
 				{
 					if (widget_ != null)
 						widget_.OnWheelInternal(d);
-				});
-			}
+				}
+			});
 		}
 
 		public void OnBeginDrag(PointerEventData d)
@@ -120,9 +129,15 @@ namespace VUI
 			get { return d_; }
 		}
 
-		public Point Mouse
+		public Point Pointer
 		{
-			get { return w_?.GetRoot()?.ToLocal(d_.position) ?? Point.Zero; }
+			get
+			{
+				if (d_ == null)
+					return w_?.GetRoot().MousePosition ?? Point.Zero;
+				else
+					return w_?.GetRoot()?.ToLocal(d_.position) ?? Point.Zero;
+			}
 		}
 	}
 
@@ -161,27 +176,74 @@ namespace VUI
 
 	class Events
 	{
-		public delegate bool DragHandler(DragEvent e);
+		public delegate void DragHandler(DragEvent e);
 		public event DragHandler DragStart, Drag, DragEnd;
 
-		public bool? FireDragStart(DragEvent e) { return DragStart?.Invoke(e); }
-		public bool? FireDrag(DragEvent e) { return Drag?.Invoke(e); }
-		public bool? FireDragEnd(DragEvent e) { return DragEnd?.Invoke(e); }
+		private void DoFireDrag(Widget w, PointerEventData d, DragHandler h)
+		{
+			if (h != null)
+			{
+				var e = new DragEvent(w, d);
+				h.Invoke(e);
+			}
+		}
+
+		public void FireDragStart(Widget w, PointerEventData d) { DoFireDrag(w, d, DragStart); }
+		public void FireDrag(Widget w, PointerEventData d) { DoFireDrag(w, d, Drag); }
+		public void FireDragEnd(Widget w, PointerEventData d) { DoFireDrag(w, d, DragEnd); }
 
 
 		public delegate bool WheelHandler(WheelEvent e);
 		public event WheelHandler Wheel;
 
-		public bool? FireWheel(WheelEvent e) { return Wheel?.Invoke(e); }
+		private bool? DoFireWheel(Widget w, PointerEventData d, WheelHandler h)
+		{
+			if (h != null)
+			{
+				var e = new WheelEvent(w, d);
+				return h.Invoke(e);
+			}
+
+			return null;
+		}
+
+		public bool? FireWheel(Widget w, PointerEventData d) { return DoFireWheel(w, d, Wheel); }
 
 
-		public delegate bool PointerHandler(PointerEvent e);
-		public event PointerHandler PointerDown, PointerUp;
+		public delegate void PointerHandler(PointerEvent e);
 		public event PointerHandler PointerEnter, PointerExit;
 
-		public bool? FirePointerDown(PointerEvent e) { return PointerDown?.Invoke(e); }
-		public bool? FirePointerUp(PointerEvent e) { return PointerUp?.Invoke(e); }
-		public bool? FirePointerEnter(PointerEvent e) { return PointerEnter?.Invoke(e); }
-		public bool? FirePointerExit(PointerEvent e) { return PointerExit?.Invoke(e); }
+		private void DoFirePointer(Widget w, PointerEventData d, PointerHandler h)
+		{
+			if (h != null)
+			{
+				var e = new PointerEvent(w, d);
+				h.Invoke(e);
+			}
+		}
+
+		public void FirePointerEnter(Widget w, PointerEventData d) { DoFirePointer(w, d, PointerEnter); }
+		public void FirePointerExit(Widget w, PointerEventData d) { DoFirePointer(w, d, PointerExit); }
+
+
+		public delegate bool BubblePointerHandler(PointerEvent e);
+		public event BubblePointerHandler PointerDown, PointerUp, PointerClick;
+		public event BubblePointerHandler PointerMove;
+
+		private bool? DoFireBubblePointer(Widget w, PointerEventData d, BubblePointerHandler h)
+		{
+			if (h != null)
+			{
+				var e = new PointerEvent(w, d);
+				return h.Invoke(e);
+			}
+
+			return null;
+		}
+
+		public bool? FirePointerDown(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerDown); }
+		public bool? FirePointerUp(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerUp); }
+		public bool? FirePointerClick(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerClick); }
+		public bool? FirePointerMove(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerMove); }
 	}
 }

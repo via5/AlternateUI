@@ -859,45 +859,63 @@ namespace VUI
 
 		public void OnPointerEnterInternal(PointerEventData d)
 		{
-			GetRoot()?.Tooltips.WidgetEntered(this);
-			events_.FirePointerEnter(new PointerEvent(this, d));
+			GetRoot()?.WidgetEntered(this);
+			events_.FirePointerEnter(this, d);
 		}
 
 		public void OnPointerExitInternal(PointerEventData d)
 		{
-			GetRoot()?.Tooltips.WidgetExited(this);
-			events_.FirePointerExit(new PointerEvent(this, d));
+			GetRoot()?.WidgetExited(this);
+			events_.FirePointerExit(this, d);
 		}
 
 		public void OnPointerDownInternal(PointerEventData d)
 		{
-			GetRoot()?.Tooltips.Hide();
-			events_.FirePointerDown(new PointerEvent(this, d));
+			GetRoot()?.PointerDown(this);
+			bool? bubble = events_.FirePointerDown(this, d);
+			if (bubble ?? false && parent_ != null)
+				parent_.OnPointerDownInternal(d);
 		}
 
 		public void OnPointerUpInternal(PointerEventData d)
 		{
-			events_.FirePointerUp(new PointerEvent(this, d));
+			bool? bubble = events_.FirePointerUp(this, d);
+			if (bubble ?? false && parent_ != null)
+				parent_.OnPointerUpInternal(d);
+		}
+
+		public void OnPointerClickInternal(PointerEventData d)
+		{
+			bool? bubble = events_.FirePointerClick(this, d);
+			if (bubble ?? false && parent_ != null)
+				parent_.OnPointerClickInternal(d);
+		}
+
+		public void OnPointerMoveInternal()
+		{
+			bool? bubble = events_.FirePointerMove(this, null);
+			if (bubble ?? true && parent_ != null)
+				parent_.OnPointerMoveInternal();
 		}
 
 		public void OnBeginDragInternal(PointerEventData d)
 		{
-			events_.FireDragStart(new DragEvent(this, d));
+			events_.FireDragStart(this, d);
 		}
 
 		public void OnDragInternal(PointerEventData d)
 		{
-			events_.FireDrag(new DragEvent(this, d));
+			events_.FireDrag(this, d);
 		}
 
 		public void OnEndDragInternal(PointerEventData d)
 		{
-			events_.FireDragEnd(new DragEvent(this, d));
+			events_.FireDragEnd(this, d);
 		}
 
 		public void OnWheelInternal(PointerEventData d)
 		{
-			bool? bubble = events_.FireWheel(new WheelEvent(this, d));
+			bool? bubble = events_.FireWheel(this, d);
 			if (bubble ?? true && parent_ != null)
 				parent_.OnWheelInternal(d);
 		}

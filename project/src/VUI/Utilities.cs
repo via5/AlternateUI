@@ -707,6 +707,13 @@ namespace VUI
 			return r;
 		}
 
+		public bool Contains(Point p)
+		{
+			return
+				p.X >= Left && p.X <= Right &&
+				p.Y >= Top && p.Y <= Bottom;
+		}
+
 		public UnityEngine.Rect ToRect()
 		{
 			return new Rect(Left, Top, Width, Height);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -183,6 +184,8 @@ namespace VUI
 
 		private UIPopup openedPopup_ = null;
 		private Widget focused_ = null;
+		private Point lastMouse_ = new Point(-10000, -10000);
+		private List<Widget> track_ = new List<Widget>();
 
 		private TimerManager ownTm_ = null;
 		private Timer checkReadyTimer_ = null;
@@ -364,6 +367,14 @@ namespace VUI
 			set { support_.RootParent.gameObject.SetActive(value); }
 		}
 
+		public void TrackPointer(Widget w, bool b)
+		{
+			if (b)
+				track_.Add(w);
+			else
+				track_.Remove(w);
+		}
+
 		public void Update(bool forceLayout=false)
 		{
 			if (ownTm_ != null)
@@ -374,6 +385,20 @@ namespace VUI
 
 			content_.Update(forceLayout);
 			floating_.Update(forceLayout);
+
+			var mp = MousePosition;
+
+			if (track_.Count > 0 && mp != lastMouse_)
+			{
+				for (int i = 0; i < track_.Count; ++i)
+				{
+					var r = track_[i].AbsoluteClientBounds;
+					if (r.Contains(mp))
+						track_[i].OnPointerMoveInternal();
+				}
+			}
+
+			lastMouse_ = mp;
 		}
 
 		public bool OverlayVisible
@@ -434,6 +459,21 @@ namespace VUI
 		{
 			if (overlay_ != null)
 				overlay_.Visible = false;
+		}
+
+		public void WidgetEntered(Widget w)
+		{
+			Tooltips.WidgetEntered(w);
+		}
+
+		public void WidgetExited(Widget w)
+		{
+			Tooltips.WidgetExited(w);
+		}
+
+		public void PointerDown(Widget w)
+		{
+			Tooltips.Hide();
 		}
 
 		public static float TextLength(Font font, int fontSize, string s)

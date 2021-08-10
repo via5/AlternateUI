@@ -51,7 +51,8 @@ namespace AUI.MorphUI
 		private const int DirtyParams = 0x01;
 		private const int DirtyDupes = 0x02;
 		private const int DirtySort = 0x04;
-		private const int DirtySearch = 0x08;
+		private const int DirtyCategory = 0x08;
+		private const int DirtySearch = 0x10;
 		private const int DirtyAll = 0xff;
 
 		private bool alwaysShowModified_ = true;
@@ -60,6 +61,7 @@ namespace AUI.MorphUI
 		private string search_ = "";
 		private int sort_ = NoSort;
 		private int sortDir_ = SortAscending;
+		private Categories.Node cat_ = null;
 
 		private int dirty_ = Clean;
 
@@ -67,6 +69,7 @@ namespace AUI.MorphUI
 		private List<DAZMorph> checked_ = new List<DAZMorph>();
 		private List<DAZMorph> deduped_ = new List<DAZMorph>();
 		private List<DAZMorph> sorted_ = new List<DAZMorph>();
+		private List<DAZMorph> categorized_ = new List<DAZMorph>();
 		private List<DAZMorph> searched_ = new List<DAZMorph>();
 
 		private Dictionary<string, DAZMorph> paths_ =
@@ -121,6 +124,12 @@ namespace AUI.MorphUI
 			set { sortDir_ = value; SortChanged(); }
 		}
 
+		public Categories.Node Category
+		{
+			get { return cat_; }
+			set { cat_ = value; CategoryChanged(); }
+		}
+
 		public bool IsDirty
 		{
 			get { return (dirty_ != Clean); }
@@ -133,12 +142,17 @@ namespace AUI.MorphUI
 
 		private void DupesChanged()
 		{
-			dirty_ |= DirtyDupes | DirtySort | DirtySearch;
+			dirty_ |= DirtyDupes | DirtySort | DirtyCategory | DirtySearch;
 		}
 
 		private void SortChanged()
 		{
-			dirty_ |= DirtySort | DirtySearch;
+			dirty_ |= DirtySort | DirtyCategory | DirtySearch;
+		}
+
+		private void CategoryChanged()
+		{
+			dirty_ |= DirtyCategory | DirtySearch;
 		}
 
 		private void SearchChanged()
@@ -172,6 +186,12 @@ namespace AUI.MorphUI
 					ProcessSort();
 			});
 
+			U.TimeThis("ProcessCategory", () =>
+			{
+				if (Bits.IsAnySet(dirty_, DirtyCategory))
+					ProcessCategory();
+			});
+
 			U.TimeThis("ProcessSearch", () =>
 			{
 				if (Bits.IsAnySet(dirty_, DirtySearch))
@@ -182,7 +202,7 @@ namespace AUI.MorphUI
 			dirty_ = Clean;
 
 			if (search_ == "")
-				return sorted_;
+				return categorized_;
 			else
 				return searched_;
 		}
@@ -229,16 +249,34 @@ namespace AUI.MorphUI
 
 		private void ProcessSort()
 		{
+			var source = deduped_;
+
 			Log.Info("process sort");
 
 			if (sort_ == NoSort)
 			{
-				sorted_ = deduped_;
+				sorted_ = source;
 			}
 			else
 			{
-				sorted_ = new List<DAZMorph>(deduped_);
+				sorted_ = new List<DAZMorph>(source);
 				sorted_.Sort(new MorphComparer(sort_, sortDir_));
+			}
+		}
+
+		private void ProcessCategory()
+		{
+			Log.Info("process category");
+
+			var source = sorted_;
+
+			if (cat_ == null)
+			{
+				categorized_ = source;
+			}
+			else
+			{
+				categorized_ = cat_.MorphsRecursive();
 			}
 		}
 
@@ -246,28 +284,30 @@ namespace AUI.MorphUI
 		{
 			Log.Info($"process search '{search_}'");
 
+			var source = categorized_;
+
 			if (search_ == "")
 			{
-				searched_ = sorted_;
+				searched_ = source;
 			}
 			else
 			{
-				if (searched_ == sorted_)
+				if (searched_ == source)
 				{
-					searched_ = new List<DAZMorph>(sorted_.Count);
+					searched_ = new List<DAZMorph>(source.Count);
 				}
 				else
 				{
 					searched_.Clear();
-					searched_.Capacity = sorted_.Count;
+					searched_.Capacity = source.Count;
 				}
 
 				var searchLc = search_.ToLower();
 
-				for (int i = 0; i < sorted_.Count; ++i)
+				for (int i = 0; i < source.Count; ++i)
 				{
-					if (sorted_[i].displayName.ToLower().Contains(searchLc))
-						searched_.Add(sorted_[i]);
+					if (source[i].displayName.ToLower().Contains(searchLc))
+						searched_.Add(source[i]);
 				}
 			}
 		}

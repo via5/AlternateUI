@@ -23,20 +23,19 @@ namespace VUI
 			Events.DragEnd += OnDragEnd;
 		}
 
-		public bool OnDragStart(DragEvent e)
+		public void OnDragStart(DragEvent e)
 		{
 			dragging_ = true;
-			dragStart_ = e.Mouse;
+			dragStart_ = e.Pointer;
 			initialBounds_ = AbsoluteClientBounds;
-			return false;
 		}
 
-		public bool OnDrag(DragEvent e)
+		public void OnDrag(DragEvent e)
 		{
 			if (!dragging_)
-				return false;
+				return;
 
-			var p = e.Mouse;
+			var p = e.Pointer;
 			var delta = p - dragStart_;
 
 			var r = Rectangle.FromSize(
@@ -57,14 +56,11 @@ namespace VUI
 			UpdateBounds();
 
 			Moved?.Invoke();
-
-			return false;
 		}
 
-		public bool OnDragEnd(DragEvent e)
+		public void OnDragEnd(DragEvent e)
 		{
 			dragging_ = false;
-			return false;
 		}
 	}
 
@@ -132,8 +128,8 @@ namespace VUI
 		private bool OnPointerDown(PointerEvent e)
 		{
 			var r = AbsoluteClientBounds;
-			var p = e.Mouse - r.TopLeft;
-			var y = ClientBounds.Top + p.Y - handle_.ClientBounds.Height / 2;
+			var p = e.Pointer - r.TopLeft;
+			var y = r.Top + p.Y - handle_.ClientBounds.Height / 2;
 
 			if (y < 0)
 				y = 0;
@@ -249,7 +245,20 @@ namespace VUI
 				set
 				{
 					expanded_ = value;
-					TreeView?.ItemExpanded(this);
+					TreeView?.ItemExpandedInternal(this);
+				}
+			}
+
+			public bool Selected
+			{
+				get
+				{
+					return TreeView?.Selected == this;
+				}
+
+				set
+				{
+					TreeView?.SetSelectedInternal(this, value);
 				}
 			}
 
@@ -306,33 +315,50 @@ namespace VUI
 		{
 			private readonly TreeView tree_;
 			private Item item_ = null;
+			private Panel panel_ = null;
 			private ToolButton toggle_ = null;
 			private Label label_ = null;
+			private bool hovered_ = false;
 
 			public Node(TreeView t)
 			{
 				tree_ = t;
 			}
 
-			public void Clear()
+			public Item Item
 			{
-				Set(null, Rectangle.Zero);
+				get { return item_; }
 			}
 
-			public void Set(Item i, Rectangle r)
+			public bool Hovered
+			{
+				get { return hovered_; }
+				set { hovered_ = value; UpdateState(); }
+			}
+
+			public void Clear()
+			{
+				Set(null, Rectangle.Zero, 0);
+			}
+
+			public void Set(Item i, Rectangle r, int indent)
 			{
 				item_ = i;
 
 				if (item_ == null)
 				{
-					if (toggle_ != null)
-						toggle_.Render = false;
-
-					if (label_ != null)
-						label_.Render = false;
+					if (panel_ != null)
+						panel_.Render = false;
 				}
 				else
 				{
+					if (panel_ == null)
+						CreatePanel(r);
+
+					UpdatePanel(r);
+
+					r.Left += indent * IndentSize;
+
 					if (item_.HasChildren)
 					{
 						if (toggle_ == null)
@@ -352,6 +378,25 @@ namespace VUI
 
 					UpdateLabel(r);
 				}
+
+				UpdateState();
+			}
+
+			private void CreatePanel(Rectangle r)
+			{
+				if (panel_ == null)
+				{
+					panel_ = new Panel(new AbsoluteLayout());
+					tree_.Add(panel_);
+					panel_.Create();
+					panel_.Events.PointerClick += (e) => true;
+				}
+			}
+
+			private void UpdatePanel(Rectangle r)
+			{
+				panel_.SetBounds(r);
+				panel_.Render = true;
 			}
 
 			private void CreateToggle(Rectangle r)
@@ -359,7 +404,7 @@ namespace VUI
 				if (toggle_ == null)
 				{
 					toggle_ = new ToolButton("", OnToggle);
-					tree_.Add(toggle_);
+					panel_.Add(toggle_);
 					toggle_.Create();
 				}
 			}
@@ -386,8 +431,9 @@ namespace VUI
 				{
 					label_ = new Label();
 					label_.WrapMode = VUI.Label.Clip;
-					tree_.Add(label_);
+					panel_.Add(label_);
 					label_.Create();
+					label_.Events.PointerClick += (e) => true;
 				}
 			}
 
@@ -400,7 +446,19 @@ namespace VUI
 				lr.Left += 35;
 				label_.Text = item_.Text;
 				label_.SetBounds(lr);
-				label_.Render = true;
+			}
+
+			public void UpdateState()
+			{
+				if (panel_ == null)
+					return;
+
+				if (hovered_)
+					panel_.BackgroundColor = Style.Theme.HighlightBackgroundColor;
+				else if (item_?.Selected ?? false)
+					panel_.BackgroundColor = Style.Theme.SelectionBackgroundColor;
+				else
+					panel_.BackgroundColor = Style.Theme.BackgroundColor;
 			}
 
 			private void OnToggle()
@@ -421,6 +479,10 @@ namespace VUI
 		}
 
 
+		public delegate void ItemCallback(Item i);
+		public event ItemCallback SelectionChanged;
+
+
 		private const int InternalPadding = 5;
 		private const int ItemHeight = 35;
 		private const int ItemPadding = 2;
@@ -434,6 +496,8 @@ namespace VUI
 		private int itemCount_ = 0;
 		private int visibleCount_ = 0;
 		private IgnoreFlag ignoreVScroll_ = new IgnoreFlag();
+		private Node hovered_ = null;
+		private Item selected_ = null;
 
 		public TreeView()
 		{
@@ -446,6 +510,10 @@ namespace VUI
 			Add(vsb_);
 
 			Events.Wheel += OnWheel;
+			Events.PointerMove += OnHover;
+			Events.PointerExit += OnExit;
+			Events.PointerClick += OnClick;
+
 			vsb_.ValueChanged += OnVerticalScroll;
 		}
 
@@ -474,13 +542,36 @@ namespace VUI
 
 		public Item RootItem
 		{
-			get{ return root_; }
+			get { return root_; }
 		}
 
-		public void ItemExpanded(Item i)
+		public Item Selected
+		{
+			get { return selected_; }
+		}
+
+		public void ItemExpandedInternal(Item i)
 		{
 			UpdateNodes();
 			base.UpdateBounds();
+		}
+
+		public void SetSelectedInternal(Item item, bool b)
+		{
+			var old = selected_;
+
+			if (b)
+				selected_ = item;
+			else if (selected_ == item)
+				selected_ = null;
+
+			for (int i = 0; i < nodes_.Count; ++i)
+			{
+				nodes_[i].UpdateState();
+			}
+
+			if (selected_ != old)
+				SelectionChanged?.Invoke(selected_);
 		}
 
 		private void UpdateNodes()
@@ -538,7 +629,7 @@ namespace VUI
 					{
 						var node = nodes_[cx.nodeIndex];
 
-						var x = cx.x + cx.indent * IndentSize;
+						var x = cx.x;
 						var y = cx.y;
 
 						var r = Rectangle.FromPoints(
@@ -546,7 +637,7 @@ namespace VUI
 							cx.av.Right - InternalPadding - ScrollBarWidth,
 							y + ItemHeight);
 
-						node.Set(child, r);
+						node.Set(child, r, cx.indent);
 
 						cx.y += ItemHeight + ItemPadding;
 						++cx.nodeIndex;
@@ -567,6 +658,7 @@ namespace VUI
 		protected override void DoCreate()
 		{
 			base.DoCreate();
+			GetRoot().TrackPointer(this, true);
 		}
 
 		protected override void DoPolish()
@@ -611,6 +703,62 @@ namespace VUI
 			});
 
 			return false;
+		}
+
+		private Node NodeAt(Point p)
+		{
+			var r = AbsoluteClientBounds;
+			r.Right -= ScrollBarWidth;
+
+			if (r.Contains(p))
+			{
+				var rp = p - r.TopLeft;
+
+				int nodeIndex = (int)(rp.Y / (ItemHeight + ItemPadding));
+				if (nodeIndex >= 0 && nodeIndex < nodes_.Count)
+					return nodes_[nodeIndex];
+			}
+
+			return null;
+		}
+
+		private bool OnHover(PointerEvent e)
+		{
+			if (!IsVisibleOnScreen())
+				return false;
+
+			SetHovered(NodeAt(e.Pointer));
+
+			return false;
+		}
+
+		private void OnExit(PointerEvent e)
+		{
+			SetHovered(null);
+		}
+
+		private bool OnClick(PointerEvent e)
+		{
+			var n = NodeAt(e.Pointer);
+
+			if (n?.Item != null)
+				n.Item.Selected = true;
+
+			return false;
+		}
+
+		private void SetHovered(Node n)
+		{
+			if (hovered_ == n)
+				return;
+
+			if (hovered_ != null)
+				hovered_.Hovered = false;
+
+			hovered_ = n;
+
+			if (hovered_ != null)
+				hovered_.Hovered = true;
 		}
 
 		public override string DebugLine

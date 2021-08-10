@@ -2,12 +2,32 @@
 {
 	class CategoriesWidget
 	{
+		private MorphUI ui_;
 		private VUI.Button button_;
 		private VUI.Panel panel_;
 		private VUI.TreeView tree_;
 
-		public CategoriesWidget(VUI.Root root)
+		class CategoryItem : VUI.TreeView.Item
 		{
+			private readonly Categories.Node node_;
+
+			public CategoryItem(Categories.Node n)
+				: base(n.Name)
+			{
+				node_ = n;
+			}
+
+			public Categories.Node Node
+			{
+				get { return node_; }
+			}
+		}
+
+
+		public CategoriesWidget(MorphUI ui)
+		{
+			ui_ = ui;
+
 			var s = new VUI.Size(500, 800);
 
 			button_ = new VUI.Button("Categories", Toggle);
@@ -21,14 +41,16 @@
 			panel_.MinimumSize = s;
 			panel_.Visible = false;
 			panel_.SetBounds(VUI.Rectangle.FromSize(
-				root.FloatingPanel.RelativeBounds.Width - s.Width - 20,
-				root.FloatingPanel.RelativeBounds.Top + 50,
+				ui_.Root.FloatingPanel.RelativeBounds.Width - s.Width - 20,
+				ui_.Root.FloatingPanel.RelativeBounds.Top + 50,
 				s.Width, s.Height));
 
 			tree_ = new VUI.TreeView();
 			panel_.Add(tree_, VUI.BorderLayout.Center);
 
-			root.FloatingPanel.Add(panel_);
+			ui_.Root.FloatingPanel.Add(panel_);
+
+			tree_.SelectionChanged += OnSelection;
 		}
 
 		public VUI.Button Button
@@ -49,7 +71,7 @@
 			{
 				foreach (var c in parentCat.Children)
 				{
-					var item = new VUI.TreeView.Item(c.Name);
+					var item = new CategoryItem(c);
 					parentItem.Add(item);
 					AddCategories(item, c);
 				}
@@ -67,6 +89,18 @@
 		{
 			panel_.Visible = !panel_.Visible;
 		}
+
+		public void OnSelection(VUI.TreeView.Item item)
+		{
+			var c = item as CategoryItem;
+
+			if (c == null)
+				ui_.Filter.Category = null;
+			else
+				ui_.Filter.Category = c.Node;
+
+			panel_.Visible = false;
+		}
 	}
 
 
@@ -83,7 +117,7 @@
 		public Controls(MorphUI ui)
 		{
 			ui_ = ui;
-			cats_ = new CategoriesWidget(ui.Root);
+			cats_ = new CategoriesWidget(ui);
 			search_.Placeholder = "Search";
 
 			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(5));
