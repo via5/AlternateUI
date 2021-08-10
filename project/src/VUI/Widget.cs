@@ -230,12 +230,6 @@ namespace VUI
 			}
 		}
 
-		private IEnumerator UpdateActiveStateCo()
-		{
-			yield return new WaitForEndOfFrame();
-			mainObject_.SetActive(render_ && visible_);
-		}
-
 		private Widget AnyDirtyChild()
 		{
 			if (!visible_)
@@ -491,6 +485,12 @@ namespace VUI
 				s.Height = Math.Min(s.Height, maxSize_.Height);
 
 			s += Margins.Size + Borders.Size + Padding.Size;
+
+			if (maxWidth != DontCare)
+				s.Width = Math.Min(maxWidth, s.Width);
+
+			if (maxHeight != DontCare)
+				s.Height = Math.Min(maxHeight, s.Height);
 
 			return s;
 		}

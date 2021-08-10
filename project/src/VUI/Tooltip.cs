@@ -6,6 +6,7 @@ namespace VUI
 	class Tooltip
 	{
 		private string text_ = "";
+		private int fontSize_ = -1;
 		private Func<string> textFunc_ = null;
 
 		public Tooltip(string text = "")
@@ -28,6 +29,12 @@ namespace VUI
 		{
 			get { return text_; }
 			set { text_ = value; }
+		}
+
+		public int FontSize
+		{
+			get { return fontSize_; }
+			set { fontSize_ = value; }
 		}
 
 		public string GetText()
@@ -78,10 +85,15 @@ namespace VUI
 			base.Destroy();
 		}
 
-		public string Text
+		public Size Set(Tooltip tt)
 		{
-			get { return label_.Text; }
-			set { label_.Text = value; }
+			label_.Text = tt.GetText();
+			label_.FontSize = tt.FontSize;
+			label_.Polish();
+
+			return Root.FitText(
+				null, label_.FontSize, label_.Text, new Size(
+					Style.Metrics.MaxTooltipWidth, Widget.DontCare));
 		}
 	}
 
@@ -138,11 +150,9 @@ namespace VUI
 				return;
 
 			active_ = w;
-			widget_.Text = w.Tooltip.GetText();
 
 			// size of text
-			var size = Root.FitText(null, -1, widget_.Text, new Size(
-				Style.Metrics.MaxTooltipWidth, Widget.DontCare));
+			var size = widget_.Set(w.Tooltip);
 
 			// widget is size of text plus its insets
 			size += widget_.Insets.Size;

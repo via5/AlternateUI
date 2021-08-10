@@ -19,7 +19,7 @@ namespace VUI
 
 		public float MaxTooltipWidth
 		{
-			get { return 600; }
+			get { return 800; }
 		}
 
 		public float TooltipBorderOffset

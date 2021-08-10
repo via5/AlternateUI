@@ -294,8 +294,8 @@ namespace VUI
 
 		public static void SetRectTransform(RectTransform rt, Rectangle r)
 		{
-			rt.offsetMin = new Vector2(r.Left, r.Top);
-			rt.offsetMax = new Vector2(r.Right, r.Bottom);
+			rt.offsetMin = new Vector2((int)r.Left, (int)r.Top);
+			rt.offsetMax = new Vector2((int)r.Right, (int)r.Bottom);
 			rt.anchorMin = new Vector2(0, 1);
 			rt.anchorMax = new Vector2(0, 1);
 			rt.anchoredPosition = new Vector2(r.Center.X, -r.Center.Y);

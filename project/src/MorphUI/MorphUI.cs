@@ -11,6 +11,7 @@ namespace AUI.MorphUI
 			private string name_;
 			private List<Node> children_ = null;
 			private List<DAZMorph> morphs_ = null;
+			private HashSet<string> morphUids_ = null;
 
 			public Node(Node parent, string name)
 			{
@@ -59,7 +60,14 @@ namespace AUI.MorphUI
 				if (morphs_ == null)
 					morphs_ = new List<DAZMorph>();
 
+				if (morphUids_ == null)
+					morphUids_ = new HashSet<string>();
+
 				morphs_.Add(m);
+				morphUids_.Add(m.uid);
+
+				if (m.uid.ToLower().Contains("acicia"))
+					Log.Info("!!! " + Path + " " + m.displayName);
 			}
 
 			public List<DAZMorph> MorphsRecursive()
@@ -67,6 +75,26 @@ namespace AUI.MorphUI
 				var list = new List<DAZMorph>();
 				MorphsRecursive(list);
 				return list;
+			}
+
+			public bool ContainsRecursive(DAZMorph m)
+			{
+				if (morphUids_ != null)
+				{
+					if (morphUids_.Contains(m.uid))
+						return true;
+				}
+
+				if (children_ != null)
+				{
+					foreach (var c in children_)
+					{
+						if (c.ContainsRecursive(m))
+							return true;
+					}
+				}
+
+				return false;
 			}
 
 			private void MorphsRecursive(List<DAZMorph> list)
@@ -208,7 +236,7 @@ namespace AUI.MorphUI
 
 							foreach (var m in n.Morphs)
 							{
-								//Log.Info($"moving {m.displayName} from {n.Path} to {nn.Path}");
+							//	Log.Info($"moving {m.displayName} from {n.Path} to {nn.Path}");
 								nn.AddMorph(m);
 							}
 
@@ -223,8 +251,12 @@ namespace AUI.MorphUI
 			}
 
 
-
 			root_.Sort();
+
+
+			BringToTop(root_.Children, "Pose");
+			BringToTop(root_.Children, "Morph");
+
 			//root_.Dump();
 
 
@@ -236,9 +268,31 @@ namespace AUI.MorphUI
 			//	Log.Info(c);
 		}
 
+		private void BringToTop(List<Node> nodes, string name)
+		{
+			for (int i=0; i<nodes.Count; ++i)
+			{
+				if (nodes[i].Name == name)
+				{
+					var temp = nodes[i];
+					nodes.RemoveAt(i);
+					nodes.Insert(0, temp);
+					return;
+				}
+			}
+		}
+
+		private string GetRegion(DAZMorph m)
+		{
+			if (m.resolvedRegionName != "")
+				return m.resolvedRegionName;
+			else
+				return m.region;
+		}
+
 		private void HandleMorph(Dictionary<string, Node> map, DAZMorph m)
 		{
-			var name = m.group;
+			var name = GetRegion(m);
 			name = name.Replace('\\', '/');
 			name = name.Trim(new char[] { '/' });
 
@@ -286,7 +340,7 @@ namespace AUI.MorphUI
 	class MorphUI
 	{
 		private const int Columns = 3;
-		private const int Rows = 5;
+		private const int Rows = 7;
 
 		private Atom atom_ = null;
 		private VUI.Root root_ = null;
@@ -301,7 +355,7 @@ namespace AUI.MorphUI
 
 		public MorphUI()
 		{
-			filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
+			//filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
 			filter_.Sort = Filter.SortName;
 		}
 
@@ -432,7 +486,7 @@ namespace AUI.MorphUI
 			cats_.Update(all_);
 			controls_?.UpdateCategories();
 
-			root_.ContentPanel.Layout = new VUI.BorderLayout(5);
+			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
 
 

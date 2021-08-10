@@ -202,7 +202,7 @@ namespace VUI
 			private List<Item> children_ = null;
 			private bool expanded_ = false;
 
-			public Item(string text)
+			public Item(string text = "")
 			{
 				text_ = text;
 			}

@@ -57,7 +57,7 @@ namespace AUI.MorphUI
 
 		private bool alwaysShowModified_ = true;
 		private bool onlyLatest_ = true;
-		private int dupes_ = SamePathDupes | SimilarDupes;
+		private int dupes_ = AllowDupes;
 		private string search_ = "";
 		private int sort_ = NoSort;
 		private int sortDir_ = SortAscending;
@@ -168,35 +168,20 @@ namespace AUI.MorphUI
 
 		public List<DAZMorph> Process()
 		{
-			U.TimeThis("ProcessParams", () =>
-			{
-				if (Bits.IsAnySet(dirty_, DirtyParams))
-					ProcessParams();
-			});
+			if (Bits.IsAnySet(dirty_, DirtyParams))
+				ProcessParams();
 
-			U.TimeThis("ProcessDupes", () =>
-			{
-				if (Bits.IsAnySet(dirty_, DirtyDupes))
-					ProcessDupes();
-			});
+			if (Bits.IsAnySet(dirty_, DirtyDupes))
+				ProcessDupes();
 
-			U.TimeThis("ProcessSort", () =>
-			{
-				if (Bits.IsSet(dirty_, DirtySort))
-					ProcessSort();
-			});
+			if (Bits.IsSet(dirty_, DirtySort))
+				ProcessSort();
 
-			U.TimeThis("ProcessCategory", () =>
-			{
-				if (Bits.IsAnySet(dirty_, DirtyCategory))
-					ProcessCategory();
-			});
+			if (Bits.IsAnySet(dirty_, DirtyCategory))
+				ProcessCategory();
 
-			U.TimeThis("ProcessSearch", () =>
-			{
-				if (Bits.IsAnySet(dirty_, DirtySearch))
-					ProcessSearch();
-			});
+			if (Bits.IsAnySet(dirty_, DirtySearch))
+				ProcessSearch();
 
 
 			dirty_ = Clean;
@@ -209,14 +194,14 @@ namespace AUI.MorphUI
 
 		private void ProcessParams()
 		{
-			Log.Info("process params");
+			var source = all_;
 
 			checked_.Clear();
-			checked_.Capacity = all_.Count;
+			checked_.Capacity = source.Count;
 
-			for (int i = 0; i < all_.Count; ++i)
+			for (int i = 0; i < source.Count; ++i)
 			{
-				var m = all_[i];
+				var m = source[i];
 
 				if (ShouldShowForParams(m))
 					checked_.Add(m);
@@ -227,18 +212,18 @@ namespace AUI.MorphUI
 
 		private void ProcessDupes()
 		{
-			Log.Info("process dupes");
+			var source = checked_;
 
 			deduped_.Clear();
-			deduped_.Capacity = all_.Count;
+			deduped_.Capacity = source.Count;
 
 			paths_.Clear();
 			filenames_.Clear();
 			similar_.Clear();
 
-			for (int i = 0; i < checked_.Count; ++i)
+			for (int i = 0; i < source.Count; ++i)
 			{
-				var m = checked_[i];
+				var m = source[i];
 
 				if (ShouldShowForDupes(m))
 					deduped_.Add(m);
@@ -250,8 +235,6 @@ namespace AUI.MorphUI
 		private void ProcessSort()
 		{
 			var source = deduped_;
-
-			Log.Info("process sort");
 
 			if (sort_ == NoSort)
 			{
@@ -266,8 +249,6 @@ namespace AUI.MorphUI
 
 		private void ProcessCategory()
 		{
-			Log.Info("process category");
-
 			var source = sorted_;
 
 			if (cat_ == null)
@@ -276,14 +257,26 @@ namespace AUI.MorphUI
 			}
 			else
 			{
-				categorized_ = cat_.MorphsRecursive();
+				if (categorized_ == source)
+				{
+					categorized_ = new List<DAZMorph>(source.Count);
+				}
+				else
+				{
+					categorized_.Clear();
+					categorized_.Capacity = source.Count;
+				}
+
+				for (int i = 0; i < source.Count; ++i)
+				{
+					if (cat_.ContainsRecursive(source[i]))
+						categorized_.Add(source[i]);
+				}
 			}
 		}
 
 		private void ProcessSearch()
 		{
-			Log.Info($"process search '{search_}'");
-
 			var source = categorized_;
 
 			if (search_ == "")

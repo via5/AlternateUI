@@ -66,6 +66,7 @@ namespace AUI.MorphUI
 				Render = true;
 				name_.Text = m.displayName;
 				name_.Tooltip.TextFunc = GetTooltip;
+				name_.Tooltip.FontSize = 24;
 			}
 
 			Update();
@@ -73,12 +74,29 @@ namespace AUI.MorphUI
 
 		private string GetTooltip()
 		{
-			var s =
-				$"{morph_.uid}\n\n" +
-				$"{morph_.morphName}\n\n" +
-				$"{morph_.overrideRegion} {morph_.group} {morph_.region}\n\n" +
-				$"{Filter.GetPath(morph_)}";
+			string s = $"{morph_.displayName}";
 
+			if (morph_.deltasLoaded)
+			{
+			}
+			else
+			{
+				s += " (unloaded)";
+			}
+
+			s += $"\n";
+
+			if (morph_.isInPackage)
+				s += $"Package: {morph_.packageUid}\n";
+
+			s +=
+				$"Path: {Filter.GetPath(morph_)}\n" +
+				$"Region: {morph_.region}\n" +
+				$"Override region: {morph_.overrideRegion}\n" +
+				$"Resolved region: {morph_.resolvedRegionName}\n" +
+				$"Resolved name: {morph_.resolvedDisplayName}\n" +
+				$"Group: {morph_.group}\n" +
+				$"Latest: {morph_.isLatestVersion} v={morph_.morphValue} sv={morph_.startValue}";
 
 			return s;
 		}
@@ -116,7 +134,9 @@ namespace AUI.MorphUI
 		private void OnAddRange()
 		{
 			if (ignore_ || morph_ == null) return;
-			slider_.SetRange(slider_.Minimum - 1, slider_.Maximum + 1);
+			morph_.min -= 1;
+			morph_.max += 1;
+			slider_.SetRange(morph_.min, morph_.max);
 		}
 
 		private void OnResetRange()

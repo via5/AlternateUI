@@ -12,9 +12,15 @@
 			private readonly Categories.Node node_;
 
 			public CategoryItem(Categories.Node n)
-				: base(n.Name)
 			{
 				node_ = n;
+
+				if (node_ == null)
+					Text = "All";
+				else if (node_.Name == "")
+					Text = "(no category)";
+				else
+					Text = n.Name;
 			}
 
 			public Categories.Node Node
@@ -61,7 +67,10 @@
 		public void Set(Categories cats)
 		{
 			tree_.RootItem.Clear();
+
+			tree_.RootItem.Add(new CategoryItem(null));
 			AddCategories(tree_.RootItem, cats.Root);
+			tree_.RootItem.Children[0].Selected = true;
 		}
 
 		private void AddCategories(
