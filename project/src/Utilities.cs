@@ -90,55 +90,27 @@ namespace AUI
 
 	class U
 	{
-		private static float lastErrorTime_ = 0;
-		private static int errorCount_ = 0;
-		private const int MaxErrors = 3;
-
-		public static void Safe(Action a)
+		public static float Clamp(float val, float min, float max)
 		{
-			try
-			{
-				a();
-			}
-			catch (Exception e)
-			{
-				Log.Error(e.ToString());
-
-				var now = Time.realtimeSinceStartup;
-
-				if (now - lastErrorTime_ < 1)
-				{
-					++errorCount_;
-					if (errorCount_ > MaxErrors)
-					{
-						Log.Error(
-							$"more than {MaxErrors} errors in the last " +
-							"second, disabling plugin");
-
-						AlternateUI.Instance.DisablePlugin();
-					}
-				}
-				else
-				{
-					errorCount_ = 0;
-				}
-
-				lastErrorTime_ = now;
-			}
-		}
-
-		public static T Clamp<T>(T val, T min, T max)
-			where T : IComparable<T>
-		{
-			if (val.CompareTo(min) < 0)
+			if (val < min)
 				return min;
-			else if (val.CompareTo(max) > 0)
+			else if (val > max)
 				return max;
 			else
 				return val;
 		}
 
-		public static void TimeThis(string s, Action f)
+		public static int Clamp(int val, int min, int max)
+		{
+			if (val < min)
+				return min;
+			else if (val > max)
+				return max;
+			else
+				return val;
+		}
+
+		public static void DebugTimeThis(string s, Action f)
 		{
 			var sw = new Stopwatch();
 			sw.Reset();
@@ -193,18 +165,18 @@ namespace AUI
 						// Certain strings may be considered different due to "soft" differences that are
 						// ignored if more significant differences follow, e.g. a hyphen only affects the
 						// comparison if no other differences follow
-						string sectionA = strA.Substring(iA, jA - iA);
-						string sectionB = strB.Substring(iB, jB - iB);
-						if (cmp.Compare(sectionA + "1", sectionB + "2", options) ==
-							cmp.Compare(sectionA + "2", sectionB + "1", options))
+						//string sectionA = strA.Substring(iA, jA - iA);
+						//string sectionB = strB.Substring(iB, jB - iB);
+						//if (cmp.Compare(sectionA + "1", sectionB + "2", options) ==
+						//	cmp.Compare(sectionA + "2", sectionB + "1", options))
 						{
 							return cmp.Compare(strA, iA, strB, iB, options);
 						}
-						else if (softResultWeight < 1)
-						{
-							softResult = cmpResult;
-							softResultWeight = 1;
-						}
+						//else if (softResultWeight < 1)
+						//{
+						//	softResult = cmpResult;
+						//	softResultWeight = 1;
+						//}
 					}
 					iA = jA;
 					iB = jB;
@@ -297,126 +269,6 @@ namespace AUI
 			string x = xt.ToString();
 			string y = yt.ToString();
 			return U.CompareNatural(x, y);
-		}
-	}
-
-
-	class Ticker
-	{
-		private readonly string name_;
-		private Stopwatch w_ = new Stopwatch();
-		private long freq_ = Stopwatch.Frequency;
-		private long ticks_ = 0;
-		private long calls_ = 0;
-
-		private float elapsed_ = 0;
-		private long avg_ = 0;
-		private long peak_ = 0;
-
-		private long lastPeak_ = 0;
-		private long lastCalls_ = 0;
-		private bool updated_ = false;
-
-		public Ticker(string name = "")
-		{
-			name_ = name;
-		}
-
-		public string Name
-		{
-			get { return name_; }
-		}
-
-		public void Do(Action f)
-		{
-			updated_ = false;
-
-			w_.Reset();
-			w_.Start();
-			f();
-			w_.Stop();
-
-			++calls_;
-			ticks_ += w_.ElapsedTicks;
-			peak_ = Math.Max(peak_, w_.ElapsedTicks);
-		}
-
-		public void Update(float s)
-		{
-			elapsed_ += s;
-			if (elapsed_ >= 1)
-			{
-				if (calls_ <= 0)
-					avg_ = 0;
-				else
-					avg_ = ticks_ / calls_;
-
-				lastPeak_ = peak_;
-				lastCalls_ = calls_;
-
-				ticks_ = 0;
-				calls_ = 0;
-				elapsed_ = 0;
-				peak_ = 0;
-				updated_ = true;
-			}
-		}
-
-		public bool Updated
-		{
-			get { return updated_; }
-		}
-
-		public float AverageMs
-		{
-			get
-			{
-				return ToMs(avg_);
-			}
-		}
-
-		public float PeakMS
-		{
-			get { return ToMs(lastPeak_); }
-		}
-
-		private float ToMs(long ticks)
-		{
-			return (float)((((double)ticks) / freq_) * 1000);
-		}
-
-		public long Calls
-		{
-			get { return lastCalls_; }
-		}
-
-		public override string ToString()
-		{
-			return $"calls={Calls} avg={AverageMs:0.000} peak={PeakMS:0.000}";
-		}
-	}
-
-
-	public class IgnoreFlag
-	{
-		private bool ignore_ = false;
-
-		public static implicit operator bool(IgnoreFlag f)
-		{
-			return f.ignore_;
-		}
-
-		public void Do(Action a)
-		{
-			try
-			{
-				ignore_ = true;
-				a();
-			}
-			finally
-			{
-				ignore_ = false;
-			}
 		}
 	}
 

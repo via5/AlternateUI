@@ -36,6 +36,68 @@ namespace AUI.MorphUI
 
 	class Filter
 	{
+		class RefList<T>
+		{
+			private List<T> own_ = null;
+			private List<T> refList_ = null;
+			private RefList<T> refRef_ = null;
+
+			public void Own(int capacity)
+			{
+				refList_ = null;
+				refRef_ = null;
+
+				if (own_ == null)
+				{
+					own_ = new List<T>(capacity);
+				}
+				else
+				{
+					own_.Clear();
+					own_.Capacity = capacity;
+				}
+			}
+
+			public void Own(List<T> copy)
+			{
+				refList_ = null;
+				refRef_ = null;
+
+				if (own_ == null)
+				{
+					own_ = new List<T>(copy);
+				}
+				else
+				{
+					own_.Clear();
+					own_.AddRange(copy);
+				}
+			}
+
+			public void Reference(List<T> other)
+			{
+				refList_ = other;
+				refRef_ = null;
+			}
+
+			public void Reference(RefList<T> other)
+			{
+				refList_ = null;
+				refRef_ = other;
+			}
+
+			public List<T> Get()
+			{
+				if (refList_ != null)
+					return refList_;
+				else if (refRef_ != null)
+					return refRef_.Get();
+				else
+					return own_;
+			}
+		}
+
+
 		public const int AllowDupes = 0x00;
 		public const int SamePathDupes = 0x01;
 		public const int SameFilenameDupes = 0x02;
@@ -68,11 +130,11 @@ namespace AUI.MorphUI
 		private int dirty_ = Clean;
 
 		private List<DAZMorph> all_ = new List<DAZMorph>();
-		private List<DAZMorph> checked_ = new List<DAZMorph>();
-		private List<DAZMorph> deduped_ = new List<DAZMorph>();
-		private List<DAZMorph> sorted_ = new List<DAZMorph>();
-		private List<DAZMorph> categorized_ = new List<DAZMorph>();
-		private List<DAZMorph> searched_ = new List<DAZMorph>();
+		private readonly List<DAZMorph> checked_ = new List<DAZMorph>();
+		private readonly List<DAZMorph> deduped_ = new List<DAZMorph>();
+		private readonly RefList<DAZMorph> sorted_ = new RefList<DAZMorph>();
+		private readonly RefList<DAZMorph> categorized_ = new RefList<DAZMorph>();
+		private readonly RefList<DAZMorph> searched_ = new RefList<DAZMorph>();
 
 		private Dictionary<string, DAZMorph> paths_ =
 			new Dictionary<string, DAZMorph>();
@@ -197,13 +259,12 @@ namespace AUI.MorphUI
 			if (Bits.IsAnySet(dirty_, DirtySearch))
 				ProcessSearch();
 
-
 			dirty_ = Clean;
 
 			if (search_ == "")
-				return categorized_;
+				return categorized_.Get();
 			else
-				return searched_;
+				return searched_.Get();
 		}
 
 		private void ProcessParams()
@@ -219,8 +280,6 @@ namespace AUI.MorphUI
 
 				if (ShouldShowForParams(m))
 					checked_.Add(m);
-				else
-					Log.Verbose($"params: filtered {m.uid}");
 			}
 		}
 
@@ -233,7 +292,10 @@ namespace AUI.MorphUI
 
 			paths_.Clear();
 			filenames_.Clear();
-			similar_.Clear();
+
+			var keys = similar_.Keys.ToList();
+			for (int i = 0; i < keys.Count; ++i)
+				similar_[keys[i]].Clear();
 
 			for (int i = 0; i < source.Count; ++i)
 			{
@@ -241,8 +303,6 @@ namespace AUI.MorphUI
 
 				if (ShouldShowForDupes(m))
 					deduped_.Add(m);
-				else
-					Log.Verbose($"dupes: filtered {m.uid}");
 			}
 		}
 
@@ -252,12 +312,12 @@ namespace AUI.MorphUI
 
 			if (sort_ == NoSort)
 			{
-				sorted_ = source;
+				sorted_.Reference(source);
 			}
 			else
 			{
-				sorted_ = new List<DAZMorph>(source);
-				sorted_.Sort(new MorphComparer(sort_, sortDir_));
+				sorted_.Own(source);
+				sorted_.Get().Sort(new MorphComparer(sort_, sortDir_));
 			}
 		}
 
@@ -267,24 +327,16 @@ namespace AUI.MorphUI
 
 			if (cat_ == null)
 			{
-				categorized_ = source;
+				categorized_.Reference(source);
 			}
 			else
 			{
-				if (categorized_ == source)
-				{
-					categorized_ = new List<DAZMorph>(source.Count);
-				}
-				else
-				{
-					categorized_.Clear();
-					categorized_.Capacity = source.Count;
-				}
+				categorized_.Own(source.Get().Count);
 
-				for (int i = 0; i < source.Count; ++i)
+				for (int i = 0; i < source.Get().Count; ++i)
 				{
-					if (cat_.ContainsRecursive(source[i]))
-						categorized_.Add(source[i]);
+					if (cat_.ContainsRecursive(source.Get()[i]))
+						categorized_.Get().Add(source.Get()[i]);
 				}
 			}
 		}
@@ -295,26 +347,18 @@ namespace AUI.MorphUI
 
 			if (search_ == "")
 			{
-				searched_ = source;
+				searched_.Reference(source);
 			}
 			else
 			{
-				if (searched_ == source)
-				{
-					searched_ = new List<DAZMorph>(source.Count);
-				}
-				else
-				{
-					searched_.Clear();
-					searched_.Capacity = source.Count;
-				}
+				searched_.Own(source.Get().Count);
 
 				var searchLc = search_.ToLower();
 
-				for (int i = 0; i < source.Count; ++i)
+				for (int i = 0; i < source.Get().Count; ++i)
 				{
-					if (source[i].displayName.ToLower().Contains(searchLc))
-						searched_.Add(source[i]);
+					if (source.Get()[i].displayName.ToLower().Contains(searchLc))
+						searched_.Get().Add(source.Get()[i]);
 				}
 			}
 		}
@@ -359,27 +403,17 @@ namespace AUI.MorphUI
 			if (Bits.IsSet(dupes_, SamePathDupes))
 			{
 				if (paths_.ContainsKey(path))
-				{
-					Log.Verbose($"{m.uid}: path dupe {path}");
 					return false;
-				}
 				else
-				{
 					paths_.Add(path, m);
-				}
 			}
 
 			if (Bits.IsSet(dupes_, SameFilenameDupes))
 			{
 				if (filenames_.ContainsKey(filename))
-				{
-					Log.Verbose($"{m.uid}: filename dupe {filename}");
 					return false;
-				}
 				else
-				{
 					filenames_.Add(filename, 0);
-				}
 			}
 
 			if (Bits.IsSet(dupes_, SimilarDupes))
@@ -387,16 +421,20 @@ namespace AUI.MorphUI
 				List<DAZMorph> list;
 				int hash = GetHash(m);
 
-				if (similar_.TryGetValue(hash, out list))
+				if (similar_.TryGetValue(hash, out list) && list.Count > 0)
 				{
-					Log.Verbose($"{m.morphName}: similar dupe");
 					list.Add(m);
 					return false;
 				}
 				else
 				{
-					list = new List<DAZMorph>();
-					similar_.Add(hash, list);
+					if (list == null)
+					{
+						list = new List<DAZMorph>();
+						similar_.Add(hash, list);
+					}
+
+					list.Add(m);
 				}
 			}
 

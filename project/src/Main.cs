@@ -1,4 +1,8 @@
-﻿namespace AUI
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace AUI
 {
 	class AlternateUI : MVRScript
 	{
@@ -6,6 +10,10 @@
 
 		private MorphUI.MorphUI mui_ = null;
 		private bool inited_ = false;
+
+		private static float lastErrorTime_ = 0;
+		private static int errorCount_ = 0;
+		private const int MaxErrors = 3;
 
 		public AlternateUI()
 		{
@@ -19,26 +27,56 @@
 
 		public void Update()
 		{
-			U.Safe(() =>
+			try
 			{
-				if (!inited_)
+				DoUpdate();
+			}
+			catch (Exception e)
+			{
+				Log.Error(e.ToString());
+
+				var now = Time.realtimeSinceStartup;
+
+				if (now - lastErrorTime_ < 1)
 				{
-					VUI.Glue.Set(
-						() => manager,
-						(s, ps) => string.Format(s, ps),
-						(s) => Log.Verbose(s),
-						(s) => Log.Info(s),
-						(s) => Log.Warning(s),
-						(s) => Log.Error(s));
+					++errorCount_;
+					if (errorCount_ > MaxErrors)
+					{
+						Log.Error(
+							$"more than {MaxErrors} errors in the last " +
+							"second, disabling plugin");
 
-					mui_ = new MorphUI.MorphUI();
-
-					mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
-					inited_ = true;
+						DisablePlugin();
+					}
+				}
+				else
+				{
+					errorCount_ = 0;
 				}
 
-				mui_.Update();
-			});
+				lastErrorTime_ = now;
+			}
+		}
+
+		private void DoUpdate()
+		{
+			if (!inited_)
+			{
+				VUI.Glue.Set(
+					() => manager,
+					(s, ps) => string.Format(s, ps),
+					(s) => Log.Verbose(s),
+					(s) => Log.Info(s),
+					(s) => Log.Warning(s),
+					(s) => Log.Error(s));
+
+				mui_ = new MorphUI.MorphUI();
+
+				mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
+				inited_ = true;
+			}
+
+			mui_.Update();
 		}
 
 		public void OnEnable()

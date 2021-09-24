@@ -543,7 +543,7 @@ namespace AUI.MorphUI
 		private void Refilter()
 		{
 			filtered_ = filter_.Process();
-			Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
+			//Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
 			PageChanged();
 		}
 

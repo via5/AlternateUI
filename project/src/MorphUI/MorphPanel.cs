@@ -7,7 +7,7 @@ namespace AUI.MorphUI
 		private DAZMorph morph_ = null;
 
 		private VUI.Label name_ = new VUI.Label();
-		private VUI.FloatTextSlider slider_ = new VUI.FloatTextSlider("0.000");
+		private VUI.FloatTextSlider slider_ = new VUI.FloatTextSlider();
 		private VUI.ToolButton reset_ = new VUI.ToolButton("R");
 		private VUI.ToolButton def_ = new VUI.ToolButton("Def");
 		private VUI.ToolButton addRange_ = new VUI.ToolButton("+Range");
@@ -22,6 +22,8 @@ namespace AUI.MorphUI
 
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.FontSize = 24;
+
+			slider_.Decimals = 3;
 
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
