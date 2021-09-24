@@ -567,6 +567,9 @@ namespace VUI
 			}
 			else
 			{
+				if (v < 0)
+					sb.Append("-");
+
 				sb.Concat(v, decimals_);
 			}
 		}
