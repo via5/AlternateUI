@@ -117,6 +117,7 @@
     <Compile Include="src\VUI\Root.cs" />
     <Compile Include="src\VUI\Slider.cs" />
     <Compile Include="src\VUI\Style.cs" />
+    <Compile Include="src\VUI\Support.cs" />
     <Compile Include="src\VUI\Tabs.cs" />
     <Compile Include="src\VUI\TextBox.cs" />
     <Compile Include="src\VUI\Timer.cs" />
@@ -124,6 +125,7 @@
     <Compile Include="src\VUI\TreeView.cs" />
     <Compile Include="src\VUI\TypedList.cs" />
     <Compile Include="src\VUI\Utilities.cs" />
+    <Compile Include="src\VUI\Version.cs" />
     <Compile Include="src\VUI\Widget.cs" />
   </ItemGroup>
   <ItemGroup>

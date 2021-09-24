@@ -41,6 +41,11 @@ namespace AUI.MorphUI
 				}
 			}
 
+			public bool HasChildren
+			{
+				get { return (children_ != null && children_.Count > 0); }
+			}
+
 			public void AddNode(Node n)
 			{
 				if (children_ == null)

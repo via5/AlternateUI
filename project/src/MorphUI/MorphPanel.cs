@@ -14,7 +14,7 @@ namespace AUI.MorphUI
 		private VUI.ToolButton resetRange_ = new VUI.ToolButton("R range");
 		private VUI.CheckBox fav_ = new VUI.CheckBox("F");
 
-		private VUI.IgnoreFlag ignore_ = new VUI.IgnoreFlag();
+		private bool ignore_ = false;
 
 		public MorphPanel()
 		{
@@ -96,7 +96,8 @@ namespace AUI.MorphUI
 				$"Resolved region: {morph_.resolvedRegionName}\n" +
 				$"Resolved name: {morph_.resolvedDisplayName}\n" +
 				$"Group: {morph_.group}\n" +
-				$"Latest: {morph_.isLatestVersion} v={morph_.morphValue} sv={morph_.startValue}";
+				$"Latest: {morph_.isLatestVersion}\n" +
+				$"Value: {morph_.morphValue:0.00} [{morph_.min:0.00}, {morph_.max:0.00}] Def: {morph_.startValue}";
 
 			return s;
 		}
@@ -105,11 +106,16 @@ namespace AUI.MorphUI
 		{
 			if (morph_ == null) return;
 
-			ignore_.Do(() =>
+			try
 			{
+				ignore_ = true;
 				slider_.Set(morph_.morphValue, morph_.min, morph_.max);
 				fav_.Checked = morph_.favorite;
-			});
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 
 		private void OnValue(float f)

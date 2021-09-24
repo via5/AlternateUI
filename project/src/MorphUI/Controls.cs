@@ -1,11 +1,57 @@
 ﻿namespace AUI.MorphUI
 {
+	class SearchBox
+	{
+		public delegate void Handler(string s);
+		public event Handler Changed;
+
+		private VUI.Panel panel_;
+		private VUI.TextBox box_;
+		private VUI.ToolButton clear_;
+
+		public SearchBox(string placeholder)
+		{
+			panel_ = new VUI.Panel(new VUI.BorderLayout());
+
+			box_ = new VUI.TextBox("", placeholder);
+			box_.TextMargins = new VUI.Insets(0, 0, 44, 0);
+			box_.Changed += (s) => Changed?.Invoke(s);
+
+			var clearPanel = new VUI.Panel(new VUI.HorizontalFlow(
+				0, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
+
+			clear_ = new VUI.ToolButton("X");
+			clear_.Margins = new VUI.Insets(0, 2, 5, 2);
+			clear_.MaximumSize = new VUI.Size(35, 35);
+			clear_.Clicked += () => box_.Text = "";
+
+			clearPanel.Add(clear_);
+
+			panel_.Add(box_, VUI.BorderLayout.Center);
+			panel_.Add(clearPanel, VUI.BorderLayout.Center);
+		}
+
+		public VUI.Widget Widget
+		{
+			get { return panel_; }
+		}
+
+		public string Text
+		{
+			get { return box_?.Text ?? ""; }
+		}
+	}
+
+
 	class CategoriesWidget
 	{
 		private MorphUI ui_;
 		private VUI.Button button_;
 		private VUI.Panel panel_;
 		private VUI.TreeView tree_;
+		private SearchBox search_;
+		private Categories cats_ = null;
+		private bool ignore_ = false;
 
 		class CategoryItem : VUI.TreeView.Item
 		{
@@ -54,6 +100,10 @@
 			tree_ = new VUI.TreeView();
 			panel_.Add(tree_, VUI.BorderLayout.Center);
 
+			search_ = new SearchBox("Search categories");
+			search_.Changed += OnSearch;
+			panel_.Add(search_.Widget, VUI.BorderLayout.Bottom);
+
 			ui_.Root.FloatingPanel.Add(panel_);
 
 			tree_.SelectionChanged += OnSelection;
@@ -66,32 +116,45 @@
 
 		public void Set(Categories cats)
 		{
-			tree_.RootItem.Clear();
+			cats_ = cats;
+			RebuildTree();
+		}
 
-			tree_.RootItem.Add(new CategoryItem(null));
-			AddCategories(tree_.RootItem, cats.Root);
-			tree_.RootItem.Children[0].Selected = true;
+		private void RebuildTree()
+		{
+			try
+			{
+				ignore_ = true;
+
+				tree_.RootItem.Clear();
+
+				if (cats_ != null)
+				{
+					tree_.RootItem.Add(new CategoryItem(null));
+					AddCategories(tree_.RootItem, cats_.Root);
+					tree_.RootItem.Children[0].Selected = true;
+				}
+
+				tree_.ItemsChanged();
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 
 		private void AddCategories(
 			VUI.TreeView.Item parentItem, Categories.Node parentCat)
 		{
-			if (parentCat.Children != null)
+			if (parentCat.Children == null)
+				return;
+
+			foreach (var c in parentCat.Children)
 			{
-				foreach (var c in parentCat.Children)
-				{
-					var item = new CategoryItem(c);
-					parentItem.Add(item);
-					AddCategories(item, c);
-				}
+				var item = new CategoryItem(c);
+				AddCategories(item, c);
+				parentItem.Add(item);
 			}
-
-			//foreach (var c in cats.All)
-			//	tree_.RootItem.Add(new VUI.TreeView.Item(c));
-
-			//if (tree_.WidgetObject != null)
-			//	tree_.UpdateBounds();
-			//Log.Info($"{cats.All.Count}");
 		}
 
 		public void Toggle()
@@ -99,8 +162,10 @@
 			panel_.Visible = !panel_.Visible;
 		}
 
-		public void OnSelection(VUI.TreeView.Item item)
+		private void OnSelection(VUI.TreeView.Item item)
 		{
+			if (ignore_) return;
+
 			var c = item as CategoryItem;
 
 			if (c?.Node == null)
@@ -116,24 +181,28 @@
 
 			panel_.Visible = false;
 		}
+
+		private void OnSearch(string s)
+		{
+			tree_.Filter = s;
+		}
 	}
 
 
 	class Controls : VUI.Panel
 	{
 		private readonly MorphUI ui_;
-		private VUI.IgnoreFlag ignore_ = new VUI.IgnoreFlag();
+		private bool ignore_ = false;
 
 		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
 		private VUI.Label count_ = new VUI.Label();
-		private VUI.TextBox search_ = new VUI.TextBox();
+		private SearchBox search_ = new SearchBox("Search");
 		private CategoriesWidget cats_;
 
 		public Controls(MorphUI ui)
 		{
 			ui_ = ui;
 			cats_ = new CategoriesWidget(ui);
-			search_.Placeholder = "Search";
 
 			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(5));
 			pagePanel.Add(new VUI.Label("Page: "));
@@ -143,7 +212,7 @@
 			pagePanel.Add(count_);
 
 			var searchPanel = new VUI.Panel(new VUI.BorderLayout());
-			searchPanel.Add(search_, VUI.BorderLayout.Center);
+			searchPanel.Add(search_.Widget, VUI.BorderLayout.Center);
 
 			var catsPanel = new VUI.Panel(new VUI.HorizontalFlow(5));
 			catsPanel.Add(cats_.Button);
@@ -159,11 +228,16 @@
 
 		public void UpdatePage()
 		{
-			ignore_.Do(() =>
+			try
 			{
+				ignore_ = true;
 				page_.Set(ui_.CurrentPage + 1, 1, ui_.PageCount);
 				count_.Text = $"/{ui_.PageCount}";
-			});
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 
 		public void UpdateCategories()
