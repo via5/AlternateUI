@@ -70,9 +70,6 @@ namespace AUI.MorphUI
 
 				morphs_.Add(m);
 				morphUids_.Add(m.uid);
-
-				if (m.uid.ToLower().Contains("acicia"))
-					Log.Info("!!! " + Path + " " + m.displayName);
 			}
 
 			public List<DAZMorph> MorphsRecursive()
