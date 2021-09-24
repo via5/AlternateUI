@@ -70,7 +70,7 @@ namespace AUI
 					(s) => Log.Warning(s),
 					(s) => Log.Error(s));
 
-				mui_ = new MorphUI.MorphUI();
+				mui_ = new MorphUI.MorphUI(this);
 
 				mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
 				inited_ = true;
@@ -81,10 +81,12 @@ namespace AUI
 
 		public void OnEnable()
 		{
+			mui_.OnPluginState(true);
 		}
 
 		public void OnDisable()
 		{
+			mui_.OnPluginState(false);
 		}
 
 		public void DisablePlugin()

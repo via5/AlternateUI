@@ -309,9 +309,19 @@ namespace VUI
 			foreach (var c in o.GetComponents(typeof(Component)))
 			{
 				if (c == null)
+				{
 					Glue.LogError(new string(' ', indent * 2) + "null?");
-				else
-					Glue.LogError(new string(' ', indent * 2) + c.ToString());
+					continue;
+				}
+
+				string s = new string(' ', indent * 2) + c.ToString();
+
+				if (c is Image)
+				{
+					s += $" {(c as Image).color}";
+				}
+
+				Glue.LogError(s);
 			}
 		}
 

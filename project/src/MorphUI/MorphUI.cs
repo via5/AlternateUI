@@ -347,6 +347,7 @@ namespace AUI.MorphUI
 		private const int Columns = 3;
 		private const int Rows = 7;
 
+		private MVRScript s_;
 		private Atom atom_ = null;
 		private VUI.Root root_ = null;
 		private Controls controls_;
@@ -358,8 +359,9 @@ namespace AUI.MorphUI
 		private Categories cats_;
 		private int page_ = 0;
 
-		public MorphUI()
+		public MorphUI(MVRScript s)
 		{
+			s_ = s;
 			//filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
 			filter_.Sort = Filter.SortName;
 		}
@@ -488,45 +490,49 @@ namespace AUI.MorphUI
 			}
 		}
 
+		private UnityEngine.Transform GetRootTransform()
+		{
+			if (atom_ == null)
+			{
+				Log.Error("no atom");
+				return null;
+			}
+
+			var cs = atom_.GetComponentInChildren<DAZCharacterSelector>();
+			if (cs == null)
+			{
+				Log.Error("no DAZCharacterSelector");
+				return null;
+			}
+
+			if (cs.morphsControlUI?.transform == null)
+			{
+				Log.Error("no morphsControlUI");
+				return null;
+			}
+
+			return cs.morphsControlUI.transform.parent;
+		}
+
 		private void CreateUI()
 		{
-			root_ = new VUI.Root(AlternateUI.Instance.UITransform.GetComponentInChildren<MVRScriptUI>());
+			var rt = GetRootTransform();
+			if (rt == null)
+			{
+				Log.Error("putting the ui in the script custom ui");
+				root_ = new VUI.Root(s_);
+			}
+			else
+			{
+				root_ = new VUI.Root(new VUI.TransformUIRootSupport(rt));
+			}
+
 			controls_ = new Controls(this);
 			cats_ = new Categories();
 			cats_.Update(all_);
 			controls_?.UpdateCategories();
 
 			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
-
-
-
-			//var t = new VUI.TreeView();
-			//
-			//for (int i=0; i<25; ++i)
-			//	t.RootItem.Add(new VUI.TreeView.Item($"{i}"));
-			//
-			//for (int i=0; i<10; ++i)
-			//	t.RootItem.Children[0].Add(new VUI.TreeView.Item($"0-{i}"));
-			//
-			//for (int i = 0; i < 20; ++i)
-			//	t.RootItem.Children[2].Add(new VUI.TreeView.Item($"2-{i}"));
-			//
-			//
-			//root_.ContentPanel.Add(t, VUI.BorderLayout.Center);
-
-
-
-			//var cb = new VUI.ComboBox<string>();
-			//for (int i=0; i<50; ++i)
-			//	cb.AddItem($"{i}");
-			//
-			//root_.ContentPanel.Add(cb, VUI.BorderLayout.Top);
-			//VUI.TimerManager.Instance.CreateTimer(
-			//	1, () => { VUI.Utilities.DumpComponentsAndDown(cb.MainObject); });
-
-
-
-
 			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
 			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
@@ -543,6 +549,12 @@ namespace AUI.MorphUI
 			}
 
 			PageChanged();
+		}
+
+		public void OnPluginState(bool b)
+		{
+			if (root_ != null)
+				root_.Visible = b;
 		}
 
 		private void Refilter()
