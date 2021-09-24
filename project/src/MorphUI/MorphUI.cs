@@ -364,6 +364,11 @@ namespace AUI.MorphUI
 			filter_.Sort = Filter.SortName;
 		}
 
+		public Atom Atom
+		{
+			get { return atom_; }
+		}
+
 		public VUI.Root Root
 		{
 			get { return root_; }

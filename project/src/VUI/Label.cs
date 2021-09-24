@@ -226,12 +226,10 @@ namespace VUI
 							CreateEllipsis();
 
 						var r = Rectangle.FromSize(
-							RelativeBounds.Width - ellipsisSize.Width,
-							RelativeBounds.Top,
+							RelativeBounds.Width - ellipsisSize.Width, 0,
 							ellipsisSize.Width, ellipsisSize.Height);
 
 						ellipsis_.gameObject.SetActive(true);
-
 						Utilities.SetRectTransform(ellipsis_, r);
 
 						if (autoTooltip_)
