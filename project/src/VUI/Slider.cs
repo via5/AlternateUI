@@ -18,6 +18,7 @@ namespace VUI
 		private T tickValue_ = default(T);
 		private T pageValue_ = default(T);
 		private bool hor_ = true;
+		private bool ignore_ = false;
 
 		public BasicSlider(T tickValue, T pageValue, ValueCallback changed = null)
 		{
@@ -64,8 +65,11 @@ namespace VUI
 
 				if (slider_ != null)
 				{
-					SetValue(value);
-					ValueChanged?.Invoke(value);
+					if (SetValue(value))
+					{
+						if (!ignore_)
+							ValueChanged?.Invoke(value);
+					}
 				}
 			}
 		}
@@ -155,7 +159,9 @@ namespace VUI
 			slider_.rangeAdjustEnabled = false;
 			SetDirection();
 
+			ignore_ = true;
 			Set(value_, min_, max_);
+			ignore_ = false;
 
 			slider_.slider.onValueChanged.AddListener(OnChanged);
 
@@ -187,7 +193,7 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			return new Size(100, 40);
+			return new Size(200, 40);
 		}
 
 		protected override void DoPolish()
@@ -214,7 +220,7 @@ namespace VUI
 		}
 
 		protected abstract T GetValue();
-		protected abstract void SetValue(T v);
+		protected abstract bool SetValue(T v);
 
 		protected abstract T GetMinimum();
 		protected abstract void SetMinimum(T v);
@@ -263,9 +269,15 @@ namespace VUI
 			return slider_.slider.value;
 		}
 
-		protected override void SetValue(float v)
+		protected override bool SetValue(float v)
 		{
-			slider_.slider.value = v;
+			if (slider_.slider.value != v)
+			{
+				slider_.slider.value = v;
+				return true;
+			}
+
+			return false;
 		}
 
 		protected override float GetMinimum()
@@ -325,9 +337,15 @@ namespace VUI
 			return (int)slider_.slider.value;
 		}
 
-		protected override void SetValue(int v)
+		protected override bool SetValue(int v)
 		{
-			slider_.slider.value = v;
+			if (slider_.slider.value != v)
+			{
+				slider_.slider.value = v;
+				return true;
+			}
+
+			return false;
 		}
 
 		protected override int GetMinimum()
@@ -475,9 +493,14 @@ namespace VUI
 
 			T f = FromString(s);
 
-			using (new ScopedFlag((b) => changingText_ = b))
+			try
 			{
+				changingText_ = true;
 				slider_.Value = f;
+			}
+			finally
+			{
+				changingText_ = false;
 			}
 		}
 

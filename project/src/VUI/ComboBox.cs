@@ -91,7 +91,7 @@ namespace VUI
 					Root.TextLength(Font, FontSize, i.Text) + 50);
 			}
 
-			return new Size(Math.Max(175, widest), 40);
+			return new Size(Math.Max(200, widest), 40);
 		}
 
 		public override void Create()
@@ -142,11 +142,15 @@ namespace VUI
 			var h = Popup.popup.topButton.gameObject.AddComponent<MouseHandler>();
 			h.Clicked += (data) =>
 			{
-				Utilities.Handler(() =>
+				try
 				{
 					if (Popup.popup.visible)
 						OnOpen();
-				});
+				}
+				catch (Exception e)
+				{
+					Glue.LogErrorST(e.ToString());
+				}
 			};
 
 			arrowObject_ = new GameObject("ComboBoxArrow");

@@ -41,6 +41,11 @@ namespace VUI
 		{
 			get { return new Size(0, 5); }
 		}
+
+		public float ToggleLabelSpacing
+		{
+			get { return 5; }
+		}
 	}
 
 
@@ -66,7 +71,7 @@ namespace VUI
 		{
 			get
 			{
-				return UnityEngine.Font.CreateDynamicFontFromOSFont("Consolas", 20);
+				return UnityEngine.Font.CreateDynamicFontFromOSFont("Consolas", 24);
 			}
 		}
 
@@ -734,6 +739,52 @@ namespace VUI
 
 		private static void Adjust(UIDynamicToggle e, Info info)
 		{
+			var bg = e.transform.Find("Background");
+			var bgRT = bg.GetComponent<RectTransform>();
+			var cm = bg.Find("Checkmark");
+			var cmRT = cm.GetComponent<RectTransform>();
+			var label = e.transform.Find("Label");
+			var labelRT = label.GetComponent<RectTransform>();
+
+			// size of the toggle
+			{
+				var rt = bgRT;
+
+				rt.offsetMin = new Vector2(0, rt.offsetMin.y - 8);
+				rt.offsetMax = new Vector2(rt.offsetMax.x - 16, 0);
+				rt.anchorMin = new Vector2(0, 1);
+				rt.anchorMax = new Vector2(0, 1);
+				rt.anchoredPosition = new Vector2(
+					rt.offsetMin.x + (rt.offsetMax.x - rt.offsetMin.x) / 2,
+					rt.offsetMin.y + (rt.offsetMax.y - rt.offsetMin.y) / 2);
+			}
+
+			// size of the checkmark within the toggle
+			{
+				var rt = cmRT;
+
+				rt.offsetMin = new Vector2(0, rt.offsetMin.y - 10);
+				rt.offsetMax = new Vector2(rt.offsetMax.x + 10, 0);
+				rt.anchorMin = new Vector2(0, 1);
+				rt.anchorMax = new Vector2(0, 1);
+				rt.anchoredPosition = new Vector2(
+					rt.offsetMin.x + (rt.offsetMax.x - rt.offsetMin.x) / 2,
+					rt.offsetMin.y + (rt.offsetMax.y - rt.offsetMin.y) / 2);
+			}
+
+			// spacing between toggle and label
+			{
+				var rt = labelRT;
+
+				rt.offsetMin = new Vector2(
+					bgRT.rect.width + Metrics.ToggleLabelSpacing,
+					rt.offsetMin.y);
+
+				rt.anchoredPosition = new Vector2(
+					rt.offsetMin.x + (rt.offsetMax.x - rt.offsetMin.x) / 2,
+					rt.offsetMin.y + (rt.offsetMax.y - rt.offsetMin.y) / 2);
+			}
+
 			Adjust(e.labelText, info);
 		}
 
@@ -856,7 +907,10 @@ namespace VUI
 
 		private static void Polish(Text e, Info info)
 		{
-			e.color = info.TextColor;
+			if (info.Enabled)
+				e.color = info.TextColor;
+			else
+				e.color = Theme.DisabledTextColor;
 
 			if (info.SetFont)
 			{

@@ -100,47 +100,6 @@ namespace VUI
 		}
 	}
 
-	public class IgnoreFlag
-	{
-		private bool ignore_ = false;
-
-		public static implicit operator bool(IgnoreFlag f)
-		{
-			return f.ignore_;
-		}
-
-		public void Do(Action a)
-		{
-			try
-			{
-				ignore_ = true;
-				a();
-			}
-			finally
-			{
-				ignore_ = false;
-			}
-		}
-	}
-
-	public class ScopedFlag : IDisposable
-	{
-		private readonly Action<bool> a_;
-		private readonly bool start_;
-
-		public ScopedFlag(Action<bool> a, bool start = true)
-		{
-			a_ = a;
-			start_ = start;
-
-			a_(start_);
-		}
-
-		public void Dispose()
-		{
-			a_(!start_);
-		}
-	}
 
 	public static class HashHelper
 	{
@@ -188,30 +147,27 @@ namespace VUI
 		public const string LockedSymbol = "U";//"\U0001F512";
 		public const string UnlockedSymbol = "L";//"\U0001F513";
 
-		public static void Handler(Action a)
+		public static float Clamp(float val, float min, float max)
 		{
-			try
-			{
-				a();
-			}
-			catch (Exception e)
-			{
-				Glue.LogError(e.ToString());
-			}
-		}
-
-		public static T Clamp<T>(T val, T min, T max)
-			where T : IComparable<T>
-		{
-			if (val.CompareTo(min) < 0)
+			if (val < min)
 				return min;
-			else if (val.CompareTo(max) > 0)
+			else if (val > max)
 				return max;
 			else
 				return val;
 		}
 
-		public static void TimeThis(string what, Action a)
+		public static int Clamp(int val, int min, int max)
+		{
+			if (val < min)
+				return min;
+			else if (val > max)
+				return max;
+			else
+				return val;
+		}
+
+		public static void DebugTimeThis(string what, Action a)
 		{
 			var start = Time.realtimeSinceStartup;
 			a();
@@ -334,6 +290,19 @@ namespace VUI
 			return null;
 		}
 
+		public static string ToString(RectTransform rt, int indent = 0)
+		{
+			var i = new string(' ', indent);
+
+			return
+				i + $"rect: {rt.rect}\n" +
+				i + $"offsetMin: {rt.offsetMin}\n" +
+				i + $"offsetMax: {rt.offsetMax}\n" +
+				i + $"anchorMin: {rt.anchorMin}\n" +
+				i + $"anchorMax: {rt.anchorMax}\n" +
+				i + $"anchorPos: {rt.anchoredPosition}\n";
+		}
+
 		public static void DumpComponents(GameObject o, int indent = 0)
 		{
 			foreach (var c in o.GetComponents(typeof(Component)))
@@ -356,14 +325,7 @@ namespace VUI
 
 			var rt = o.GetComponent<RectTransform>();
 			if (rt != null)
-			{
-				Glue.LogError("  rect: " + rt.rect.ToString());
-				Glue.LogError("  offsetMin: " + rt.offsetMin.ToString());
-				Glue.LogError("  offsetMax: " + rt.offsetMax.ToString());
-				Glue.LogError("  anchorMin: " + rt.anchorMin.ToString());
-				Glue.LogError("  anchorMax: " + rt.anchorMax.ToString());
-				Glue.LogError("  anchorPos: " + rt.anchoredPosition.ToString());
-			}
+				Glue.LogError(ToString(rt, 2));
 
 			DumpComponents(o);
 			Glue.LogError("---");
@@ -387,14 +349,7 @@ namespace VUI
 			{
 				var rt = o.GetComponent<RectTransform>();
 				if (rt != null)
-				{
-					Glue.LogError(new string(' ', indent * 2) + "->rect: " + rt.rect.ToString());
-					Glue.LogError(new string(' ', indent * 2) + "->offsetMin: " + rt.offsetMin.ToString());
-					Glue.LogError(new string(' ', indent * 2) + "->offsetMax: " + rt.offsetMax.ToString());
-					Glue.LogError(new string(' ', indent * 2) + "->anchorMin: " + rt.anchorMin.ToString());
-					Glue.LogError(new string(' ', indent * 2) + "->anchorMax: " + rt.anchorMax.ToString());
-					Glue.LogError(new string(' ', indent * 2) + "->anchorPos: " + rt.anchoredPosition.ToString());
-				}
+					Glue.LogError(ToString(rt, indent * 2));
 			}
 
 			DumpComponents(o, indent);

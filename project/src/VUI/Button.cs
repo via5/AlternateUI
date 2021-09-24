@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace VUI
 {
@@ -110,6 +111,14 @@ namespace VUI
 			}
 		}
 
+		public void Click()
+		{
+			if (button_ != null)
+			{
+				button_.button.onClick?.Invoke();
+			}
+		}
+
 		protected override GameObject CreateGameObject()
 		{
 			return UnityEngine.Object.Instantiate(
@@ -180,12 +189,16 @@ namespace VUI
 
 		private void OnClicked()
 		{
-			Utilities.Handler(() =>
+			try
 			{
 				GetRoot().SetFocus(this);
 				Clicked?.Invoke();
 				button_.button.OnDeselect(new UnityEngine.EventSystems.BaseEventData(null));
-			});
+			}
+			catch (Exception e)
+			{
+				Glue.LogErrorST(e.ToString());
+			}
 		}
 	}
 

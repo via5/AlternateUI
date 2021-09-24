@@ -103,10 +103,16 @@
 		{
 			var c = item as CategoryItem;
 
-			if (c == null)
+			if (c?.Node == null)
+			{
 				ui_.Filter.Category = null;
+				button_.Text = "Categories";
+			}
 			else
+			{
 				ui_.Filter.Category = c.Node;
+				button_.Text = c.Node.Name;
+			}
 
 			panel_.Visible = false;
 		}
