@@ -204,6 +204,8 @@
 			ui_ = ui;
 			cats_ = new CategoriesWidget(ui);
 
+			Layout = new VUI.VerticalFlow(5);
+
 			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(5));
 			pagePanel.Add(new VUI.Label("Page: "));
 			pagePanel.Add(page_);
@@ -217,10 +219,33 @@
 			var catsPanel = new VUI.Panel(new VUI.HorizontalFlow(5));
 			catsPanel.Add(cats_.Button);
 
-			Layout = new VUI.BorderLayout(5);
-			Add(pagePanel, VUI.BorderLayout.Left);
-			Add(searchPanel, VUI.BorderLayout.Center);
-			Add(catsPanel, VUI.BorderLayout.Right);
+			var row = new VUI.Panel(new VUI.BorderLayout(5));
+			row.Add(pagePanel, VUI.BorderLayout.Left);
+			row.Add(searchPanel, VUI.BorderLayout.Center);
+			row.Add(catsPanel, VUI.BorderLayout.Right);
+			Add(row);
+
+			row = new VUI.Panel(new VUI.HorizontalFlow(5));
+
+			row.Add(new VUI.CheckBox(
+				"Favorites",
+				(b) => ui_.Filter.OnlyFavorites = b,
+				ui_.Filter.OnlyFavorites));
+
+			row.Add(new VUI.CheckBox(
+				"Latest",
+				(b) => ui_.Filter.OnlyLatest = b,
+				ui_.Filter.OnlyLatest));
+
+			row.Add(new VUI.CheckBox(
+				"Active",
+				(b) => ui_.Filter.OnlyActive = b,
+				ui_.Filter.OnlyActive));
+
+			Add(row);
+
+			Borders = new VUI.Insets(1);
+			Padding = new VUI.Insets(5);
 
 			page_.ValueChanged += OnPageChanged;
 			search_.Changed += OnSearchChanged;

@@ -56,7 +56,9 @@ namespace AUI.MorphUI
 		private const int DirtyAll = 0xff;
 
 		private bool alwaysShowModified_ = true;
+		private bool onlyFavorites_ = false;
 		private bool onlyLatest_ = true;
+		private bool onlyActive_ = false;
 		private int dupes_ = AllowDupes;
 		private string search_ = "";
 		private int sort_ = NoSort;
@@ -94,10 +96,22 @@ namespace AUI.MorphUI
 			set { alwaysShowModified_ = value; ParamsChanged(); }
 		}
 
+		public bool OnlyFavorites
+		{
+			get { return onlyFavorites_; }
+			set { onlyFavorites_ = value; ParamsChanged(); }
+		}
+
 		public bool OnlyLatest
 		{
 			get { return onlyLatest_; }
 			set { onlyLatest_ = value; ParamsChanged(); }
+		}
+
+		public bool OnlyActive
+		{
+			get { return onlyActive_; }
+			set { onlyActive_ = value; ParamsChanged(); }
 		}
 
 		public int Dupes
@@ -307,15 +321,21 @@ namespace AUI.MorphUI
 
 		private bool ShouldShowForParams(DAZMorph m)
 		{
-			if (alwaysShowModified_)
-			{
-				if (m.morphValue != m.startValue)
-					return true;
-			}
-
 			if (onlyLatest_)
 			{
 				if (!m.isLatestVersion)
+					return false;
+			}
+
+			if (onlyActive_)
+			{
+				if (m.morphValue == m.startValue)
+					return false;
+			}
+
+			if (onlyFavorites_)
+			{
+				if (!m.favorite)
 					return false;
 			}
 
@@ -326,6 +346,12 @@ namespace AUI.MorphUI
 		{
 			if (dupes_ == AllowDupes)
 				return true;
+
+			if (alwaysShowModified_)
+			{
+				if (m.morphValue != m.startValue)
+					return true;
+			}
 
 			var path = GetPath(m);
 			var filename = GetFilename(m);
