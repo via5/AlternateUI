@@ -76,7 +76,7 @@ namespace AUI
 				inited_ = true;
 			}
 
-			mui_.Update();
+			mui_.Update(Time.deltaTime);
 		}
 
 		public void OnEnable()

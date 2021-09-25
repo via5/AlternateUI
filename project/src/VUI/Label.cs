@@ -289,10 +289,11 @@ namespace VUI
 
 		protected override void DoSetRender(bool b)
 		{
-			base.DoSetRender(b);
+			if (textObject_ != null)
+				textObject_.gameObject.SetActive(b);
 
 			if (ellipsis_ != null)
-				ellipsis_.GetComponent<CanvasRenderer>().cull = !b;
+				ellipsis_.gameObject.SetActive(b);
 		}
 
 		private bool TextTooLong()

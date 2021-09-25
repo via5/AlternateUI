@@ -339,13 +339,14 @@ namespace AUI.MorphUI
 	}
 
 
-	class MorphUI
+	class GenderMorphUI
 	{
+		private float UpdateInterval = 0.025f;
 		private const int Columns = 3;
 		private const int Rows = 7;
 
-		private MVRScript s_;
 		private Atom atom_ = null;
+		private GenerateDAZMorphsControlUI mui_ = null;
 		private VUI.Root root_ = null;
 		private Controls controls_;
 		private VUI.Panel grid_ = new VUI.Panel();
@@ -355,17 +356,13 @@ namespace AUI.MorphUI
 		private Filter filter_ = new Filter();
 		private Categories cats_;
 		private int page_ = 0;
+		private float createElapsed_ = 1000;
+		private bool triedOnce_ = false;
+		private float updateElapsed_ = 0;
 
-		public MorphUI(MVRScript s)
+		public GenderMorphUI()
 		{
-			s_ = s;
-			//filter_.Dupes = Filter.SamePathDupes | Filter.SimilarDupes;
 			filter_.Sort = Filter.SortName;
-		}
-
-		public Atom Atom
-		{
-			get { return atom_; }
 		}
 
 		public VUI.Root Root
@@ -378,14 +375,15 @@ namespace AUI.MorphUI
 			get { return filter_; }
 		}
 
-		public void SetAtom(Atom a)
+		public void Set(Atom a, GenerateDAZMorphsControlUI mui)
 		{
 			atom_ = a;
+			mui_ = mui;
 
 			if (atom_ == null)
 				all_ = new List<DAZMorph>();
 			else
-				all_ = GetMUI(atom_).GetMorphs();
+				all_ = mui_.GetMorphs();
 
 			filter_.Set(all_);
 			Refilter();
@@ -393,25 +391,43 @@ namespace AUI.MorphUI
 			controls_?.UpdateCategories();
 		}
 
-		public void Update()
+		public void Update(float s)
 		{
 			if (root_ == null)
 			{
-				if (AlternateUI.Instance.UITransform == null)
-					return;
+				createElapsed_ += s;
+				if (createElapsed_ > 1)
+				{
+					createElapsed_ = 0;
 
-				CreateUI();
+					if (!CreateUI())
+					{
+						Log.Error("will keep retrying");
+						triedOnce_ = true;
+					}
+				}
 			}
+
+			updateElapsed_ += s;
 
 			if (root_.Visible)
 			{
 				if (filter_.IsDirty)
 					Refilter();
 
-				for (int i = 0; i < panels_.Count; ++i)
-					panels_[i].Update();
+				if (updateElapsed_ >= UpdateInterval)
+				{
+					updateElapsed_ = 0;
 
-				root_.Update();
+					for (int i = 0; i < panels_.Count; ++i)
+						panels_[i].Update();
+
+					root_.Update();
+				}
+			}
+			else
+			{
+				updateElapsed_ = 1000;
 			}
 		}
 
@@ -487,42 +503,18 @@ namespace AUI.MorphUI
 			}
 		}
 
-		private UnityEngine.Transform GetRootTransform()
+		private bool CreateUI()
 		{
-			if (atom_ == null)
-			{
-				Log.Error("no atom");
-				return null;
-			}
-
-			var cs = atom_.GetComponentInChildren<DAZCharacterSelector>();
-			if (cs == null)
-			{
-				Log.Error("no DAZCharacterSelector");
-				return null;
-			}
-
-			if (cs.morphsControlUI?.transform == null)
-			{
-				Log.Error("no morphsControlUI");
-				return null;
-			}
-
-			return cs.morphsControlUI.transform.parent;
-		}
-
-		private void CreateUI()
-		{
-			var rt = GetRootTransform();
+			var rt = mui_.transform.parent;
 			if (rt == null)
 			{
-				Log.Error("putting the ui in the script custom ui");
-				root_ = new VUI.Root(s_);
+				if (!triedOnce_)
+					Log.Error("no morph ui");
+
+				return false;
 			}
-			else
-			{
-				root_ = new VUI.Root(new VUI.TransformUIRootSupport(rt));
-			}
+
+			root_ = new VUI.Root(new VUI.TransformUIRootSupport(rt));
 
 			controls_ = new Controls(this);
 			cats_ = new Categories();
@@ -546,6 +538,8 @@ namespace AUI.MorphUI
 			}
 
 			PageChanged();
+
+			return true;
 		}
 
 		public void OnPluginState(bool b)
@@ -557,20 +551,82 @@ namespace AUI.MorphUI
 		private void Refilter()
 		{
 			filtered_ = filter_.Process();
-			//Log.Verbose($"filtered {all_.Count - filtered_.Count} morphs");
 			PageChanged();
 		}
+	}
 
-		private GenerateDAZMorphsControlUI GetMUI(Atom atom)
+
+	class MorphUI
+	{
+		private MVRScript s_;
+		private Atom atom_ = null;
+		private GenderMorphUI male_ = new GenderMorphUI();
+		private GenderMorphUI female_ = new GenderMorphUI();
+
+		public MorphUI(MVRScript s)
 		{
-			if (atom == null)
-				return null;
+			s_ = s;
+		}
 
-			var cs = atom.GetComponentInChildren<DAZCharacterSelector>();
+		public Atom Atom
+		{
+			get { return atom_; }
+		}
+
+		public void SetAtom(Atom a)
+		{
+			atom_ = a;
+			male_.Set(a, GetMUI(true));
+			female_.Set(a, GetMUI(false));
+		}
+
+		public void Update(float s)
+		{
+			male_.Update(s);
+			female_.Update(s);
+		}
+
+		private GenerateDAZMorphsControlUI GetMUI(bool male)
+		{
+			if (atom_ == null)
+			{
+				Log.Error("no atom");
+				return null;
+			}
+
+			var cs = atom_.GetComponentInChildren<DAZCharacterSelector>();
 			if (cs == null)
+			{
+				Log.Error("no DAZCharacterSelector");
 				return null;
+			}
 
-			return cs.morphsControlUI;
+			if (male)
+			{
+				if (cs.morphsControlMaleUI == null)
+				{
+					Log.Error("no morphsControlMaleUI");
+					return null;
+				}
+
+				return cs.morphsControlMaleUI;
+			}
+			else
+			{
+				if (cs.morphsControlFemaleUI?.transform == null)
+				{
+					Log.Error("no morphsControlFemaleUI");
+					return null;
+				}
+
+				return cs.morphsControlFemaleUI;
+			}
+		}
+
+		public void OnPluginState(bool b)
+		{
+			male_.OnPluginState(b);
+			female_.OnPluginState(b);
 		}
 	}
 }

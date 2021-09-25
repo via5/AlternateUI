@@ -45,7 +45,7 @@
 
 	class CategoriesWidget
 	{
-		private MorphUI ui_;
+		private GenderMorphUI ui_;
 		private VUI.Button button_;
 		private VUI.Panel panel_;
 		private VUI.TreeView tree_;
@@ -76,7 +76,7 @@
 		}
 
 
-		public CategoriesWidget(MorphUI ui)
+		public CategoriesWidget(GenderMorphUI ui)
 		{
 			ui_ = ui;
 
@@ -191,7 +191,7 @@
 
 	class Controls : VUI.Panel
 	{
-		private readonly MorphUI ui_;
+		private readonly GenderMorphUI ui_;
 		private bool ignore_ = false;
 
 		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
@@ -199,7 +199,7 @@
 		private SearchBox search_ = new SearchBox("Search");
 		private CategoriesWidget cats_;
 
-		public Controls(MorphUI ui)
+		public Controls(GenderMorphUI ui)
 		{
 			ui_ = ui;
 			cats_ = new CategoriesWidget(ui);
