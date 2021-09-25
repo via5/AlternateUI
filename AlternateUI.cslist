@@ -1,5 +1,6 @@
 project\src\Main.cs
 project\src\Utilities.cs
+project\src\Version.cs
 project\src\MorphUI\Controls.cs
 project\src\MorphUI\Filter.cs
 project\src\MorphUI\MorphPanel.cs
