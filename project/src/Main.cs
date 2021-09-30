@@ -62,7 +62,7 @@ namespace AUI
 		{
 			if (!inited_)
 			{
-				VUI.Glue.Set(
+				VUI.Root.Init(
 					() => manager,
 					(s, ps) => string.Format(s, ps),
 					(s) => Log.Verbose(s),
