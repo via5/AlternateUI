@@ -608,6 +608,7 @@ namespace VUI
 
 		public delegate void ItemCallback(Item i);
 		public event ItemCallback SelectionChanged;
+		public event ItemCallback ItemClicked;
 
 		private const int InternalPadding = 5;
 		private const int ItemHeight = 35;
@@ -962,7 +963,10 @@ namespace VUI
 			var n = NodeAt(e.Pointer);
 
 			if (n?.Item != null)
+			{
 				n.Item.Selected = true;
+				ItemClicked?.Invoke(n.Item);
+			}
 
 			return false;
 		}

@@ -106,7 +106,7 @@
 
 			ui_.Root.FloatingPanel.Add(panel_);
 
-			tree_.SelectionChanged += OnSelection;
+			tree_.ItemClicked += OnSelection;
 		}
 
 		public VUI.Button Button

@@ -325,9 +325,9 @@ namespace VUI
 				string s = new string(' ', indent * 2) + c.ToString();
 
 				if (c is Image)
-				{
 					s += $" {(c as Image).color}";
-				}
+				else if (c is Text)
+					s += $" '{(c as Text).text}'";
 
 				Glue.LogError(s);
 			}

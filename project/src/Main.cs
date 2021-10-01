@@ -30,7 +30,7 @@ namespace AUI
 		{
 			return new IAlternateUI[]
 			{
-				//new MorphUI.MorphUI(),
+				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI()
 			};
 		}
