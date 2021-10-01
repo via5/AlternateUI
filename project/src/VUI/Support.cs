@@ -452,7 +452,7 @@ namespace VUI
 
 		public override void SetActive(bool b)
 		{
-			// todo
+			fullscreenPanel_?.SetActive(b);
 		}
 
 		public void Attach(int hand)
