@@ -484,6 +484,19 @@ namespace VUI
 			return rr;
 		}
 
+		// vam will sometime restore the original background color, especially
+		// if part of the ui is loaded on demand, like the morphs panel
+		//
+		public static void CheckRoot(Transform t, RootRestore rr)
+		{
+			var bg = t.GetComponent<Image>();
+			if (bg != null)
+			{
+				if (bg.color != theme_.BackgroundColor)
+					bg.color = theme_.BackgroundColor;
+			}
+		}
+
 		public static void RevertRoot(Transform t, RootRestore rr)
 		{
 			if (t.GetComponent<MVRScriptUI>() != null)

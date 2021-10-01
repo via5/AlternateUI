@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace AUI
@@ -33,28 +32,7 @@ namespace AUI
 			}
 			catch (Exception e)
 			{
-				Log.Error(e.ToString());
-
-				var now = Time.realtimeSinceStartup;
-
-				if (now - lastErrorTime_ < 1)
-				{
-					++errorCount_;
-					if (errorCount_ > MaxErrors)
-					{
-						Log.Error(
-							$"more than {MaxErrors} errors in the last " +
-							"second, disabling plugin");
-
-						DisablePlugin();
-					}
-				}
-				else
-				{
-					errorCount_ = 0;
-				}
-
-				lastErrorTime_ = now;
+				OnException(e);
 			}
 		}
 
@@ -70,9 +48,9 @@ namespace AUI
 					(s) => Log.Warning(s),
 					(s) => Log.Error(s));
 
-				mui_ = new MorphUI.MorphUI(this);
+				mui_ = new MorphUI.MorphUI();
+				mui_.OnPluginState(true);
 
-				mui_.SetAtom(SuperController.singleton.GetAtomByUid("Person"));
 				inited_ = true;
 			}
 
@@ -81,17 +59,57 @@ namespace AUI
 
 		public void OnEnable()
 		{
-			mui_.OnPluginState(true);
+			try
+			{
+				mui_?.OnPluginState(true);
+			}
+			catch (Exception e)
+			{
+				OnException(e);
+			}
 		}
 
 		public void OnDisable()
 		{
-			mui_.OnPluginState(false);
+			try
+			{
+				mui_?.OnPluginState(false);
+			}
+			catch (Exception e)
+			{
+				OnException(e);
+			}
 		}
 
 		public void DisablePlugin()
 		{
 			enabledJSON.val = false;
+		}
+
+		private void OnException(Exception e)
+		{
+			Log.Error(e.ToString());
+
+			var now = Time.realtimeSinceStartup;
+
+			if (now - lastErrorTime_ < 1)
+			{
+				++errorCount_;
+				if (errorCount_ > MaxErrors)
+				{
+					Log.Error(
+						$"more than {MaxErrors} errors in the last " +
+						"second, disabling plugin");
+
+					DisablePlugin();
+				}
+			}
+			else
+			{
+				errorCount_ = 0;
+			}
+
+			lastErrorTime_ = now;
 		}
 
 		static void Main()

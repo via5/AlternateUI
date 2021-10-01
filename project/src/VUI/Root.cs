@@ -387,6 +387,8 @@ namespace VUI
 		{
 			try
 			{
+				support_?.Update(Time.deltaTime);
+
 				if (ownTm_ != null)
 				{
 					ownTm_.TickTimers(Time.deltaTime);

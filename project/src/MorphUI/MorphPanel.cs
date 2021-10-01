@@ -32,10 +32,10 @@ namespace AUI.MorphUI
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(
 				3, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
-			buttons.Add(reset_);
-			buttons.Add(def_);
-			buttons.Add(addRange_);
 			buttons.Add(resetRange_);
+			buttons.Add(def_);
+			buttons.Add(reset_);
+			buttons.Add(addRange_);
 			buttons.Add(fav_);
 
 			reset_.FontSize = buttonsFontSize;

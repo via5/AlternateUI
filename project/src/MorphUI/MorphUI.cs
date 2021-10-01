@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace AUI.MorphUI
@@ -421,9 +422,9 @@ namespace AUI.MorphUI
 
 					for (int i = 0; i < panels_.Count; ++i)
 						panels_[i].Update();
-
-					root_.Update();
 				}
+
+				root_.Update();
 			}
 			else
 			{
@@ -556,28 +557,25 @@ namespace AUI.MorphUI
 	}
 
 
-	class MorphUI
+	class BadAtom : Exception { }
+
+
+	class PersonMorphUI
 	{
-		private MVRScript s_;
 		private Atom atom_ = null;
 		private GenderMorphUI male_ = new GenderMorphUI();
 		private GenderMorphUI female_ = new GenderMorphUI();
 
-		public MorphUI(MVRScript s)
+		public PersonMorphUI(Atom a)
 		{
-			s_ = s;
+			atom_ = a;
+			male_.Set(a, GetMUI(true));
+			female_.Set(a, GetMUI(false));
 		}
 
 		public Atom Atom
 		{
 			get { return atom_; }
-		}
-
-		public void SetAtom(Atom a)
-		{
-			atom_ = a;
-			male_.Set(a, GetMUI(true));
-			female_.Set(a, GetMUI(false));
 		}
 
 		public void Update(float s)
@@ -591,14 +589,14 @@ namespace AUI.MorphUI
 			if (atom_ == null)
 			{
 				Log.Error("no atom");
-				return null;
+				throw new BadAtom();
 			}
 
 			var cs = atom_.GetComponentInChildren<DAZCharacterSelector>();
 			if (cs == null)
 			{
 				Log.Error("no DAZCharacterSelector");
-				return null;
+				throw new BadAtom();
 			}
 
 			if (male)
@@ -606,7 +604,7 @@ namespace AUI.MorphUI
 				if (cs.morphsControlMaleUI == null)
 				{
 					Log.Error("no morphsControlMaleUI");
-					return null;
+					throw new BadAtom();
 				}
 
 				return cs.morphsControlMaleUI;
@@ -616,7 +614,7 @@ namespace AUI.MorphUI
 				if (cs.morphsControlFemaleUI?.transform == null)
 				{
 					Log.Error("no morphsControlFemaleUI");
-					return null;
+					throw new BadAtom();
 				}
 
 				return cs.morphsControlFemaleUI;
@@ -627,6 +625,94 @@ namespace AUI.MorphUI
 		{
 			male_.OnPluginState(b);
 			female_.OnPluginState(b);
+		}
+	}
+
+
+	class MorphUI
+	{
+		private SuperController sc_;
+		private readonly List<PersonMorphUI> uis_ = new List<PersonMorphUI>();
+
+		public MorphUI()
+		{
+			sc_ = SuperController.singleton;
+
+			foreach (var a in sc_.GetAtoms())
+			{
+				if (a.type == "Person")
+					Add(a);
+			}
+		}
+
+		public void Update(float s)
+		{
+			for (int i = 0; i < uis_.Count; ++i)
+				uis_[i].Update(s);
+		}
+
+		public void OnPluginState(bool b)
+		{
+			if (b)
+			{
+				sc_.onAtomAddedHandlers += Add;
+				sc_.onAtomRemovedHandlers += Remove;
+			}
+			else
+			{
+				sc_.onAtomAddedHandlers -= Add;
+				sc_.onAtomRemovedHandlers -= Remove;
+			}
+
+			for (int i = 0; i < uis_.Count; ++i)
+				uis_[i].OnPluginState(b);
+		}
+
+		private void Add(Atom a)
+		{
+			if (a.type != "Person")
+				return;
+
+			var i = IndexOf(a);
+
+			if (i == -1)
+			{
+				try
+				{
+					Log.Verbose($"morphui: new atom {a.uid}");
+					uis_.Add(new PersonMorphUI(a));
+				}
+				catch (BadAtom)
+				{
+					Log.Error($"morphui: bad atom {a.uid}");
+				}
+			}
+			else
+			{
+				Log.Warning($"morphui: new atom {a.uid} already in list");
+			}
+		}
+
+		private void Remove(Atom a)
+		{
+			var i = IndexOf(a);
+			if (i == -1)
+				return;
+
+			Log.Verbose($"morphui: atom {a.uid} removed");
+			uis_[i].OnPluginState(false);
+			uis_.RemoveAt(i);
+		}
+
+		private int IndexOf(Atom a)
+		{
+			for (int i = 0; i < uis_.Count; ++i)
+			{
+				if (uis_[i].Atom == a)
+					return i;
+			}
+
+			return -1;
 		}
 	}
 }
