@@ -589,16 +589,9 @@ namespace VUI
 		protected override void ToString(float v, StringBuilder sb)
 		{
 			if (WholeNumbers)
-			{
 				sb.Append((int)Math.Round(v));
-			}
 			else
-			{
-				if (v < 0)
-					sb.Append("-");
-
 				sb.Concat(v, decimals_);
-			}
 		}
 	}
 

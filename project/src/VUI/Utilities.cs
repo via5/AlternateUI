@@ -918,6 +918,12 @@ namespace VUI
 			{
 				int int_part = (int)float_val;
 
+				if (float_val < 0)
+				{
+					string_builder.Append('-');
+					int_part = -int_part;
+				}
+
 				// First part is easy, just cast to an integer
 				string_builder.Concat(int_part, pad_amount, pad_char, 10);
 
@@ -931,15 +937,10 @@ namespace VUI
 				do
 				{
 					remainder *= 10;
+					string_builder.Concat((uint)remainder % 10);
 					decimal_places--;
 				}
 				while (decimal_places > 0);
-
-				// Round up. It's guaranteed to be a positive number, so no extra work required here.
-				remainder += 0.5f;
-
-				// All done, print that as an int!
-				string_builder.Concat((uint)remainder, 0, '0', 10);
 			}
 			return string_builder;
 		}
