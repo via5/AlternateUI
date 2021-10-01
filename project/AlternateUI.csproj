@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Main.cs" />
+    <Compile Include="src\MorphUI\Categories.cs" />
     <Compile Include="src\MorphUI\Controls.cs" />
     <Compile Include="src\MorphUI\Filter.cs" />
     <Compile Include="src\MorphUI\MorphPanel.cs" />

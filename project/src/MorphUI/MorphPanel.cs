@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AUI.MorphUI
+﻿namespace AUI.MorphUI
 {
 	class MorphPanel : VUI.Panel
 	{
