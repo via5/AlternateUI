@@ -3,11 +3,18 @@ using UnityEngine;
 
 namespace AUI
 {
+	interface IAlternateUI
+	{
+		void Update(float s);
+		void OnPluginState(bool b);
+	}
+
+
 	class AlternateUI : MVRScript
 	{
 		static private AlternateUI instance_ = null;
 
-		private MorphUI.MorphUI mui_ = null;
+		private IAlternateUI[] uis_ = null;
 		private bool inited_ = false;
 
 		private static float lastErrorTime_ = 0;
@@ -17,6 +24,15 @@ namespace AUI
 		public AlternateUI()
 		{
 			instance_ = this;
+		}
+
+		private IAlternateUI[] CreateUIs()
+		{
+			return new IAlternateUI[]
+			{
+				//new MorphUI.MorphUI(),
+				new SelectUI.SelectUI()
+			};
 		}
 
 		static public AlternateUI Instance
@@ -48,20 +64,27 @@ namespace AUI
 					(s) => Log.Warning(s),
 					(s) => Log.Error(s));
 
-				mui_ = new MorphUI.MorphUI();
-				mui_.OnPluginState(true);
+				uis_ = CreateUIs();
+
+				for (int i=0; i<uis_.Length; ++i)
+					uis_[i].OnPluginState(true);
 
 				inited_ = true;
 			}
 
-			mui_.Update(Time.deltaTime);
+			for (int i = 0; i < uis_.Length; ++i)
+				uis_[i].Update(Time.deltaTime);
 		}
 
 		public void OnEnable()
 		{
 			try
 			{
-				mui_?.OnPluginState(true);
+				if (uis_ != null)
+				{
+					for (int i = 0; i < uis_.Length; ++i)
+						uis_[i].OnPluginState(true);
+				}
 			}
 			catch (Exception e)
 			{
@@ -73,7 +96,11 @@ namespace AUI
 		{
 			try
 			{
-				mui_?.OnPluginState(false);
+				if (uis_ != null)
+				{
+					for (int i = 0; i < uis_.Length; ++i)
+						uis_[i].OnPluginState(false);
+				}
 			}
 			catch (Exception e)
 			{

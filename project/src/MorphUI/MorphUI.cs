@@ -293,7 +293,7 @@ namespace AUI.MorphUI
 	}
 
 
-	class MorphUI
+	class MorphUI : IAlternateUI
 	{
 		private SuperController sc_;
 		private readonly List<PersonMorphUI> uis_ = new List<PersonMorphUI>();
