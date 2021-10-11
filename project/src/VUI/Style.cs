@@ -42,9 +42,58 @@ namespace VUI
 			get { return new Size(0, 5); }
 		}
 
+		// space between toggle and label
+		//
 		public float ToggleLabelSpacing
 		{
 			get { return 5; }
+		}
+
+		// padding around the whole tree
+		//
+		public float TreeInternalPadding
+		{
+			get { return 5; }
+		}
+
+		// height of a tree item
+		//
+		public float TreeItemHeight
+		{
+			get { return 35; }
+		}
+
+		// vertical space between items
+		//
+		public float TreeItemSpacing
+		{
+			get { return 2; }
+		}
+
+		// width of one indent for a tree item
+		//
+		public float TreeIndentSize
+		{
+			get { return 35; }
+		}
+
+		// width of the + button
+		//
+		public float TreeToggleWidth
+		{
+			get { return 30; }
+		}
+
+		// space between the + button and label
+		//
+		public float TreeToggleSpacing
+		{
+			get { return 5; }
+		}
+
+		public float ScrollBarWidth
+		{
+			get { return 40; }
 		}
 	}
 

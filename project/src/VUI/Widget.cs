@@ -565,6 +565,11 @@ namespace VUI
 			// no-op
 		}
 
+		public override string ToString()
+		{
+			return $"{TypeName} {name_}";
+		}
+
 		public virtual string DebugLine
 		{
 			get

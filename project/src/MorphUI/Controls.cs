@@ -84,7 +84,7 @@
 
 			button_ = new VUI.Button("Categories", Toggle);
 
-			panel_ = new VUI.Panel();
+			panel_ = new VUI.Panel("CategoriesWidgetPanel");
 			panel_.Layout = new VUI.BorderLayout();
 			panel_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
 			panel_.BorderColor = VUI.Style.Theme.BorderColor;

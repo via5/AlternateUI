@@ -22,6 +22,7 @@
 			name_.FontSize = 24;
 
 			slider_.Decimals = 3;
+			slider_.TickValue = 0.01f;
 
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
