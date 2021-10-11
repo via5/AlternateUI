@@ -365,6 +365,12 @@ namespace AUI.MorphUI
 
 		private bool ShouldShowForParams(DAZMorph m)
 		{
+			if (alwaysShowModified_)
+			{
+				if (m.morphValue != m.startValue)
+					return true;
+			}
+
 			if (onlyLatest_)
 			{
 				if (!m.isLatestVersion)

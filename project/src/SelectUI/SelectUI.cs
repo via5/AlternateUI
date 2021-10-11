@@ -32,6 +32,7 @@ namespace AUI.SelectUI
 							if (uid != "None")
 							{
 								var atom = SuperController.singleton.GetAtomByUid(uid);
+
 								if (atom == null)
 									Log.Error($"selectui: atom {uid} not found");
 								else
@@ -68,10 +69,12 @@ namespace AUI.SelectUI
 		{
 			if (b)
 			{
+				sc_.onSceneLoadedHandlers += OnSceneLoaded;
 				AddCallbacks();
 			}
 			else
 			{
+				sc_.onSceneLoadedHandlers -= OnSceneLoaded;
 				RemoveCallbacks();
 				lastDisplays_ = null;
 				lastValues_ = null;
@@ -88,18 +91,31 @@ namespace AUI.SelectUI
 
 				var popup = SuperController.singleton?.selectAtomPopup;
 
-				if (popup.displayPopupValues != lastDisplays_ ||
-					popup.popupValues != lastValues_)
+				if (popup != null && popup.visible)
 				{
-					lastDisplays_ = popup.displayPopupValues;
-					lastValues_ = popup.popupValues;
+					if (popup.displayPopupValues != lastDisplays_ ||
+						popup.popupValues != lastValues_)
+					{
+						lastDisplays_ = popup.displayPopupValues;
+						lastValues_ = popup.popupValues;
 
-					sc_.StartCoroutine(RefreshCallbacks());
+						RefreshCallbacks();
+					}
 				}
 			}
 		}
 
-		private IEnumerator RefreshCallbacks()
+		private void OnSceneLoaded()
+		{
+			RefreshCallbacks();
+		}
+
+		private void RefreshCallbacks()
+		{
+			sc_.StartCoroutine(RefreshCallbacksCo());
+		}
+
+		private IEnumerator RefreshCallbacksCo()
 		{
 			yield return new WaitForEndOfFrame();
 			RemoveCallbacks();
@@ -112,9 +128,12 @@ namespace AUI.SelectUI
 			{
 				var mc = bt.GetComponent<MouseCallbacks>();
 
-				if (mc == null)
-					mc = bt.gameObject.AddComponent<MouseCallbacks>();
+				if (mc != null)
+					UnityEngine.Object.Destroy(mc);
 
+				mc = bt.gameObject.AddComponent<MouseCallbacks>();
+
+				mc.enabled = true;
 				mc.Button = bt;
 			}
 		}
