@@ -109,7 +109,7 @@ namespace VUI
 			r.Bottom = r.Top + h;
 
 			handle_.SetBounds(r);
-			DoLayout();
+			DoLayoutImpl();
 
 			base.UpdateBounds();
 		}
@@ -142,7 +142,7 @@ namespace VUI
 			cb.Bottom = y + h;
 
 			handle_.SetBounds(cb);
-			DoLayout();
+			DoLayoutImpl();
 			base.UpdateBounds();
 
 			OnHandleMoved();
@@ -814,7 +814,7 @@ namespace VUI
 				for (int i = cx.nodeIndex; i < nodes_.Count; ++i)
 					nodes_[i].Clear();
 
-				DoLayout();
+				DoLayoutImpl();
 
 				itemCount_ = cx.itemIndex;
 				visibleCount_ = (int)(cx.av.Height / (ItemHeight + ItemPadding));

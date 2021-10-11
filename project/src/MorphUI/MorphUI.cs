@@ -78,7 +78,10 @@ namespace AUI.MorphUI
 			if (root_.Visible)
 			{
 				if (filter_.IsDirty)
+				{
 					Refilter();
+					updateElapsed_ = UpdateInterval + 1;
+				}
 
 				if (updateElapsed_ >= UpdateInterval)
 				{
@@ -92,7 +95,7 @@ namespace AUI.MorphUI
 			}
 			else
 			{
-				updateElapsed_ = 1000;
+				updateElapsed_ = UpdateInterval + 1;
 			}
 		}
 

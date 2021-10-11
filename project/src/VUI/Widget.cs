@@ -191,7 +191,7 @@ namespace VUI
 				if (render_ != value)
 				{
 					render_ = value;
-					SetRender(render_);
+					UpdateRenderState();
 				}
 			}
 		}
@@ -216,7 +216,7 @@ namespace VUI
 		protected virtual void UpdateActiveState()
 		{
 			if (mainObject_ != null)
-				mainObject_.SetActive(render_ && visible_);
+				mainObject_.SetActive(visible_);
 
 			if (render_ && visible_)
 			{
@@ -648,12 +648,19 @@ namespace VUI
 
 		public void DoLayout()
 		{
+			DoLayoutImpl();
+			Create();
+			UpdateBounds();
+		}
+
+		protected void DoLayoutImpl()
+		{
 			layout_?.DoLayout();
 
 			foreach (var w in children_)
 			{
 				if (w.IsVisibleOnScreen())
-					w.DoLayout();
+					w.DoLayoutImpl();
 			}
 
 			SetDirty(false);
@@ -694,22 +701,27 @@ namespace VUI
 			foreach (var w in children_)
 				w.Create();
 
-			SetRender(render_);
+			UpdateRenderState();
 			Created?.Invoke();
+		}
+
+		private void UpdateRenderState()
+		{
+			SetRender(render_);
 		}
 
 		private void SetRender(bool b)
 		{
-			if (widgetObject_ != null)
-			{
-				if (!borders_.Empty)
-					borderGraphics_?.gameObject?.SetActive(b);
+			if (widgetObject_ == null || !visible_)
+				return;
 
-				DoSetRender(b);
+			if (!borders_.Empty)
+				borderGraphics_?.gameObject?.SetActive(b);
 
-				foreach (var c in children_)
-					c.SetRender(b);
-			}
+			DoSetRender(b);
+
+			foreach (var c in children_)
+				c.SetRender(b && c.render_);
 		}
 
 		protected virtual void DoSetRender(bool b)

@@ -54,6 +54,11 @@
 			fav_.Changed += OnFavorite;
 		}
 
+		public DAZMorph Morph
+		{
+			get { return morph_; }
+		}
+
 		public void SetMorph(DAZMorph m)
 		{
 			morph_ = m;

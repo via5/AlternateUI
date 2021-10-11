@@ -26,6 +26,22 @@ namespace AUI
 			instance_ = this;
 		}
 
+		static public AlternateUI Instance
+		{
+			get { return instance_; }
+		}
+
+		public T GetUI<T>() where T : class, IAlternateUI
+		{
+			for (int i = 0; i < uis_.Length; ++i)
+			{
+				if (uis_[i] is T)
+					return uis_[i] as T;
+			}
+
+			return null;
+		}
+
 		private IAlternateUI[] CreateUIs()
 		{
 			return new IAlternateUI[]
@@ -33,11 +49,6 @@ namespace AUI
 				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI()
 			};
-		}
-
-		static public AlternateUI Instance
-		{
-			get { return instance_; }
 		}
 
 		public void Update()
@@ -111,6 +122,32 @@ namespace AUI
 		public void DisablePlugin()
 		{
 			enabledJSON.val = false;
+		}
+
+		public void ReloadPlugin()
+		{
+			var pui = GetPluginUI();
+			if (pui == null)
+				return;
+
+			SuperController.LogError("reloading");
+			pui.reloadButton?.onClick?.Invoke();
+		}
+
+		private MVRPluginUI GetPluginUI()
+		{
+			Transform p = enabledJSON?.toggle?.transform;
+
+			while (p != null)
+			{
+				var pui = p.GetComponent<MVRPluginUI>();
+				if (pui != null)
+					return pui;
+
+				p = p.parent;
+			}
+
+			return null;
 		}
 
 		private void OnException(Exception e)

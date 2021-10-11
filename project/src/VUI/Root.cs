@@ -78,11 +78,7 @@ namespace VUI
 			if (dirty_ || forceLayout)
 			{
 				var start = Time.realtimeSinceStartup;
-
 				DoLayout();
-				Create();
-				UpdateBounds();
-
 				var t = Time.realtimeSinceStartup - start;
 
 				Glue.LogVerbose($"layout {Name}: {t:0.000:}s");

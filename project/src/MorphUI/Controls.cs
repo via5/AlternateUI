@@ -242,6 +242,9 @@
 				(b) => ui_.Filter.OnlyActive = b,
 				ui_.Filter.OnlyActive));
 
+			//row.Add(new VUI.Button(
+			//	"Reload plugin", () => AlternateUI.Instance.ReloadPlugin()));
+
 			Add(row);
 
 			Borders = new VUI.Insets(1);
