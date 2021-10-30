@@ -83,6 +83,7 @@
 			var s = new VUI.Size(500, 800);
 
 			button_ = new VUI.Button("Categories", Toggle);
+			button_.Events.PointerClick += ToggleClick;
 
 			panel_ = new VUI.Panel("CategoriesWidgetPanel");
 			panel_.Layout = new VUI.BorderLayout();
@@ -162,6 +163,20 @@
 			panel_.Visible = !panel_.Visible;
 		}
 
+		private bool ToggleClick(VUI.PointerEvent e)
+		{
+			if (e.Button == VUI.PointerEvent.RightButton)
+				ResetCategory();
+
+			return false;
+		}
+
+		private void ResetCategory()
+		{
+			ui_.Filter.Category = null;
+			button_.Text = "Categories";
+		}
+
 		private void OnSelection(VUI.TreeView.Item item)
 		{
 			if (ignore_) return;
@@ -170,8 +185,7 @@
 
 			if (c?.Node == null)
 			{
-				ui_.Filter.Category = null;
-				button_.Text = "Categories";
+				ResetCategory();
 			}
 			else
 			{

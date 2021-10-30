@@ -101,6 +101,7 @@
     <Compile Include="src\MorphUI\MorphPanel.cs" />
     <Compile Include="src\MorphUI\MorphUI.cs" />
     <Compile Include="src\SelectUI\SelectUI.cs" />
+    <Compile Include="src\SkinUI\SkinUI.cs" />
     <Compile Include="src\Utilities.cs" />
     <Compile Include="src\Version.cs" />
     <Compile Include="src\VUI\BorderLayout.cs" />

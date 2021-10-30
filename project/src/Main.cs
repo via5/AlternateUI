@@ -47,7 +47,8 @@ namespace AUI
 			return new IAlternateUI[]
 			{
 				new MorphUI.MorphUI(),
-				new SelectUI.SelectUI()
+				new SelectUI.SelectUI(),
+				new SkinUI.SkinUI()
 			};
 		}
 

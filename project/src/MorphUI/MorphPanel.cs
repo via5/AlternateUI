@@ -83,14 +83,6 @@
 		{
 			string s = $"{morph_.displayName}";
 
-			if (morph_.deltasLoaded)
-			{
-			}
-			else
-			{
-				s += " (unloaded)";
-			}
-
 			s += $"\n";
 
 			if (morph_.isInPackage)

@@ -106,7 +106,13 @@ namespace AUI.MorphUI
 
 		public int PageCount
 		{
-			get { return filtered_.Count / PerPage + 1; }
+			get
+			{
+				if (filtered_.Count <= PerPage)
+					return 1;
+				else
+					return filtered_.Count / PerPage + 1;
+			}
 		}
 
 		public int CurrentPage
