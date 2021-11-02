@@ -48,7 +48,8 @@ namespace AUI
 			{
 				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI(),
-				new SkinUI.SkinUI()
+				new SkinUI.SkinUI(),
+				new LogUI.LogUI()
 			};
 		}
 
