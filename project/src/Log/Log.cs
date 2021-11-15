@@ -41,9 +41,6 @@ namespace AUI.LogUI
 			logText_.resizeTextForBestFit = false;
 			logText_.font = f;
 			logText_.fontSize = f.fontSize;
-
-			for (int i = 0; i < 10; ++i)
-				SuperController.LogError($"test {i}");
 		}
 
 		private void Disable()

@@ -16,6 +16,7 @@ namespace AUI
 
 		private IAlternateUI[] uis_ = null;
 		private bool inited_ = false;
+		private VUI.TimerManager tm_ = null;
 
 		private static float lastErrorTime_ = 0;
 		private static int errorCount_ = 0;
@@ -77,6 +78,7 @@ namespace AUI
 					(s) => Log.Warning(s),
 					(s) => Log.Error(s));
 
+				tm_ = new VUI.TimerManager();
 				uis_ = CreateUIs();
 
 				for (int i=0; i<uis_.Length; ++i)
@@ -84,6 +86,9 @@ namespace AUI
 
 				inited_ = true;
 			}
+
+			tm_.TickTimers(Time.deltaTime);
+			tm_.CheckTimers();
 
 			for (int i = 0; i < uis_.Length; ++i)
 				uis_[i].Update(Time.deltaTime);
