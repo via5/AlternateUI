@@ -1,20 +1,184 @@
-﻿using System;
+﻿using SimpleJSON;
+using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace AUI
 {
 	interface IAlternateUI
 	{
+		string Name { get; }
+		string DisplayName { get; }
+		string Description { get; }
+
+		void Load(JSONClass o);
+		JSONClass Save();
+		void Init();
+		void CreateUI();
 		void Update(float s);
-		void OnPluginState(bool b);
+	}
+
+
+	public abstract class BasicAlternateUI : IAlternateUI
+	{
+		private readonly string name_, displayName_;
+		private JSONStorableBool enabledParam_;
+		private bool enabled_;
+
+		protected BasicAlternateUI(string name, string displayName, bool defaultEnabled)
+		{
+			name_ = name;
+			displayName_ = displayName;
+			enabled_ = defaultEnabled;
+
+			enabledParam_ = new JSONStorableBool($"{name_}.enabled", enabled_, (bool b) =>
+			{
+				if (enabled_ != enabledParam_.val)
+				{
+					SuperController.LogError($"{Name}: enabled changed to {enabledParam_.val}");
+
+					enabled_ = enabledParam_.val;
+
+					if (enabled_)
+						Enable();
+					else
+						Disable();
+
+					AlternateUI.Instance.Save();
+				}
+			});
+		}
+
+		public string Name
+		{
+			get { return name_; }
+		}
+
+		public string DisplayName
+		{
+			get { return displayName_; }
+		}
+
+		public abstract string Description { get; }
+
+		public void Load(JSONClass o)
+		{
+			if (o.HasKey("enabled"))
+			{
+				enabled_ = o["enabled"].AsBool;
+				enabledParam_.valNoCallback = enabled_;
+			}
+
+			DoLoad(o);
+		}
+
+		public JSONClass Save()
+		{
+			var o = new JSONClass();
+
+			o.Add("enabled", new JSONData(enabled_));
+			DoSave(o);
+
+			return o;
+		}
+
+		public void Init()
+		{
+			SuperController.LogError($"init {Name}");
+			DoInit();
+
+			if (enabled_)
+				Enable();
+		}
+
+		public void OnPluginState(bool b)
+		{
+			if (!enabled_)
+				return;
+
+			if (b)
+				Enable();
+			else
+				Disable();
+		}
+
+		private void Enable()
+		{
+			SuperController.LogError($"enable {Name}");
+			DoEnable();
+		}
+
+		private void Disable()
+		{
+			SuperController.LogError($"disable {Name}");
+			DoDisable();
+		}
+
+		public void CreateUI()
+		{
+			var a = AlternateUI.Instance;
+
+			var t = a.CreateToggle(enabledParam_);
+			t.labelText.text = $"{DisplayName}";
+
+			var ts = new JSONStorableString("text", Description);
+			var tt = a.CreateTextField(ts, true);
+			tt.GetComponent<LayoutElement>().minHeight = 150;
+			tt.height = 150;
+
+			DoCreateUI();
+		}
+
+		protected virtual void DoCreateUI()
+		{
+			// no-op
+		}
+
+		public void Update(float s)
+		{
+			if (enabled_)
+				DoUpdate(s);
+		}
+
+		protected virtual void DoLoad(JSONClass o)
+		{
+			// no-op
+		}
+
+		protected virtual JSONClass DoSave(JSONClass o)
+		{
+			// no-op
+			return null;
+		}
+
+		protected virtual void DoInit()
+		{
+			// no-op
+		}
+
+		protected virtual void DoUpdate(float s)
+		{
+			// no-op
+		}
+
+		protected virtual void DoEnable()
+		{
+			// no-op
+		}
+
+		protected virtual void DoDisable()
+		{
+			// no-op
+		}
 	}
 
 
 	class AlternateUI : MVRScript
 	{
-		static private AlternateUI instance_ = null;
+		private static AlternateUI instance_ = null;
+		private const string ConfigFile = "Custom/PluginData/aui.json";
 
-		private IAlternateUI[] uis_ = null;
+		private BasicAlternateUI[] uis_ = null;
 		private bool inited_ = false;
 		private VUI.TimerManager tm_ = null;
 
@@ -43,15 +207,16 @@ namespace AUI
 			return null;
 		}
 
-		private IAlternateUI[] CreateUIs()
+		private BasicAlternateUI[] CreateUIs()
 		{
-			return new IAlternateUI[]
+			return new BasicAlternateUI[]
 			{
 				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI(),
 				new SkinUI.SkinUI(),
 				new LogUI.LogUI(),
-				new Tweaks.Tweaks(),
+				new Tweaks.EditMode(),
+				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
 				new Tweaks.MoveNewLight()
 			};
@@ -73,22 +238,8 @@ namespace AUI
 		{
 			if (!inited_)
 			{
-				VUI.Root.Init(
-					"AUI",
-					() => manager,
-					(s, ps) => string.Format(s, ps),
-					(s) => Log.Verbose(s),
-					(s) => Log.Info(s),
-					(s) => Log.Warning(s),
-					(s) => Log.Error(s));
-
-				tm_ = new VUI.TimerManager();
-				uis_ = CreateUIs();
-
-				for (int i=0; i<uis_.Length; ++i)
-					uis_[i].OnPluginState(true);
-
 				inited_ = true;
+				DoInit();
 			}
 
 			tm_.TickTimers(Time.deltaTime);
@@ -96,6 +247,84 @@ namespace AUI
 
 			for (int i = 0; i < uis_.Length; ++i)
 				uis_[i].Update(Time.deltaTime);
+		}
+
+		private void DoInit()
+		{
+			//SuperController.LogError("init");
+
+			VUI.Root.Init(
+				"AUI",
+				() => manager,
+				(s, ps) => string.Format(s, ps),
+				(s) => Log.Verbose(s),
+				(s) => Log.Info(s),
+				(s) => Log.Warning(s),
+				(s) => Log.Error(s));
+
+			tm_ = new VUI.TimerManager();
+			uis_ = CreateUIs();
+
+			LoadConfig();
+
+			//SuperController.LogError("initializing uis");
+			for (int i = 0; i < uis_.Length; ++i)
+				uis_[i].Init();
+
+			SaveConfig();
+			CreateUI();
+		}
+
+		private void CreateUI()
+		{
+			for (int i = 0; i < uis_.Length; ++i)
+			{
+				if (i > 0)
+				{
+					var s = CreateSpacer();
+					s.height = 85;
+				}
+
+				uis_[i].CreateUI();
+			}
+		}
+
+		private void LoadConfig()
+		{
+			SuperController.LogError("loading config");
+
+			var j = LoadJSON(ConfigFile) as JSONClass;
+			if (j == null)
+				return;
+
+			for (int i = 0; i < uis_.Length; ++i)
+			{
+				if (j.HasKey(uis_[i].Name))
+				{
+					var o = j[uis_[i].Name].AsObject;
+					if (o != null)
+						uis_[i].Load(o);
+				}
+			}
+		}
+
+		private void SaveConfig()
+		{
+			var j = new JSONClass();
+
+			for (int i = 0; i < uis_.Length; ++i)
+			{
+				var o = uis_[i].Save();
+				if (o != null)
+					j.Add(uis_[i].Name, o);
+			}
+
+			SaveJSON(j, ConfigFile);
+		}
+
+		public void Save()
+		{
+			SaveConfig();
 		}
 
 		public void OnEnable()

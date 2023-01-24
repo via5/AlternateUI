@@ -216,10 +216,16 @@ namespace AUI.MorphUI
 			return true;
 		}
 
-		public void OnPluginState(bool b)
+		public void Enable()
 		{
 			if (root_ != null)
-				root_.Visible = b;
+				root_.Visible = true;
+		}
+
+		public void Disable()
+		{
+			if (root_ != null)
+				root_.Visible = false;
 		}
 
 		private void Refilter()
@@ -294,20 +300,40 @@ namespace AUI.MorphUI
 			}
 		}
 
-		public void OnPluginState(bool b)
+		public void Enable()
 		{
-			male_.OnPluginState(b);
-			female_.OnPluginState(b);
+			male_.Enable();
+			female_.Enable();
+		}
+
+		public void Disable()
+		{
+			male_.Disable();
+			female_.Disable();
 		}
 	}
 
 
-	class MorphUI : IAlternateUI
+	class MorphUI : BasicAlternateUI
 	{
 		private SuperController sc_;
 		private readonly List<PersonMorphUI> uis_ = new List<PersonMorphUI>();
 
 		public MorphUI()
+			: base("morphs", "Morphs UI", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Complete overhaul of the male and female morphs panel.";
+			}
+		}
+
+		protected override void DoInit()
 		{
 			sc_ = SuperController.singleton;
 
@@ -318,27 +344,28 @@ namespace AUI.MorphUI
 			}
 		}
 
-		public void Update(float s)
+		protected override void DoUpdate(float s)
 		{
 			for (int i = 0; i < uis_.Count; ++i)
 				uis_[i].Update(s);
 		}
 
-		public void OnPluginState(bool b)
+		protected override void DoEnable()
 		{
-			if (b)
-			{
-				sc_.onAtomAddedHandlers += Add;
-				sc_.onAtomRemovedHandlers += Remove;
-			}
-			else
-			{
-				sc_.onAtomAddedHandlers -= Add;
-				sc_.onAtomRemovedHandlers -= Remove;
-			}
+			sc_.onAtomAddedHandlers += Add;
+			sc_.onAtomRemovedHandlers += Remove;
 
 			for (int i = 0; i < uis_.Count; ++i)
-				uis_[i].OnPluginState(b);
+				uis_[i].Enable();
+		}
+
+		protected override void DoDisable()
+		{
+			sc_.onAtomAddedHandlers -= Add;
+			sc_.onAtomRemovedHandlers -= Remove;
+
+			for (int i = 0; i < uis_.Count; ++i)
+				uis_[i].Disable();
 		}
 
 		private void Add(Atom a)
@@ -373,7 +400,7 @@ namespace AUI.MorphUI
 				return;
 
 			Log.Verbose($"morphui: atom {a.uid} removed");
-			uis_[i].OnPluginState(false);
+			uis_[i].Disable();
 			uis_.RemoveAt(i);
 		}
 

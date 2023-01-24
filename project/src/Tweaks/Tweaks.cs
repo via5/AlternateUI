@@ -1,33 +1,74 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace AUI.Tweaks
 {
-	class Tweaks : IAlternateUI
+	class EditMode : BasicAlternateUI
 	{
-		public Tweaks()
+		public EditMode()
+			: base("editMode", "Edit mode on load", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Switch to Edit mode when loading a scene.";
+			}
+		}
+
+		protected override void DoEnable()
 		{
 			SuperController.singleton.onSceneLoadedHandlers += OnSceneLoaded;
 			OnSceneLoaded();
 		}
 
-		public void Update(float s)
+		protected override void DoDisable()
 		{
-		}
-
-		public void OnPluginState(bool b)
-		{
+			SuperController.singleton.onSceneLoadedHandlers -= OnSceneLoaded;
 		}
 
 		private void OnSceneLoaded()
 		{
 			SuperController.singleton.gameMode = SuperController.GameMode.Edit;
 			SuperController.singleton.ShowMainHUD();
+		}
+	}
 
-			//SuperController.LogError("scene loaded");
 
+	class FocusHead : BasicAlternateUI
+	{
+		public FocusHead()
+			: base("focusHead", "Focus head on load", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Always focus the head of the first Person atom when " +
+					"loading a scene. Works best with Disable Load Position " +
+					"enabled.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			SuperController.singleton.onSceneLoadedHandlers += OnSceneLoaded;
+			OnSceneLoaded();
+		}
+
+		protected override void DoDisable()
+		{
+			SuperController.singleton.onSceneLoadedHandlers -= OnSceneLoaded;
+		}
+
+		private void OnSceneLoaded()
+		{
 			var atoms = SuperController.singleton.GetAtoms();
-			//SuperController.LogError($"{atoms.Count} atoms");
 
 			foreach (var a in atoms)
 			{
@@ -38,32 +79,41 @@ namespace AUI.Tweaks
 				{
 					if (fc.name == "headControl")
 					{
-						//SuperController.LogError($"focusing head of {a.uid}");
 						SuperController.singleton.FocusOnController(fc);
 						return;
 					}
 				}
 			}
-
-			//SuperController.LogError($"nothing to focus");
 		}
 	}
 
 
-	class DisableLoadPosition : IAlternateUI
+	class DisableLoadPosition : BasicAlternateUI
 	{
 		public DisableLoadPosition()
+			: base("disableLoadPosition", "Disable load position", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Never use the scene's load position, remember the last " +
+					"camera position.";
+			}
+		}
+
+		protected override void DoEnable()
 		{
 			SuperController.singleton.onSceneLoadedHandlers += OnSceneLoaded;
 			OnSceneLoaded();
 		}
 
-		public void Update(float s)
+		protected override void DoDisable()
 		{
-		}
-
-		public void OnPluginState(bool b)
-		{
+			SuperController.singleton.onSceneLoadedHandlers -= OnSceneLoaded;
 		}
 
 		private void OnSceneLoaded()
@@ -73,19 +123,31 @@ namespace AUI.Tweaks
 	}
 
 
-	class MoveNewLight: IAlternateUI
+	class MoveNewLight: BasicAlternateUI
 	{
 		public MoveNewLight()
+			: base("moveNewLight", "Move new lights", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Slightly move new InvisibleLight atoms forwards so they " +
+					"better illuminate atoms in the center.";
+			}
+		}
+
+		protected override void DoEnable()
 		{
 			SuperController.singleton.onAtomAddedHandlers += OnAtomAdded;
 		}
 
-		public void Update(float s)
+		protected override void DoDisable()
 		{
-		}
-
-		public void OnPluginState(bool b)
-		{
+			SuperController.singleton.onAtomAddedHandlers -= OnAtomAdded;
 		}
 
 		private void OnAtomAdded(Atom a)

@@ -33,17 +33,28 @@ namespace AUI.SkinUI
 		}
 	}
 
-	class SkinUI : IAlternateUI
+	class SkinUI : BasicAlternateUI
 	{
 		private SuperController sc_ = SuperController.singleton;
 
 		public SkinUI()
+			: base("skin", "Right-click skin texture reload", true)
 		{
-			RefreshCallbacks();
 		}
 
-		public void Update(float s)
+		public override string Description
 		{
+			get
+			{
+				return
+					"Right-click the Select button in the Skin Textures " +
+					"panel to reload the texture.";
+			}
+		}
+
+		protected override void DoInit()
+		{
+			RefreshCallbacks();
 		}
 
 		private void RefreshCallbacks()
@@ -58,20 +69,18 @@ namespace AUI.SkinUI
 			AddCallbacks(a);
 		}
 
-		public void OnPluginState(bool b)
+		protected override void DoEnable()
 		{
-			if (b)
-			{
-				sc_.onAtomAddedHandlers += AtomAdded;
-				sc_.onAtomRemovedHandlers += AtomRemoved;
-				sc_.onSceneLoadedHandlers += OnSceneLoaded;
-			}
-			else
-			{
-				sc_.onAtomAddedHandlers -= AtomAdded;
-				sc_.onAtomRemovedHandlers -= AtomRemoved;
-				sc_.onSceneLoadedHandlers -= OnSceneLoaded;
-			}
+			sc_.onAtomAddedHandlers += AtomAdded;
+			sc_.onAtomRemovedHandlers += AtomRemoved;
+			sc_.onSceneLoadedHandlers += OnSceneLoaded;
+		}
+
+		protected override void DoDisable()
+		{
+			sc_.onAtomAddedHandlers -= AtomAdded;
+			sc_.onAtomRemovedHandlers -= AtomRemoved;
+			sc_.onSceneLoadedHandlers -= OnSceneLoaded;
 		}
 
 		private void AtomAdded(Atom a)

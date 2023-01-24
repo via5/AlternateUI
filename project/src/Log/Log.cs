@@ -3,13 +3,28 @@ using UnityEngine.UI;
 
 namespace AUI.LogUI
 {
-	class LogUI : IAlternateUI
+	class LogUI : BasicAlternateUI
 	{
 		private Text logText_ = null;
 		private int oldLogFontSize_ = -1;
 		private Font oldLogFont_ = null;
 
 		public LogUI()
+			: base("log", "Monospace log", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Changes the error log panel to use Consolas with a " +
+					"smaller font size.";
+			}
+		}
+
+		protected override void DoInit()
 		{
 			var vp = VUI.Utilities.FindChildRecursive(
 				SuperController.singleton.errorLogPanel, "Viewport");
@@ -19,19 +34,7 @@ namespace AUI.LogUI
 			logText_ = textObject.GetComponent<UnityEngine.UI.Text>();
 		}
 
-		public void Update(float s)
-		{
-		}
-
-		public void OnPluginState(bool b)
-		{
-			if (b)
-				Enable();
-			else
-				Disable();
-		}
-
-		private void Enable()
+		protected override void DoEnable()
 		{
 			oldLogFontSize_ = logText_.fontSize;
 			oldLogFont_ = logText_.font;
@@ -43,7 +46,7 @@ namespace AUI.LogUI
 			logText_.fontSize = f.fontSize;
 		}
 
-		private void Disable()
+		protected override void DoDisable()
 		{
 			logText_.resizeTextForBestFit = true;
 			logText_.font = oldLogFont_;

@@ -50,7 +50,7 @@ namespace AUI.SelectUI
 	}
 
 
-	class SelectUI : IAlternateUI
+	class SelectUI : BasicAlternateUI
 	{
 		private const float Interval = 0.2f;
 
@@ -61,27 +61,39 @@ namespace AUI.SelectUI
 		private string[] lastValues_ = null;
 
 		public SelectUI()
+			: base("select", "Middle-click remove", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Middle-click atoms in the Select screen to remove them.";
+			}
+		}
+
+		protected override void DoInit()
 		{
 			sc_ = SuperController.singleton;
 		}
 
-		public void OnPluginState(bool b)
+		protected override void DoEnable()
 		{
-			if (b)
-			{
-				sc_.onSceneLoadedHandlers += OnSceneLoaded;
-				AddCallbacks();
-			}
-			else
-			{
-				sc_.onSceneLoadedHandlers -= OnSceneLoaded;
-				RemoveCallbacks();
-				lastDisplays_ = null;
-				lastValues_ = null;
-			}
+			sc_.onSceneLoadedHandlers += OnSceneLoaded;
+			AddCallbacks();
 		}
 
-		public void Update(float s)
+		protected override void DoDisable()
+		{
+			sc_.onSceneLoadedHandlers -= OnSceneLoaded;
+			RemoveCallbacks();
+			lastDisplays_ = null;
+			lastValues_ = null;
+		}
+
+		protected override void DoUpdate(float s)
 		{
 			elapsed_ += s;
 
