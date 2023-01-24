@@ -87,6 +87,11 @@ namespace VUI
 			}
 		}
 
+		public void ForceRelayout(string why)
+		{
+			SetDirty(true, why);
+		}
+
 		protected override void NeedsLayoutImpl(string why)
 		{
 			if (!dirty_)
@@ -153,25 +158,25 @@ namespace VUI
 			}
 		}
 
-		public Root(MVRScript s)
+		public Root(MVRScript s, string prefix="")
 		{
-			CheckInit(s);
+			CheckInit(s, prefix);
 			Create(new ScriptUIRootSupport(s));
 		}
 
-		public Root(MVRScriptUI sui)
+		public Root(MVRScriptUI sui, string prefix="")
 		{
-			CheckInit(null);
+			CheckInit(null, prefix);
 			Create(new ScriptUIRootSupport(sui));
 		}
 
-		public Root(IRootSupport support)
+		public Root(IRootSupport support, string prefix="")
 		{
-			CheckInit(null);
+			CheckInit(null, prefix);
 			Create(support);
 		}
 
-		private void CheckInit(MVRScript s)
+		private void CheckInit(MVRScript s, string prefix)
 		{
 			if (Glue.Initialized)
 				return;
@@ -186,7 +191,7 @@ namespace VUI
 			}
 			else
 			{
-				Init(s);
+				Init(s, prefix);
 			}
 		}
 
@@ -202,12 +207,16 @@ namespace VUI
 			AttachTo(support);
 		}
 
-		public static void Init(MVRScript script)
+		public static void Init(MVRScript script, string prefix="")
 		{
-			Glue.InitInternal(() => script.manager);
+			if (string.IsNullOrEmpty(prefix))
+				prefix = script.name;
+
+			Init(prefix , () => script.manager, null, null, null, null, null);
 		}
 
 		public static void Init(
+			string prefix,
 			Glue.PluginManagerDelegate getPluginManager,
 			Glue.StringDelegate getString = null,
 			Glue.LogDelegate logVerbose = null,
@@ -216,8 +225,10 @@ namespace VUI
 			Glue.LogDelegate logError = null)
 		{
 			Glue.InitInternal(
-				getPluginManager, getString,
+				prefix, getPluginManager, getString,
 				logVerbose, logInfo, logWarning, logError);
+
+			BasicRootSupport.Cleanup();
 		}
 
 		public IRootSupport RootSupport
@@ -295,11 +306,7 @@ namespace VUI
 			Utilities.SetRectTransform(rootObject_, support_.Bounds);
 			rootObject_.AddComponent<LayoutElement>().ignoreLayout = true;
 
-			bounds_ = new Rectangle(0, 0, support_.Bounds.Size);
-			Glue.LogVerbose($"root: bounds {bounds_}");
-
-			content_.SetBounds(bounds_);
-			floating_.SetBounds(bounds_);
+			SupportBoundsChanged();
 
 			var text = SuperController.singleton.GetComponentInChildren<Text>();
 			if (text == null)
@@ -416,6 +423,22 @@ namespace VUI
 			{
 				Glue.LogErrorST(e.ToString());
 			}
+		}
+
+		public void SupportBoundsChanged()
+		{
+			bounds_ = new Rectangle(0, 0, support_.Bounds.Size);
+			Glue.LogVerbose($"root: bounds {bounds_}");
+
+			content_.SetBounds(bounds_);
+			floating_.SetBounds(bounds_);
+
+			ForceRelayout("support bounds changed");
+		}
+
+		public void ForceRelayout(string why = "")
+		{
+			content_.ForceRelayout(why);
 		}
 
 		public bool OverlayVisible

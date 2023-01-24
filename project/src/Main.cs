@@ -50,7 +50,10 @@ namespace AUI
 				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI(),
 				new SkinUI.SkinUI(),
-				new LogUI.LogUI()
+				new LogUI.LogUI(),
+				new Tweaks.Tweaks(),
+				new Tweaks.DisableLoadPosition(),
+				new Tweaks.MoveNewLight()
 			};
 		}
 
@@ -71,6 +74,7 @@ namespace AUI
 			if (!inited_)
 			{
 				VUI.Root.Init(
+					"AUI",
 					() => manager,
 					(s, ps) => string.Format(s, ps),
 					(s) => Log.Verbose(s),

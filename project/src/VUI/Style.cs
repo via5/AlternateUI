@@ -32,6 +32,11 @@ namespace VUI
 			get { return new Size(150, 40); }
 		}
 
+		public Size TabButtonMinimumSize
+		{
+			get { return new Size(120, 40); }
+		}
+
 		public Size ButtonPadding
 		{
 			get { return new Size(20, 0); }
@@ -100,19 +105,30 @@ namespace VUI
 
 	class Theme
 	{
-		Font font_ = null;
+		private Font defaultFont_ = null;
+		private Font monospaceFont_ = null;
+
+		private Font GetFont(string name)
+		{
+			var f = Resources.GetBuiltinResource<Font>(name);
+			if (f != null)
+				return f;
+
+			f = Resources.GetBuiltinResource<Font>(name + ".ttf");
+			if (f != null)
+				return f;
+
+			return Font.CreateDynamicFontFromOSFont(name, 24);
+		}
 
 		public Font DefaultFont
 		{
 			get
 			{
-				if (font_ == null)
-				{
-					font_ = (Font)Resources.GetBuiltinResource(
-						typeof(Font), "Arial.ttf");
-				}
+				if (defaultFont_ == null)
+					defaultFont_ = GetFont("Arial");
 
-				return font_;
+				return defaultFont_;
 			}
 		}
 
@@ -120,7 +136,10 @@ namespace VUI
 		{
 			get
 			{
-				return UnityEngine.Font.CreateDynamicFontFromOSFont("Consolas", 24);
+				if (monospaceFont_ == null)
+					monospaceFont_ = GetFont("Consolas");
+
+				return monospaceFont_;
 			}
 		}
 

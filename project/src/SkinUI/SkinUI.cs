@@ -64,11 +64,13 @@ namespace AUI.SkinUI
 			{
 				sc_.onAtomAddedHandlers += AtomAdded;
 				sc_.onAtomRemovedHandlers += AtomRemoved;
+				sc_.onSceneLoadedHandlers += OnSceneLoaded;
 			}
 			else
 			{
 				sc_.onAtomAddedHandlers -= AtomAdded;
 				sc_.onAtomRemovedHandlers -= AtomRemoved;
+				sc_.onSceneLoadedHandlers -= OnSceneLoaded;
 			}
 		}
 
@@ -80,6 +82,11 @@ namespace AUI.SkinUI
 		private void AtomRemoved(Atom a)
 		{
 			RemoveCallbacks(a);
+		}
+
+		private void OnSceneLoaded()
+		{
+			RefreshCallbacks();
 		}
 
 		private void AddCallbacks(Atom a)

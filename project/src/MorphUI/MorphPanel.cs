@@ -94,6 +94,7 @@
 				$"Override region: {morph_.overrideRegion}\n" +
 				$"Resolved region: {morph_.resolvedRegionName}\n" +
 				$"Resolved name: {morph_.resolvedDisplayName}\n" +
+				$"Name: {morph_.morphName}\n" +
 				$"Group: {morph_.group}\n" +
 				$"Latest: {morph_.isLatestVersion}\n" +
 				$"Value: {morph_.morphValue:0.00} [{morph_.min:0.00}, {morph_.max:0.00}] Def: {morph_.startValue}";

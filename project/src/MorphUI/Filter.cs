@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace AUI.MorphUI
 {
@@ -341,6 +343,29 @@ namespace AUI.MorphUI
 			}
 		}
 
+		private bool IsRegex(string s)
+		{
+			return (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/');
+		}
+
+		private Regex CreateRegex(string s)
+		{
+			if (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/')
+			{
+				try
+				{
+					return new Regex(
+						s.Substring(1, s.Length - 2), RegexOptions.IgnoreCase);
+				}
+				catch (Exception)
+				{
+					return null;
+				}
+			}
+
+			return null;
+		}
+
 		private void ProcessSearch()
 		{
 			var source = categorized_;
@@ -353,12 +378,28 @@ namespace AUI.MorphUI
 			{
 				searched_.Own(source.Get().Count);
 
-				var searchLc = search_.ToLower();
-
-				for (int i = 0; i < source.Get().Count; ++i)
+				if (IsRegex(search_))
 				{
-					if (source.Get()[i].displayName.ToLower().Contains(searchLc))
-						searched_.Get().Add(source.Get()[i]);
+					var re = CreateRegex(search_);
+
+					if (re != null)
+					{
+						for (int i = 0; i < source.Get().Count; ++i)
+						{
+							if (re.IsMatch(source.Get()[i].displayName))
+								searched_.Get().Add(source.Get()[i]);
+						}
+					}
+				}
+				else
+				{
+					var searchLc = search_.ToLower();
+
+					for (int i = 0; i < source.Get().Count; ++i)
+					{
+						if (source.Get()[i].displayName.ToLower().Contains(searchLc))
+							searched_.Get().Add(source.Get()[i]);
+					}
 				}
 			}
 		}

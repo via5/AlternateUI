@@ -1,6 +1,7 @@
 ﻿using UnityEngine.UI;
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 namespace VUI
 {
@@ -15,39 +16,55 @@ namespace VUI
 		float TopOffset { get; }
 		Transform RootParent { get; }
 
+		void SetSize(Vector2 v);
 		Point ToLocal(Vector2 v);
 	}
 
 
 	abstract class BasicRootSupport : IRootSupport
 	{
-		protected class InitResults
-		{
-			public bool ok;
-			public Rectangle bounds;
-			public float topOffset;
-
-			public InitResults(Rectangle b, float to)
-			{
-				ok = true;
-				bounds = b;
-				topOffset = to;
-			}
-
-			public static InitResults Failed
-			{
-				get
-				{
-					var r = new InitResults(Rectangle.Zero, 0);
-					r.ok = false;
-					return r;
-				}
-			}
-		}
-
 		private Canvas canvas_ = null;
 		private Rectangle bounds_ = Rectangle.Zero;
 		private float topOffset_ = 0;
+
+		private static List<Transform> destroy_ = new List<Transform>();
+
+		public static void Cleanup()
+		{
+			try
+			{
+				destroy_.Clear();
+
+				ScriptUIRootSupport.DoCleanup();
+				TransformUIRootSupport.DoCleanup();
+				VRTopHudRootSupport.DoCleanup();
+				VRHandRootSupport.DoCleanup();
+				OverlayRootSupport.DoCleanup();
+
+				foreach (var t in destroy_)
+				{
+					var temp = new GameObject().transform;
+					t.transform.SetParent(temp);
+					UnityEngine.Object.Destroy(temp.gameObject);
+				}
+			}
+			catch (Exception e)
+			{
+				Glue.LogError("exception during vui cleanup:");
+				Glue.LogError(e.ToString());
+			}
+		}
+
+		protected static void DestroyRootObject(Transform t)
+		{
+			destroy_.Add(t);
+		}
+
+		protected static GameObject CreateRootObject(string prefix)
+		{
+			return new GameObject(
+				prefix + UnityEngine.Random.Range(10000, 100000).ToString());
+		}
 
 		public virtual Rectangle Bounds
 		{
@@ -64,6 +81,7 @@ namespace VUI
 
 		public abstract void Destroy();
 		public abstract void SetActive(bool b);
+		public abstract void SetSize(Vector2 v);
 
 		public virtual void Update(float s)
 		{
@@ -72,14 +90,13 @@ namespace VUI
 
 		public bool Init()
 		{
-			var r = DoInit();
-			if (!r.ok)
-				return false;
+			return DoInit();
+		}
 
-			bounds_ = r.bounds;
-			topOffset_ = r.topOffset;
-
-			return true;
+		protected void SetBounds(Rectangle b, float topOffset)
+		{
+			bounds_ = b;
+			topOffset_ = topOffset;
 		}
 
 		public virtual Point ToLocal(Vector2 v)
@@ -102,7 +119,7 @@ namespace VUI
 			return new Point(pp.x, pp.y);
 		}
 
-		protected abstract InitResults DoInit();
+		protected abstract bool DoInit();
 		protected abstract Canvas GetCanvas();
 	}
 
@@ -123,26 +140,31 @@ namespace VUI
 			sui_ = sui;
 		}
 
+		public static void DoCleanup()
+		{
+			// no-op
+		}
+
 		public override Transform RootParent
 		{
 			get { return sui_?.fullWidthUIContent; }
 		}
 
-		protected override InitResults DoInit()
+		protected override bool DoInit()
 		{
 			if (sui_ == null)
 			{
 				if (s_.UITransform == null)
 				{
 					Glue.LogVerbose("scriptui support: not ready, no UITransform");
-					return InitResults.Failed;
+					return false;
 				}
 
 				sui_ = s_.UITransform.GetComponentInChildren<MVRScriptUI>();
 				if (sui_ == null)
 				{
 					Glue.LogVerbose("scriptui support: not ready, no scriptui");
-					return InitResults.Failed;
+					return false;
 				}
 			}
 
@@ -155,7 +177,7 @@ namespace VUI
 					$"scriptui support: not ready, scroll view size is " +
 					$"{scrollViewRT.rect}");
 
-				return InitResults.Failed;
+				return false;
 			}
 
 			Glue.LogVerbose("scriptui support: ready, initing");
@@ -169,7 +191,9 @@ namespace VUI
 
 			var topOffset = scrollViewRT.offsetMin.y - scrollViewRT.offsetMax.y;
 
-			return new InitResults(bounds, topOffset);
+			SetBounds(bounds, topOffset);
+
+			return true;
 		}
 
 		public override void Destroy()
@@ -187,6 +211,11 @@ namespace VUI
 				else
 					Style.RevertRoot(sui_.transform, rr_);
 			}
+		}
+
+		public override void SetSize(Vector2 v)
+		{
+			// no-op
 		}
 
 		protected override Canvas GetCanvas()
@@ -210,12 +239,17 @@ namespace VUI
 			t_ = t;
 		}
 
+		public static void DoCleanup()
+		{
+			// no-op
+		}
+
 		public override Transform RootParent
 		{
 			get { return t_; }
 		}
 
-		protected override InitResults DoInit()
+		protected override bool DoInit()
 		{
 			var rt = t_.GetComponent<RectTransform>();
 
@@ -234,8 +268,9 @@ namespace VUI
 			}
 
 			SetActive(true);
+			SetBounds(bounds, topOffset);
 
-			return new InitResults(bounds, topOffset);
+			return true;
 		}
 
 		public override void Destroy()
@@ -265,6 +300,11 @@ namespace VUI
 					Style.RevertRoot(t_, rr_);
 				}
 			}
+		}
+
+		public override void SetSize(Vector2 v)
+		{
+			// no-op
 		}
 
 		public override void Update(float s)
@@ -302,12 +342,29 @@ namespace VUI
 			size_ = size;
 		}
 
+		private static string RootObjectPrefix
+		{
+			get { return Glue.Prefix + ".VRTopHudRootSupport."; }
+		}
+
+		public static void DoCleanup()
+		{
+			foreach (Transform t in Camera.main.transform)
+			{
+				if (t.name.StartsWith(RootObjectPrefix))
+				{
+					DestroyRootObject(t);
+					break;
+				}
+			}
+		}
+
 		public override Transform RootParent
 		{
 			get { return hudPanel_.transform; }
 		}
 
-		protected override InitResults DoInit()
+		protected override bool DoInit()
 		{
 			CreateFullscreenPanel(Camera.main.transform);
 			CreateHudPanel();
@@ -319,7 +376,9 @@ namespace VUI
 
 			var topOffset = rt.offsetMin.y - rt.offsetMax.y;
 
-			return new InitResults(bounds, topOffset);
+			SetBounds(bounds, topOffset);
+
+			return true;
 		}
 
 		public override void Destroy()
@@ -327,7 +386,7 @@ namespace VUI
 			if (canvas_ != null)
 				SuperController.singleton.RemoveCanvas(canvas_);
 
-			Object.Destroy(fullscreenPanel_);
+			UnityEngine.Object.Destroy(fullscreenPanel_);
 			fullscreenPanel_ = null;
 		}
 
@@ -336,9 +395,14 @@ namespace VUI
 			// todo
 		}
 
+		public override void SetSize(Vector2 v)
+		{
+			// todo
+		}
+
 		private void CreateFullscreenPanel(Transform parent)
 		{
-			fullscreenPanel_ = new GameObject();
+			fullscreenPanel_ = CreateRootObject(RootObjectPrefix);
 			fullscreenPanel_.transform.SetParent(parent, false);
 
 			canvas_ = fullscreenPanel_.AddComponent<Canvas>();
@@ -431,6 +495,29 @@ namespace VUI
 			size_ = size;
 		}
 
+		private static string RootObjectPrefix
+		{
+			get { return Glue.Prefix + ".VRHandRootSupport."; }
+		}
+
+		public static void DoCleanup()
+		{
+			foreach (Transform t in SuperController.singleton.leftHand)
+			{
+				if (t.name.StartsWith(RootObjectPrefix))
+					DestroyRootObject(t);
+			}
+
+			foreach (Transform t in SuperController.singleton.rightHand)
+			{
+				if (t.name.StartsWith(RootObjectPrefix))
+				{
+					DestroyRootObject(t);
+					break;
+				}
+			}
+		}
+
 		public override Transform RootParent
 		{
 			get { return hudPanel_.transform; }
@@ -446,19 +533,12 @@ namespace VUI
 			}
 		}
 
-		protected override InitResults DoInit()
+		protected override bool DoInit()
 		{
 			CreateFullscreenPanel(HandTransform);
 			CreateHudPanel();
 
-			var rt = RootParent.GetComponent<RectTransform>();
-
-			var bounds = Rectangle.FromPoints(
-				0, 0, rt.rect.width, rt.rect.height);
-
-			var topOffset = rt.offsetMin.y - rt.offsetMax.y;
-
-			return new InitResults(bounds, topOffset);
+			return true;
 		}
 
 		public override void Destroy()
@@ -466,13 +546,19 @@ namespace VUI
 			if (canvas_ != null)
 				SuperController.singleton.RemoveCanvas(canvas_);
 
-			Object.Destroy(fullscreenPanel_);
+			UnityEngine.Object.Destroy(fullscreenPanel_);
 			fullscreenPanel_ = null;
 		}
 
 		public override void SetActive(bool b)
 		{
 			fullscreenPanel_?.SetActive(b);
+		}
+
+		public override void SetSize(Vector2 v)
+		{
+			size_ = v;
+			SetRect();
 		}
 
 		public void Attach(int hand)
@@ -489,15 +575,13 @@ namespace VUI
 
 		private void CreateFullscreenPanel(Transform parent)
 		{
-			fullscreenPanel_ = new GameObject();
+			fullscreenPanel_ = CreateRootObject(RootObjectPrefix);
 			fullscreenPanel_.transform.SetParent(parent, false);
 
 			canvas_ = fullscreenPanel_.AddComponent<Canvas>();
 			var cr = fullscreenPanel_.AddComponent<CanvasRenderer>();
 			var cs = fullscreenPanel_.AddComponent<CanvasScaler>();
-			var rt = fullscreenPanel_.AddComponent<RectTransform>();
-			if (rt == null)
-				rt = fullscreenPanel_.GetComponent<RectTransform>();
+			fullscreenPanel_.AddComponent<RectTransform>();
 
 			canvas_.renderMode = RenderMode.WorldSpace;
 			canvas_.worldCamera = Camera.main;
@@ -510,6 +594,14 @@ namespace VUI
 
 			var rc = fullscreenPanel_.AddComponent<GraphicRaycaster>();
 			var fc = fullscreenPanel_.AddComponent<FaceCamera>();
+
+			SetRect();
+			SuperController.singleton.AddCanvas(canvas_);
+		}
+
+		private void SetRect()
+		{
+			var rt = fullscreenPanel_.GetComponent<RectTransform>();
 
 			float w = size_.x;
 			float h = size_.y;
@@ -526,7 +618,12 @@ namespace VUI
 			rt.localPosition = new Vector3(0, 0.08f, -0.05f);
 			rt.localScale = new Vector3(-s / w, s / w, s / w);
 
-			SuperController.singleton.AddCanvas(canvas_);
+			var bounds = Rectangle.FromPoints(
+				0, 0, rt.rect.width, rt.rect.height);
+
+			var topOffset = rt.offsetMin.y - rt.offsetMax.y;
+
+			SetBounds(bounds, topOffset);
 		}
 
 		private void CreateHudPanel()
@@ -562,17 +659,31 @@ namespace VUI
 	class OverlayRootSupport : BasicRootSupport
 	{
 		private float topOffset_;
-		private float width_, height_;
+		private Vector2 size_;
 
 		private GameObject panel_ = null;
 		private GameObject ui_ = null;
 		private Canvas canvas_ = null;
+		private CanvasScaler scaler_ = null;
 
 		public OverlayRootSupport(float topOffset, float width, float height)
 		{
 			topOffset_ = topOffset;
-			width_ = width;
-			height_ = height;
+			size_ = new Vector2(width, height);
+		}
+
+		private static string RootObjectPrefix
+		{
+			get { return Glue.Prefix + ".OverlayRootSupport."; }
+		}
+
+		public static void DoCleanup()
+		{
+			foreach (Transform t in SuperController.singleton.transform.root)
+			{
+				if (t.name.StartsWith(RootObjectPrefix))
+					DestroyRootObject(t);
+			}
 		}
 
 		public override Transform RootParent
@@ -580,13 +691,14 @@ namespace VUI
 			get { return ui_.transform; }
 		}
 
-		protected override InitResults DoInit()
+		protected override bool DoInit()
 		{
-			panel_ = new GameObject("OverlayRootSupport");
+			panel_ = CreateRootObject(RootObjectPrefix);
+			panel_.transform.SetParent(SuperController.singleton.transform.root);
 
 			canvas_ = panel_.AddComponent<Canvas>();
 			panel_.AddComponent<CanvasRenderer>();
-			panel_.AddComponent<CanvasScaler>();
+			scaler_ = panel_.AddComponent<CanvasScaler>();
 
 			canvas_.renderMode = RenderMode.ScreenSpaceOverlay;
 			canvas_.gameObject.AddComponent<GraphicRaycaster>();
@@ -595,24 +707,59 @@ namespace VUI
 
 			ui_ = new GameObject("OverlayRootSupportUI");
 			ui_.transform.SetParent(panel_.transform, false);
-			var rt = ui_.AddComponent<RectTransform>();
-			rt.anchorMin = new Vector2(0.5f, 1);
-			rt.anchorMax = new Vector2(0.5f, 1);
-			rt.offsetMin = new Vector2(-width_ / 2, -(height_ + topOffset_));
-			rt.offsetMax = new Vector2(width_ / 2, -topOffset_);
+			ui_.AddComponent<RectTransform>();
 
 			var bg = ui_.AddComponent<Image>();
 			bg.color = new Color(0, 0, 0, 0.8f);
 			bg.raycastTarget = true;
 
 			SuperController.singleton.AddCanvas(canvas_);
+			SetRect();
+
+			return true;
+		}
+
+		private void SetRect()
+		{
+			var rt = ui_.GetComponent<RectTransform>();
+			if (rt == null)
+			{
+				Glue.LogError("null rt");
+				return;
+			}
+
+			rt.anchorMin = new Vector2(1, 1);
+			rt.anchorMax = new Vector2(1, 1);
+			rt.offsetMin = new Vector2(-size_.x, -(size_.y + topOffset_));
+			rt.offsetMax = new Vector2(0, -topOffset_);
 
 			var bounds = Rectangle.FromPoints(
 				0, 0, rt.rect.width, rt.rect.height);
 
 			var topOffset = rt.offsetMin.y - rt.offsetMax.y;
 
-			return new InitResults(bounds, topOffset);
+			SetBounds(bounds, topOffset);
+		}
+
+		private bool ShowUI
+		{
+			get
+			{
+				var go = SuperController.singleton?.mainHUD?.gameObject;
+
+				if (go == null)
+					return true;
+				else
+					return go.activeSelf;
+			}
+		}
+
+		public override void Update(float s)
+		{
+			if (ShowUI != panel_.activeSelf)
+				SetActive(ShowUI);
+
+			scaler_.scaleFactor = SuperController.singleton.monitorUIScale / 2;
 		}
 
 		public override void Destroy()
@@ -622,14 +769,21 @@ namespace VUI
 
 			if (panel_ != null)
 			{
-				Object.Destroy(panel_);
+				UnityEngine.Object.Destroy(panel_);
 				panel_ = null;
 			}
 		}
 
 		public override void SetActive(bool b)
 		{
-			// todo
+			if (panel_ != null)
+				panel_.SetActive(b && ShowUI);
+		}
+
+		public override void SetSize(Vector2 v)
+		{
+			size_ = v;
+			SetRect();
 		}
 
 		protected override Canvas GetCanvas()
