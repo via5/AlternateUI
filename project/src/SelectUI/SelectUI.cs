@@ -9,11 +9,13 @@ namespace AUI.SelectUI
 {
 	class MouseCallbacks : MonoBehaviour, IPointerDownHandler
 	{
+		private SelectUI ui_ = null;
 		private UIPopupButton button_ = null;
 
-		public UIPopupButton Button
+		public void Set(SelectUI ui, UIPopupButton button)
 		{
-			set { button_ = value; }
+			ui_ = ui;
+			button_ = button;
 		}
 
 		public void OnPointerDown(PointerEventData d)
@@ -34,7 +36,7 @@ namespace AUI.SelectUI
 								var atom = SuperController.singleton.GetAtomByUid(uid);
 
 								if (atom == null)
-									Log.Error($"selectui: atom {uid} not found");
+									ui_.Log.Error($"atom {uid} not found");
 								else
 									SuperController.singleton.RemoveAtom(atom);
 							}
@@ -44,7 +46,7 @@ namespace AUI.SelectUI
 			}
 			catch (Exception e)
 			{
-				Log.Error(e.ToString());
+				ui_.Log.Error(e.ToString());
 			}
 		}
 	}
@@ -145,8 +147,8 @@ namespace AUI.SelectUI
 
 				mc = bt.gameObject.AddComponent<MouseCallbacks>();
 
+				mc.Set(this, bt);
 				mc.enabled = true;
-				mc.Button = bt;
 			}
 		}
 

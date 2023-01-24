@@ -6,11 +6,13 @@ namespace AUI.SkinUI
 {
 	class MouseCallbacks : MonoBehaviour, IPointerDownHandler
 	{
+		private SkinUI ui_ = null;
 		private JSONStorableUrl url_ = null;
 
-		public JSONStorableUrl Url
+		public void Set(SkinUI ui, JSONStorableUrl url)
 		{
-			set { url_ = value; }
+			ui_ = ui;
+			url_ = url;
 		}
 
 		public void OnPointerDown(PointerEventData d)
@@ -21,14 +23,14 @@ namespace AUI.SkinUI
 				{
 					if (url_ != null)
 					{
-						Log.Info($"reloading {url_.name}");
+						ui_.Log.Info($"reloading {url_.name}");
 						url_.Reload();
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				Log.Error(e.ToString());
+				ui_.Log.Error(e.ToString());
 			}
 		}
 	}
@@ -210,7 +212,7 @@ namespace AUI.SkinUI
 			mc = bt.gameObject.AddComponent<MouseCallbacks>();
 
 			mc.enabled = true;
-			mc.Url = url;
+			mc.Set(this, url);
 		}
 
 

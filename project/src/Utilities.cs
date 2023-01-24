@@ -118,7 +118,7 @@ namespace AUI
 			f();
 			sw.Stop();
 			var ms = ((((double)sw.ElapsedTicks) / Stopwatch.Frequency) * 1000);
-			Log.Info($"{s} {ms:0.000}ms");
+			AlternateUI.Instance.Log.Info($"{s} {ms:0.000}ms");
 		}
 
 		public static void NatSort(List<string> list)
@@ -273,12 +273,15 @@ namespace AUI
 	}
 
 
-	static class Log
+	public class Logger
 	{
 		public const int ErrorLevel = 0;
 		public const int WarningLevel = 1;
 		public const int InfoLevel = 2;
 		public const int VerboseLevel = 3;
+
+		private Func<string> prefix_;
+		private bool enabled_ = true;
 
 		public static string LevelToShortString(int i)
 		{
@@ -292,71 +295,22 @@ namespace AUI
 			}
 		}
 
-		public static void Out(int level, string s)
+		public Logger(string prefix)
 		{
-			var t = DateTime.Now.ToString("hh:mm:ss.fff");
-			string p = LevelToShortString(level);
-
-			if (level == ErrorLevel)
-				SuperController.LogError($"{t} !![{p}] {s}");
-			else
-				SuperController.LogError($"{t}   [{p}] {s}");
-		}
-
-		public static void Verbose(string s)
-		{
-			//Out(VerboseLevel, s);
-		}
-
-		public static void Info(string s)
-		{
-			Out(InfoLevel, s);
-		}
-
-		public static void Warning(string s)
-		{
-			Out(WarningLevel, s);
-		}
-
-		public static void Error(string s)
-		{
-			Out(ErrorLevel, s);
-		}
-
-		public static void ErrorST(string s)
-		{
-			Out(ErrorLevel, $"{s}\n{new StackTrace(1)}");
-		}
-	}
-
-
-	class Logger
-	{
-		public const int All = int.MaxValue;
-		private static int enabled_ = All;
-
-		private int type_;
-		private Func<string> prefix_;
-
-		public Logger(int type, string prefix)
-		{
-			type_ = type;
 			prefix_ = () => prefix;
 		}
 
-		public Logger(int type, Func<string> prefix)
+		public Logger(Func<string> prefix)
 		{
-			type_ = type;
 			prefix_ = prefix;
 		}
 
-		public Logger(int type, Atom a, string prefix)
+		public Logger(Atom a, string prefix)
 		{
-			type_ = type;
 			prefix_ = () => a.uid + (prefix == "" ? "" : " " + prefix);
 		}
 
-		public static int Enabled
+		public bool Enabled
 		{
 			get { return enabled_; }
 			set { enabled_ = value; }
@@ -369,34 +323,45 @@ namespace AUI
 
 		public void Verbose(string s)
 		{
-			if (IsEnabled())
-				Log.Verbose($"{Prefix}: {s}");
+			//if (IsEnabled())
+			//	Out(VerboseLevel, $"{Prefix}: {s}");
 		}
 
 		public void Info(string s)
 		{
 			if (IsEnabled())
-				Log.Info($"{Prefix}: {s}");
+				Out(InfoLevel, $"{Prefix}: {s}");
 		}
 
 		public void Warning(string s)
 		{
-			Log.Warning($"{Prefix}: {s}");
+			Out(WarningLevel, $"{Prefix}: {s}");
 		}
 
 		public void Error(string s)
 		{
-			Log.Error($"{Prefix}: {s}");
+			Out(ErrorLevel, $"{Prefix}: {s}");
 		}
 
 		public void ErrorST(string s)
 		{
-			Log.ErrorST($"{Prefix}: {s}\n{new StackTrace(1)}");
+			Out(ErrorLevel, $"{Prefix}: {s}\n{new StackTrace(1)}");
 		}
 
 		private bool IsEnabled()
 		{
-			return Bits.IsSet(enabled_, type_);
+			return enabled_;
+		}
+
+		public static void Out(int level, string s)
+		{
+			var t = DateTime.Now.ToString("hh:mm:ss.fff");
+			string p = LevelToShortString(level);
+
+			if (level == ErrorLevel)
+				SuperController.LogError($"{t} !![{p}] {s}");
+			else
+				SuperController.LogMessage($"{t}   [{p}] {s}");
 		}
 	}
 }

@@ -515,7 +515,7 @@ namespace AUI.MorphUI
 				if (pos != -1)
 					return m.uid.Substring(pos + 2);
 
-				Log.Error($"{m.uid} has no :/");
+				AlternateUI.Instance.Log.Error($"{m.uid} has no :/");
 			}
 
 			return m.uid;

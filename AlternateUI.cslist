@@ -1,7 +1,7 @@
 project\src\Main.cs
 project\src\Utilities.cs
 project\src\Version.cs
-project\src\Log\Log.cs
+project\src\LogUI\LogUI.cs
 project\src\MorphUI\Categories.cs
 project\src\MorphUI\Controls.cs
 project\src\MorphUI\Filter.cs

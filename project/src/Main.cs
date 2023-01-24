@@ -22,6 +22,7 @@ namespace AUI
 	public abstract class BasicAlternateUI : IAlternateUI
 	{
 		private readonly string name_, displayName_;
+		private readonly Logger log_;
 		private JSONStorableBool enabledParam_;
 		private bool enabled_;
 
@@ -29,13 +30,14 @@ namespace AUI
 		{
 			name_ = name;
 			displayName_ = displayName;
+			log_ = new Logger("aui." + name_);
 			enabled_ = defaultEnabled;
 
 			enabledParam_ = new JSONStorableBool($"{name_}.enabled", enabled_, (bool b) =>
 			{
 				if (enabled_ != enabledParam_.val)
 				{
-					SuperController.LogError($"{Name}: enabled changed to {enabledParam_.val}");
+					Log.Info($"{Name}: enabled changed to {enabledParam_.val}");
 
 					enabled_ = enabledParam_.val;
 
@@ -57,6 +59,11 @@ namespace AUI
 		public string DisplayName
 		{
 			get { return displayName_; }
+		}
+
+		public Logger Log
+		{
+			get { return log_; }
 		}
 
 		public abstract string Description { get; }
@@ -84,7 +91,7 @@ namespace AUI
 
 		public void Init()
 		{
-			SuperController.LogError($"init {Name}");
+			Log.Verbose($"init {Name}");
 			DoInit();
 
 			if (enabled_)
@@ -104,13 +111,13 @@ namespace AUI
 
 		private void Enable()
 		{
-			SuperController.LogError($"enable {Name}");
+			Log.Info($"enable {Name}");
 			DoEnable();
 		}
 
 		private void Disable()
 		{
-			SuperController.LogError($"disable {Name}");
+			Log.Info($"disable {Name}");
 			DoDisable();
 		}
 
@@ -178,6 +185,7 @@ namespace AUI
 		private static AlternateUI instance_ = null;
 		private const string ConfigFile = "Custom/PluginData/aui.json";
 
+		private Logger log_;
 		private BasicAlternateUI[] uis_ = null;
 		private bool inited_ = false;
 		private VUI.TimerManager tm_ = null;
@@ -189,11 +197,17 @@ namespace AUI
 		public AlternateUI()
 		{
 			instance_ = this;
+			log_ = new Logger("aui");
 		}
 
 		static public AlternateUI Instance
 		{
 			get { return instance_; }
+		}
+
+		public Logger Log
+		{
+			get { return log_; }
 		}
 
 		public T GetUI<T>() where T : class, IAlternateUI
@@ -251,7 +265,7 @@ namespace AUI
 
 		private void DoInit()
 		{
-			//SuperController.LogError("init");
+			Log.Verbose("init");
 
 			VUI.Root.Init(
 				"AUI",
@@ -267,7 +281,6 @@ namespace AUI
 
 			LoadConfig();
 
-			//SuperController.LogError("initializing uis");
 			for (int i = 0; i < uis_.Length; ++i)
 				uis_[i].Init();
 
@@ -291,7 +304,7 @@ namespace AUI
 
 		private void LoadConfig()
 		{
-			SuperController.LogError("loading config");
+			Log.Verbose("loading config");
 
 			var j = LoadJSON(ConfigFile) as JSONClass;
 			if (j == null)
@@ -370,7 +383,7 @@ namespace AUI
 			if (pui == null)
 				return;
 
-			SuperController.LogError("reloading");
+			Log.Verbose("reloading");
 			pui.reloadButton?.onClick?.Invoke();
 		}
 

@@ -10,6 +10,7 @@ namespace AUI.MorphUI
 		private const int Columns = 3;
 		private const int Rows = 7;
 
+		private readonly MorphUI ui_;
 		private Atom atom_ = null;
 		private GenerateDAZMorphsControlUI mui_ = null;
 		private VUI.Root root_ = null;
@@ -25,9 +26,15 @@ namespace AUI.MorphUI
 		private bool triedOnce_ = false;
 		private float updateElapsed_ = 0;
 
-		public GenderMorphUI()
+		public GenderMorphUI(MorphUI ui)
 		{
+			ui_ = ui;
 			filter_.Sort = Filter.SortName;
+		}
+
+		public Logger Log
+		{
+			get { return ui_.Log; }
 		}
 
 		public VUI.Root Root
@@ -241,13 +248,19 @@ namespace AUI.MorphUI
 
 	class PersonMorphUI
 	{
-		private Atom atom_ = null;
-		private GenderMorphUI male_ = new GenderMorphUI();
-		private GenderMorphUI female_ = new GenderMorphUI();
+		private readonly MorphUI ui_;
+		private readonly Atom atom_;
+		private readonly GenderMorphUI male_;
+		private readonly GenderMorphUI female_;
 
-		public PersonMorphUI(Atom a)
+		public PersonMorphUI(MorphUI ui, Atom a)
 		{
+			ui_ = ui;
 			atom_ = a;
+
+			male_ = new GenderMorphUI(ui);
+			female_ = new GenderMorphUI(ui);
+
 			male_.Set(a, GetMUI(true));
 			female_.Set(a, GetMUI(false));
 		}
@@ -255,6 +268,11 @@ namespace AUI.MorphUI
 		public Atom Atom
 		{
 			get { return atom_; }
+		}
+
+		public Logger Log
+		{
+			get { return ui_.Log; }
 		}
 
 		public void Update(float s)
@@ -380,7 +398,7 @@ namespace AUI.MorphUI
 				try
 				{
 					Log.Verbose($"morphui: new atom {a.uid}");
-					uis_.Add(new PersonMorphUI(a));
+					uis_.Add(new PersonMorphUI(this, a));
 				}
 				catch (BadAtom)
 				{

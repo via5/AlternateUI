@@ -174,8 +174,8 @@ namespace AUI.MorphUI
 
 				foreach (var c in children_)
 				{
-					Log.Info(new string(' ', indent * 4) + c.name_);
-					c.Dump(indent + 1);
+					//Log.Info(new string(' ', indent * 4) + c.name_);
+					//c.Dump(indent + 1);
 				}
 			}
 		}
