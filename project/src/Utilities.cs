@@ -361,7 +361,7 @@ namespace AUI
 			if (level == ErrorLevel)
 				SuperController.LogError($"{t} !![{p}] {s}");
 			else
-				SuperController.LogMessage($"{t}   [{p}] {s}");
+				SuperController.LogError($"{t}   [{p}] {s}");
 		}
 	}
 }

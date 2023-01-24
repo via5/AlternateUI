@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -87,7 +88,7 @@ namespace AUI.SkinUI
 
 		private void AtomAdded(Atom a)
 		{
-			RefreshCallbacks(a);
+			AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo(a));
 		}
 
 		private void AtomRemoved(Atom a)
@@ -97,7 +98,19 @@ namespace AUI.SkinUI
 
 		private void OnSceneLoaded()
 		{
+			AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo());
+		}
+
+		private IEnumerator RefreshCallbacksCo()
+		{
+			yield return new WaitForSeconds(1);
 			RefreshCallbacks();
+		}
+
+		private IEnumerator RefreshCallbacksCo(Atom a)
+		{
+			yield return new WaitForSeconds(1);
+			RefreshCallbacks(a);
 		}
 
 		private void AddCallbacks(Atom a)
@@ -193,10 +206,29 @@ namespace AUI.SkinUI
 
 		private void AddCallbacks(Atom a, UnityEngine.UI.Button b, string param)
 		{
-			var url = a.GetStorableByID("textures")?.GetUrlJSONParam(param);
+			//Log.Info($"adding callback for atom {a?.uid}, button {b?.name}, param {param}");
 
-			if (b == null || url == null)
+			if (b == null)
+			{
+				//Log.Error("button is null");
 				return;
+			}
+
+			var st = a.GetStorableByID("textures");
+			if (st == null)
+			{
+				//Log.Error("textures storable is null");
+				return;
+			}
+
+			var url = st.GetUrlJSONParam(param);
+			if (url == null)
+			{
+				//Log.Error("url is null");
+				return;
+			}
+
+			//Log.Info($"url is {url.val}");
 
 			RemoveCallbacks(b);
 			AddCallbacks(b, url);
@@ -213,6 +245,8 @@ namespace AUI.SkinUI
 
 			mc.enabled = true;
 			mc.Set(this, url);
+
+			//Log.Info($"added MouseCallbacks to button {bt.name}, url={url.val}");
 		}
 
 
