@@ -26,7 +26,11 @@ This alternate new Morphs UI is much faster than the default one. It has a slide
     - `+Range`: doubles the range.
     - `F`: set as favorite.
 
-<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png" width="300"></a>
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png" width="300" align="right"></a>
+
+The` Categories` button will open a tree where the category can be selected. All morphs belonging to this category or any of its children will be displayed. The first two items will always be `Morph` and `Pose`. Other top-level categories will be displayed below these two.
+
+<br><br><br><br><br><br><br><br><br><br>
 
 ## Tweaks
 ### Middle-click remove
@@ -49,3 +53,6 @@ Some scenes will move the camera to a specific location when they load. This dis
 
 ### Move new lights
 The `InvisibleLight`'s initial position is a bit too close to the center for characters that are in the default position. This will move new `InvisibleLight` atoms slightly forwards for better illumination.
+
+## Licence
+AlternateUI is released under [Creative Commons Zero](https://creativecommons.org/share-your-work/public-domain/cc0). This project is in the public domain.
