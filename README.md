@@ -4,9 +4,14 @@ AlternateUI mainly replaces the male and female morphs UI, but also has several 
 ## Usage
 Add `AlternateUI.cslist` from `via5.AlternateUI.x` as a session plugin. To load the plugin every time VaM starts, save it as the default session plugin preset. The plugin UI contains toggles for every feature.
 
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png" width="300"></a>
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png" width="300"></a>
+
 ## Features
 
 ### Morphs UI
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui.png" width="400" align="right"></a>
+
 This alternate new Morphs UI is much faster than the default one. It has a slider for pages, fast search that supports regular expressions and a tree for the categories. Some features are missing from the default UI. If you need them, disable the AlternateUI plugin to revert to the default UI.
 
 - All sliders supports the mouse wheel.
@@ -21,9 +26,11 @@ This alternate new Morphs UI is much faster than the default one. It has a slide
     - `+Range`: doubles the range.
     - `F`: set as favorite.
 
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui-categories.png" width="300"></a>
+
 ## Tweaks
 ### Middle-click remove
-Middle-click atoms in the the selection list to remove them.
+Middle-click atoms in the selection list to remove them.
 
 ### Right-click skin texture reload
 In the `Skin Textures` tab, right-click the `Select` button to reload this texture. Useful when editing textures.
