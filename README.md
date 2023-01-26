@@ -45,16 +45,16 @@ In the `Skin Textures` tab, right-click the `Select` button to reload this textu
 Use the `Consolas` font for the error log.
 
 ### Edit mode on load
-Switch to Edit mode every time a scene is loaded.
+Switch to Edit mode every time a scene is loaded. Disabled by default.
 
 ### Focus head on load
-When a scene is loaded, center the camera to the head of the first atom in the scene. Works best with `Disable load position` enabled.
+When a scene is loaded, center the camera to the head of the first atom in the scene. Works best with `Disable load position` enabled. Disabled by default.
 
 ### Disable load position
-Some scenes will move the camera to a specific location when they load. This disables the load position for all scenes and keeps the camera where it was.
+Some scenes will move the camera to a specific location when they load. This disables the load position for all scenes and keeps the camera where it was. Disabled by default.
 
 ### Move new lights
-The `InvisibleLight`'s initial position is a bit too close to the center for characters that are in the default position. This will move new `InvisibleLight` atoms slightly forwards for better illumination.
+The `InvisibleLight`'s initial position is a bit too close to the center for characters that are in the default position. This will move new `InvisibleLight` atoms slightly forwards for better illumination. Disabled by default.
 
 ## Licence
 AlternateUI is released under [Creative Commons Zero](https://creativecommons.org/share-your-work/public-domain/cc0). This project is in the public domain.
