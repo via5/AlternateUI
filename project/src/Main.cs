@@ -232,7 +232,8 @@ namespace AUI
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
-				new Tweaks.MoveNewLight()
+				new Tweaks.MoveNewLight(),
+				new LightUI.LightUI()
 			};
 		}
 

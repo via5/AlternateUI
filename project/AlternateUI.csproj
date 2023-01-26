@@ -94,6 +94,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\LightUI\LightUI.cs" />
     <Compile Include="src\LogUI\LogUI.cs" />
     <Compile Include="src\Main.cs" />
     <Compile Include="src\MorphUI\Categories.cs" />
