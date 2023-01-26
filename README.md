@@ -30,9 +30,11 @@ This alternate new Morphs UI is much faster than the default one. It has a slide
 
 The` Categories` button will open a tree where the category can be selected. All morphs belonging to this category or any of its children will be displayed. The first two items will always be `Morph` and `Pose`. Other top-level categories will be displayed below these two.
 
-<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br>
 
 ## Tweaks
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png" width="300" align="right"></a>
+
 ### Middle-click remove
 Middle-click atoms in the selection list to remove them.
 
