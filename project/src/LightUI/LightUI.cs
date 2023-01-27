@@ -1,8 +1,4 @@
-﻿using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace AUI.LightUI
 {
@@ -59,7 +55,6 @@ namespace AUI.LightUI
 
 			foreach (Transform t in parent)
 			{
-				Log.Info(t.name);
 				if (t.name.StartsWith(ButtonName))
 					UnityEngine.Object.Destroy(t.gameObject);
 			}

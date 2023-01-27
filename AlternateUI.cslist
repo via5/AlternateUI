@@ -8,6 +8,7 @@ project\src\MorphUI\Controls.cs
 project\src\MorphUI\Filter.cs
 project\src\MorphUI\MorphPanel.cs
 project\src\MorphUI\MorphUI.cs
+project\src\PluginsUI\PluginsUI.cs
 project\src\SelectUI\SelectUI.cs
 project\src\SkinUI\SkinUI.cs
 project\src\Tweaks\Tweaks.cs
