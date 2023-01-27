@@ -247,6 +247,12 @@ namespace AUI
 		{
 			try
 			{
+				if (Input.GetKeyDown(KeyCode.F5))
+				{
+					ReloadPlugin();
+					return;
+				}
+
 				DoUpdate();
 			}
 			catch (Exception e)

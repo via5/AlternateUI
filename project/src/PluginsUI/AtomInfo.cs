@@ -1,7 +1,6 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace AUI.PluginsUI
@@ -36,6 +35,11 @@ namespace AUI.PluginsUI
 			a_ = a;
 		}
 
+		public Atom Atom
+		{
+			get { return a_; }
+		}
+
 		public Logger Log
 		{
 			get { return pui_.Log; }
@@ -46,10 +50,27 @@ namespace AUI.PluginsUI
 			get { return (ui_ != null); }
 		}
 
+		private static string GetCategory(Atom a)
+		{
+			string cat = a.category.Trim();
+			string s = "";
+
+			for (int i = 0; i < cat.Length; ++i)
+			{
+				if (char.IsLetterOrDigit(cat[i]))
+					s += cat[i];
+			}
+
+			if (s == "")
+				s = "None";
+
+			return s;
+		}
+
 		public string GetRecentFile()
 		{
 			return AlternateUI.Instance.GetConfigFilePath(
-				string.Format(RecentFileFormat, a_.type));
+				string.Format(RecentFileFormat, GetCategory(a_)));
 		}
 
 		public List<string> GetRecentPlugins()
@@ -113,7 +134,7 @@ namespace AUI.PluginsUI
 			if (pm_ == null)
 			{
 				if (log)
-					Log.Error($"{this}: no PluginManager");
+					Log.Verbose($"{this}: no PluginManager");
 
 				return false;
 			}
@@ -121,7 +142,7 @@ namespace AUI.PluginsUI
 			if (pm_.UITransform == null)
 			{
 				if (log)
-					Log.Error($"{this}: no UITransform");
+					Log.Verbose($"{this}: no UITransform");
 
 				return false;
 			}
@@ -130,7 +151,7 @@ namespace AUI.PluginsUI
 			if (ui_ == null)
 			{
 				if (log)
-					Log.Error($"{this} no MVRPluginManagerUI");
+					Log.Verbose($"{this} no MVRPluginManagerUI");
 
 				return false;
 			}
@@ -257,7 +278,7 @@ namespace AUI.PluginsUI
 				var ui = pp.GetComponent<MVRPluginUI>();
 				if (ui == null)
 				{
-					Log.Info("plugin as no ui");
+					Log.Error("plugin as no ui");
 					continue;
 				}
 
@@ -311,6 +332,9 @@ namespace AUI.PluginsUI
 		{
 			var ps = GetRecentPlugins();
 
+			if (ps.Count == 0)
+				Log.Info($"{a_.uid} {a_.category} {a_.type} empty");
+
 			var list = popup_.popup;
 
 			list.useDifferentDisplayValues = true;
@@ -343,7 +367,7 @@ namespace AUI.PluginsUI
 			if (string.IsNullOrEmpty(s.Trim()))
 				return;
 
-			Log.Info(s);
+			Log.Verbose(s);
 
 			var p = pm_.CreatePlugin();
 			p.pluginURLJSON.val = s;
@@ -357,7 +381,7 @@ namespace AUI.PluginsUI
 
 		public override string ToString()
 		{
-			return $"{a_.type}.{a_.uid}";
+			return $"{GetCategory(a_)}.{a_.uid}";
 		}
 	}
 }

@@ -1,16 +1,14 @@
-﻿using SimpleJSON;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using UnityEngine;
 
 namespace AUI.PluginsUI
 {
 	class PluginsUI : BasicAlternateUI
 	{
-		private const float DeferredCheckInterval = 1;
-		private const float ChangedCheckInterval = 1;
+		private const float DeferredCheckInterval = 2;
+		private const float ChangedCheckInterval = 2;
 
-		private AtomInfo[] deferred_ = null;
+		private readonly List<AtomInfo> deferred_ = new List<AtomInfo>();
 		private readonly List<AtomInfo> atoms_ = new List<AtomInfo>();
 		private float deferredElapsed_ = 0;
 		private float changedElapsed_ = 0;
@@ -66,7 +64,7 @@ namespace AUI.PluginsUI
 
 		private void CheckDeferred(float s)
 		{
-			if (deferred_ == null)
+			if (deferred_.Count == 0)
 				return;
 
 			deferredElapsed_ += s;
@@ -76,14 +74,14 @@ namespace AUI.PluginsUI
 
 				bool okay = true;
 
-				for (int i = 0; i < deferred_.Length; ++i)
+				for (int i = 0; i < deferred_.Count; ++i)
 				{
 					if (deferred_[i] == null)
 						continue;
 
 					if (deferred_[i].Enable())
 					{
-						Log.Info($"deferred atom {deferred_[i]} now okay");
+						Log.Verbose($"deferred atom {deferred_[i]} now okay");
 						atoms_.Add(deferred_[i]);
 						deferred_[i] = null;
 					}
@@ -95,8 +93,8 @@ namespace AUI.PluginsUI
 
 				if (okay)
 				{
-					Log.Info($"all deferred atoms okay");
-					deferred_ = null;
+					Log.Verbose($"all deferred atoms okay");
+					deferred_.Clear();
 				}
 			}
 		}
@@ -126,7 +124,7 @@ namespace AUI.PluginsUI
 					return;
 			}
 
-			Log.Info($"{ai} new recent plugin: {p.lastUrl}");
+			Log.Verbose($"{ai} new recent plugin: {p.lastUrl}");
 			list.Insert(0, p.lastUrl);
 
 			ai.SaveRecentPlugins(list);
@@ -140,7 +138,7 @@ namespace AUI.PluginsUI
 			var list = ai.GetRecentPlugins();
 
 			list.RemoveAll((i) => (i == s));
-			Log.Info($"{ai} removed {s}");
+			Log.Verbose($"{ai} removed {s}");
 
 			ai.SaveRecentPlugins(list);
 		}
@@ -177,16 +175,22 @@ namespace AUI.PluginsUI
 			return p;
 		}
 
+		private bool ValidAtom(Atom a)
+		{
+			if (a.uid == "[CameraRig]")
+				return false;
+
+			return true;
+		}
+
 		private List<Atom> GetAtoms()
 		{
 			var list = new List<Atom>();
 
 			foreach (var a in SuperController.singleton.GetAtoms())
 			{
-				if (a.uid == "[CameraRig]")
-					continue;
-
-				list.Add(a);
+				if (ValidAtom(a))
+					list.Add(a);
 			}
 
 			return list;
@@ -194,31 +198,72 @@ namespace AUI.PluginsUI
 
 		protected override void DoEnable()
 		{
-			var deferred = new List<AtomInfo>();
+			SuperController.singleton.onAtomAddedHandlers += OnAtomAdded;
+			SuperController.singleton.onAtomRemovedHandlers += OnAtomRemoved;
+			SuperController.singleton.onSceneLoadedHandlers += OnSceneLoaded;
 
-			foreach (var a in GetAtoms())
-			{
-				var ai = new AtomInfo(this, a);
-
-				if (ai.Enable())
-				{
-					atoms_.Add(ai);
-				}
-				else
-				{
-					Log.Error($"{ai}: deferring");
-					deferred.Add(ai);
-				}
-			}
-
-			if (deferred.Count > 0)
-				deferred_ = deferred.ToArray();
+			CheckScene();
 		}
 
 		protected override void DoDisable()
 		{
+			SuperController.singleton.onAtomAddedHandlers -= OnAtomAdded;
+			SuperController.singleton.onAtomRemovedHandlers -= OnAtomRemoved;
+			SuperController.singleton.onSceneLoadedHandlers -= OnSceneLoaded;
+
 			foreach (var a in atoms_)
 				a.Disable();
+
+			atoms_.Clear();
+			deferred_.Clear();
+		}
+
+		private void CheckScene()
+		{
+			atoms_.Clear();
+			deferred_.Clear();
+
+			foreach (var a in GetAtoms())
+				TryAddAtom(a);
+		}
+
+		private void TryAddAtom(Atom a)
+		{
+			var ai = new AtomInfo(this, a);
+
+			if (ai.Enable())
+			{
+				atoms_.Add(ai);
+			}
+			else
+			{
+				Log.Verbose($"{ai}: deferring");
+				deferred_.Add(ai);
+			}
+		}
+
+		private void OnAtomAdded(Atom a)
+		{
+			if (ValidAtom(a))
+				TryAddAtom(a);
+		}
+
+		private void OnAtomRemoved(Atom a)
+		{
+			for (int i = 0; i < atoms_.Count; ++i)
+			{
+				if (atoms_[i].Atom == a)
+				{
+					atoms_[i].Disable();
+					atoms_.RemoveAt(i);
+					break;
+				}
+			}
+		}
+
+		private void OnSceneLoaded()
+		{
+			CheckScene();
 		}
 	}
 }
