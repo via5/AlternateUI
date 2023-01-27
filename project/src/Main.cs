@@ -1,4 +1,5 @@
-﻿using SimpleJSON;
+﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -183,7 +184,10 @@ namespace AUI
 	class AlternateUI : MVRScript
 	{
 		private static AlternateUI instance_ = null;
-		private const string ConfigFile = "Custom/PluginData/aui.json";
+
+		private const string ConfigDir = "Custom/PluginData/AlternateUI";
+		private const string ConfigFile = ConfigDir + "/aui.json";
+		private const string OldConfigFile = "Custom/PluginData/aui.json";
 
 		private Logger log_;
 		private BasicAlternateUI[] uis_ = null;
@@ -198,6 +202,7 @@ namespace AUI
 		{
 			instance_ = this;
 			log_ = new Logger("aui");
+			FileManagerSecure.CreateDirectory(ConfigDir);
 		}
 
 		static public AlternateUI Instance
@@ -233,7 +238,8 @@ namespace AUI
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
 				new Tweaks.MoveNewLight(),
-				new LightUI.LightUI()
+				new LightUI.LightUI(),
+				new PluginsUI.PluginsUI()
 			};
 		}
 
@@ -303,11 +309,22 @@ namespace AUI
 			}
 		}
 
+		public string GetConfigFilePath(string filename)
+		{
+			return ConfigDir + "/" + filename;
+		}
+
 		private void LoadConfig()
 		{
 			Log.Verbose("loading config");
 
-			var j = LoadJSON(ConfigFile) as JSONClass;
+			JSONClass j = null;
+
+			if (FileManagerSecure.FileExists(OldConfigFile))
+				j = LoadJSON(OldConfigFile) as JSONClass;
+			else if (FileManagerSecure.FileExists(ConfigFile))
+				j = LoadJSON(ConfigFile) as JSONClass;
+
 			if (j == null)
 				return;
 
@@ -334,6 +351,9 @@ namespace AUI
 			}
 
 			SaveJSON(j, ConfigFile);
+
+			if (FileManagerSecure.FileExists(OldConfigFile))
+				FileManagerSecure.DeleteFile(OldConfigFile);
 		}
 
 		public void Save()
