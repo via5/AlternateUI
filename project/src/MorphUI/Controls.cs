@@ -9,7 +9,7 @@
 		private VUI.TextBox box_;
 		private VUI.ToolButton clear_;
 
-		public SearchBox(string placeholder, bool autoComplete)
+		public SearchBox(string placeholder)
 		{
 			panel_ = new VUI.Panel(new VUI.BorderLayout());
 
@@ -29,8 +29,6 @@
 
 			panel_.Add(box_, VUI.BorderLayout.Center);
 			panel_.Add(clearPanel, VUI.BorderLayout.Center);
-
-			box_.AutoComplete.Enabled = autoComplete;
 		}
 
 		public VUI.Widget Widget
@@ -41,6 +39,11 @@
 		public string Text
 		{
 			get { return box_?.Text ?? ""; }
+		}
+
+		public VUI.TextBox TextBox
+		{
+			get { return box_; }
 		}
 	}
 
@@ -104,7 +107,7 @@
 
 			panel_.Add(tree_, VUI.BorderLayout.Center);
 
-			search_ = new SearchBox("Search categories", false);
+			search_ = new SearchBox("Search categories");
 			search_.Changed += OnSearch;
 			panel_.Add(search_.Widget, VUI.BorderLayout.Bottom);
 
@@ -235,7 +238,7 @@
 
 		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
 		private VUI.Label count_ = new VUI.Label();
-		private SearchBox search_ = new SearchBox("Search", true);
+		private SearchBox search_ = new SearchBox("Search");
 		private CategoriesWidget cats_;
 
 		public Controls(GenderMorphUI ui)
@@ -281,9 +284,6 @@
 				(b) => ui_.Filter.OnlyActive = b,
 				ui_.Filter.OnlyActive));
 
-			//row.Add(new VUI.Button(
-			//	"Reload plugin", () => AlternateUI.Instance.ReloadPlugin()));
-
 			Add(row);
 
 			Borders = new VUI.Insets(1);
@@ -291,6 +291,17 @@
 
 			page_.ValueChanged += OnPageChanged;
 			search_.Changed += OnSearchChanged;
+
+			search_.TextBox.AutoComplete.Enabled = true;
+			search_.TextBox.AutoComplete.File = GetAutoCompleteFile();
+
+			search_.TextBox.AutoComplete.Changed += OnAutoCompleteChanged;
+		}
+
+		private string GetAutoCompleteFile()
+		{
+			return AlternateUI.Instance.GetConfigFilePath(
+				$"aui.{ui_.PersonMorphUI.MorphUI.Name}.{ui_.GenderName}.autocomplete.json");
 		}
 
 		public void UpdatePage()
@@ -321,6 +332,23 @@
 		private void OnSearchChanged(string s)
 		{
 			ui_.Filter.Search = s;
+		}
+
+		private void OnAutoCompleteChanged()
+		{
+			foreach (var pm in ui_.PersonMorphUI.MorphUI.PersonUIs)
+			{
+				if (pm == ui_.PersonMorphUI)
+					continue;
+
+				foreach (var gm in pm.GenderMorphUIs)
+				{
+					if (ui_.GenderName == gm.GenderName)
+					{
+						gm.Controls?.search_?.TextBox?.AutoComplete?.Reload();
+					}
+				}
+			}
 		}
 	}
 }

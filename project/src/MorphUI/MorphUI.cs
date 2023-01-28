@@ -10,7 +10,8 @@ namespace AUI.MorphUI
 		private const int Columns = 3;
 		private const int Rows = 7;
 
-		private readonly MorphUI ui_;
+		private readonly PersonMorphUI ui_;
+		private readonly string name_;
 		private Atom atom_ = null;
 		private GenerateDAZMorphsControlUI mui_ = null;
 		private VUI.Root root_ = null;
@@ -26,10 +27,21 @@ namespace AUI.MorphUI
 		private bool triedOnce_ = false;
 		private float updateElapsed_ = 0;
 
-		public GenderMorphUI(MorphUI ui)
+		public GenderMorphUI(PersonMorphUI ui, string name)
 		{
 			ui_ = ui;
+			name_ = name;
 			filter_.Sort = Filter.SortName;
+		}
+
+		public PersonMorphUI PersonMorphUI
+		{
+			get { return ui_; }
+		}
+
+		public string GenderName
+		{
+			get { return name_; }
 		}
 
 		public Logger Log
@@ -45,6 +57,11 @@ namespace AUI.MorphUI
 		public Filter Filter
 		{
 			get { return filter_; }
+		}
+
+		public Controls Controls
+		{
+			get { return controls_; }
 		}
 
 		public void Set(Atom a, GenerateDAZMorphsControlUI mui)
@@ -258,8 +275,8 @@ namespace AUI.MorphUI
 			ui_ = ui;
 			atom_ = a;
 
-			male_ = new GenderMorphUI(ui);
-			female_ = new GenderMorphUI(ui);
+			male_ = new GenderMorphUI(this, "male");
+			female_ = new GenderMorphUI(this, "female");
 
 			male_.Set(a, GetMUI(true));
 			female_.Set(a, GetMUI(false));
@@ -273,6 +290,26 @@ namespace AUI.MorphUI
 		public Logger Log
 		{
 			get { return ui_.Log; }
+		}
+
+		public MorphUI MorphUI
+		{
+			get { return ui_; }
+		}
+
+		public GenderMorphUI Male
+		{
+			get { return male_; }
+		}
+
+		public GenderMorphUI Female
+		{
+			get { return female_; }
+		}
+
+		public GenderMorphUI[] GenderMorphUIs
+		{
+			get { return new GenderMorphUI[] { male_, female_ }; }
 		}
 
 		public void Update(float s)
@@ -350,6 +387,12 @@ namespace AUI.MorphUI
 					"Complete overhaul of the male and female morphs panel.";
 			}
 		}
+
+		public List<PersonMorphUI> PersonUIs
+		{
+			get { return uis_; }
+		}
+
 
 		protected override void DoInit()
 		{

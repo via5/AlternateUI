@@ -199,8 +199,12 @@ namespace VUI
 
 		private void OnPointerClick(PointerEvent e)
 		{
-			Clicked?.Invoke();
-			button_.button.OnDeselect(new UnityEngine.EventSystems.BaseEventData(null));
+			if (e.Button == PointerEvent.LeftButton)
+			{
+				Clicked?.Invoke();
+				button_.button.OnDeselect(new UnityEngine.EventSystems.BaseEventData(null));
+			}
+
 			e.Bubble = false;
 		}
 

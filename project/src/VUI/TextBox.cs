@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using SimpleJSON;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -166,12 +168,18 @@ namespace VUI
 
 	class AutoComplete
 	{
+		private const int Max = 30;
+
+		public delegate void ChangedHandler();
+		public event ChangedHandler Changed;
+
 		private readonly TextBox tb_;
 		private Panel panel_ = null;
 		private readonly List<string> list_ = new List<string>();
 		private ListView<string> listView_ = null;
 		private bool ignore_ = false;
 		private bool enabled_ = false;
+		private string file_ = null;
 
 		public AutoComplete(TextBox tb)
 		{
@@ -206,6 +214,27 @@ namespace VUI
 			}
 		}
 
+		public string File
+		{
+			get
+			{
+				return file_;
+			}
+
+			set
+			{
+				if (file_ != value)
+				{
+					file_ = value;
+					if (file_ == "")
+						file_ = null;
+
+					if (!string.IsNullOrEmpty(file_))
+						Reload();
+				}
+			}
+		}
+
 		public void Add(string s)
 		{
 			if (!enabled_)
@@ -214,23 +243,58 @@ namespace VUI
 			if (ignore_) return;
 
 			s = s.Trim();
+			if (string.IsNullOrEmpty(s) || list_.IndexOf(s) != -1)
+				return;
 
-			if (string.IsNullOrEmpty(s))
+			try
+			{
+				ignore_ = true;
+				list_.Insert(0, s);
+
+				while (list_.Count > Max)
+					list_.RemoveAt(list_.Count - 1);
+
+				ItemsChanged();
+			}
+			finally
+			{
+				ignore_ = false;
+			}
+		}
+
+		public void Remove(string s)
+		{
+			if (!enabled_)
+				return;
+
+			if (ignore_) return;
+
+			s = s.Trim();
+			if (string.IsNullOrEmpty(s) || list_.IndexOf(s) == -1)
 				return;
 
 			try
 			{
 				ignore_ = true;
 				list_.Remove(s);
-				list_.Insert(0, s);
-
-				if (listView_ != null)
-					listView_.SetItems(list_, list_[0]);
+				ItemsChanged();
 			}
 			finally
 			{
 				ignore_ = false;
 			}
+		}
+
+		private void ItemsChanged()
+		{
+			if (listView_ != null)
+				listView_.SetItems(list_);
+
+			if (list_.Count == 0)
+				Hide();
+
+			Save();
+			Changed?.Invoke();
 		}
 
 		public void Show()
@@ -245,7 +309,8 @@ namespace VUI
 			{
 				listView_ = new ListView<string>();
 				listView_.SelectionChanged += OnSelection;
-				listView_.SetItems(list_, list_[0]);
+				listView_.ItemRightClicked += OnRightClick;
+				listView_.SetItems(list_);
 
 				panel_ = new Panel(new VUI.BorderLayout());
 				panel_.Add(listView_, BorderLayout.Center);
@@ -272,6 +337,50 @@ namespace VUI
 				panel_.Visible = false;
 		}
 
+		private void Save()
+		{
+			if (file_ == null)
+				return;
+
+			var j = new JSONClass();
+
+			var a = new JSONArray();
+			foreach (var s in list_)
+				a.Add(new JSONData(s));
+
+			j.Add("autocomplete", a);
+
+			SuperController.singleton.SaveJSON(j, file_);
+		}
+
+		public void Reload()
+		{
+			if (file_ == null)
+				return;
+
+			if (!FileManagerSecure.FileExists(file_))
+				return;
+
+			var j = SuperController.singleton.LoadJSON(file_)?.AsObject;
+			if (j == null)
+				return;
+
+			if (j.HasKey("autocomplete"))
+			{
+				var a = j["autocomplete"].AsArray;
+				if (a == null)
+					return;
+
+				list_.Clear();
+
+				foreach (JSONNode n in a)
+					list_.Add(n.Value);
+
+				if (listView_ != null)
+					listView_.SetItems(list_);
+			}
+		}
+
 		private void OnSelection(string s)
 		{
 			if (!enabled_)
@@ -279,9 +388,25 @@ namespace VUI
 
 			if (ignore_) return;
 
+			if (string.IsNullOrEmpty(s))
+				return;
+
 			tb_.Text = s;
 			tb_.Blur();
 			Hide();
+		}
+
+		private void OnRightClick(string s)
+		{
+			if (!enabled_)
+				return;
+
+			if (ignore_) return;
+
+			if (string.IsNullOrEmpty(s))
+				return;
+
+			Remove(s);
 		}
 
 		private void OnBlur(FocusEvent e)
@@ -646,7 +771,10 @@ namespace VUI
 				}
 
 				if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+				{
 					Submitted?.Invoke(text_);
+					ac_.Hide();
+				}
 			}
 			catch (Exception e)
 			{
