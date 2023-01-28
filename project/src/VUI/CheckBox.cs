@@ -15,10 +15,14 @@ namespace VUI
 		private UIDynamicToggle toggle_ = null;
 
 		public CheckBox(
-			string t = "", ChangedCallback changed = null, bool initial = false)
+			string t = "", ChangedCallback changed = null,
+			bool initial = false, string tooltip = "")
 		{
 			text_ = t;
 			checked_ = initial;
+
+			if (tooltip != "")
+				Tooltip.Text = tooltip;
 
 			if (changed != null)
 				Changed += changed;

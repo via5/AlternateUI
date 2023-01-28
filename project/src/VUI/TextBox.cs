@@ -631,14 +631,17 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
+			var tl = Root.TextLength(Font, FontSize, text_);
+			var w = tl + Style.Metrics.TextBoxHorizontalPadding;
+
 			return new Size(
-				Math.Max(Root.TextLength(Font, FontSize, text_) + 20, 200),
-				40);
+				Math.Max(w, Style.Metrics.TextBoxPreferredSize.Width),
+				Style.Metrics.TextBoxPreferredSize.Height);
 		}
 
 		protected override Size DoGetMinimumSize()
 		{
-			return new Size(100, DontCare);
+			return Style.Metrics.TextBoxMinimumSize;
 		}
 
 		protected override void DoSetRender(bool b)

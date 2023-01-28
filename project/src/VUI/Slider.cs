@@ -200,7 +200,7 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			return new Size(200, 40);
+			return Style.Metrics.SliderMinimumSize;
 		}
 
 		protected override void DoPolish()

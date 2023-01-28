@@ -6,17 +6,23 @@
 
 		private VUI.Label name_ = new VUI.Label();
 		private VUI.FloatTextSlider slider_ = new VUI.FloatTextSlider();
-		private VUI.ToolButton reset_ = new VUI.ToolButton("R");
-		private VUI.ToolButton def_ = new VUI.ToolButton("Def");
-		private VUI.ToolButton addRange_ = new VUI.ToolButton("+Range");
-		private VUI.ToolButton resetRange_ = new VUI.ToolButton("R range");
-		private VUI.CheckBox fav_ = new VUI.CheckBox("F");
+		private VUI.ToolButton reset_;
+		private VUI.ToolButton def_;
+		private VUI.ToolButton addRange_;
+		private VUI.ToolButton resetRange_;
+		private VUI.CheckBox fav_;
 
 		private bool ignore_ = false;
 
 		public MorphPanel()
 		{
 			int buttonsFontSize = 18;
+
+			reset_ = new VUI.ToolButton("R", OnReset, "Reset range and value");
+			def_ = new VUI.ToolButton("Def", OnDefault, "Set default value");
+			addRange_ = new VUI.ToolButton("+Range", OnAddRange, "Double range");
+			resetRange_ = new VUI.ToolButton("R range", OnResetRange, "Reset range");
+			fav_ = new VUI.CheckBox("F", OnFavorite, false, "Favorite");
 
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.FontSize = 24;
@@ -27,7 +33,7 @@
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
 			Layout = new VUI.VerticalFlow(
-				0, true, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
+				2, true, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(
 				3, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
@@ -41,18 +47,12 @@
 			def_.FontSize = buttonsFontSize;
 			addRange_.FontSize = buttonsFontSize;
 			resetRange_.FontSize = buttonsFontSize;
-			fav_.FontSize = buttonsFontSize;
 
 			Add(name_);
 			Add(slider_);
 			Add(buttons);
 
 			slider_.ValueChanged += OnValue;
-			reset_.Clicked += OnReset;
-			def_.Clicked += OnDefault;
-			addRange_.Clicked += OnAddRange;
-			resetRange_.Clicked += OnResetRange;
-			fav_.Changed += OnFavorite;
 		}
 
 		public DAZMorph Morph

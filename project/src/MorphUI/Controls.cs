@@ -187,7 +187,7 @@
 
 		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)
 		{
-			if (!focused.HasParent(panel_))
+			if (!focused.HasParent(panel_) && focused != button_)
 				Hide();
 		}
 
@@ -248,7 +248,9 @@
 
 			Layout = new VUI.VerticalFlow(5);
 
-			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(5));
+			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(
+				5, VUI.FlowLayout.AlignLeft|VUI.FlowLayout.AlignVCenter, true));
+
 			pagePanel.Add(new VUI.Label("Page: "));
 			pagePanel.Add(page_);
 			pagePanel.Add(new VUI.ToolButton("<", () => ui_.PreviousPage()));
@@ -258,33 +260,42 @@
 			var searchPanel = new VUI.Panel(new VUI.BorderLayout());
 			searchPanel.Add(search_.Widget, VUI.BorderLayout.Center);
 
-			var catsPanel = new VUI.Panel(new VUI.HorizontalFlow(5));
+			var catsPanel = new VUI.Panel(new VUI.HorizontalFlow(
+				5, VUI.FlowLayout.AlignDefault, true));
 			catsPanel.Add(cats_.Button);
 
-			var row = new VUI.Panel(new VUI.BorderLayout(5));
-			row.Add(pagePanel, VUI.BorderLayout.Left);
-			row.Add(searchPanel, VUI.BorderLayout.Center);
-			row.Add(catsPanel, VUI.BorderLayout.Right);
-			Add(row);
+			var firstRow = new VUI.Panel(new VUI.BorderLayout(5));
+			firstRow.Add(pagePanel, VUI.BorderLayout.Left);
+			firstRow.Add(searchPanel, VUI.BorderLayout.Center);
+			firstRow.Add(catsPanel, VUI.BorderLayout.Right);
+			Add(firstRow);
 
-			row = new VUI.Panel(new VUI.HorizontalFlow(5));
+			var secondRow = new VUI.Panel(new VUI.BorderLayout(5));
 
-			row.Add(new VUI.CheckBox(
+			var center = new VUI.Panel(new VUI.HorizontalFlow(
+				5, VUI.FlowLayout.AlignLeft|VUI.FlowLayout.AlignVCenter, true));
+
+			center.Add(new VUI.CheckBox(
 				"Favorites",
 				(b) => ui_.Filter.OnlyFavorites = b,
 				ui_.Filter.OnlyFavorites));
 
-			row.Add(new VUI.CheckBox(
+			center.Add(new VUI.CheckBox(
 				"Latest",
 				(b) => ui_.Filter.OnlyLatest = b,
 				ui_.Filter.OnlyLatest));
 
-			row.Add(new VUI.CheckBox(
+			center.Add(new VUI.CheckBox(
 				"Active",
 				(b) => ui_.Filter.OnlyActive = b,
 				ui_.Filter.OnlyActive));
 
-			Add(row);
+			var right = new VUI.Panel(new VUI.HorizontalFlow(5));
+
+			secondRow.Add(center, VUI.BorderLayout.Center);
+			secondRow.Add(right, VUI.BorderLayout.Right);
+
+			Add(secondRow);
 
 			Borders = new VUI.Insets(1);
 			Padding = new VUI.Insets(5);
