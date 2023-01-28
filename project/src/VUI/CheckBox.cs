@@ -22,6 +22,8 @@ namespace VUI
 
 			if (changed != null)
 				Changed += changed;
+
+			Events.PointerDown += OnPointerDown;
 		}
 
 		public bool Checked
@@ -59,7 +61,7 @@ namespace VUI
 			toggle_ = WidgetObject.GetComponent<UIDynamicToggle>();
 			toggle_.labelText.text = text_;
 			toggle_.toggle.isOn = checked_;
-			toggle_.toggle.onValueChanged.AddListener(OnClicked);
+			toggle_.toggle.onValueChanged.AddListener(OnValueChanged);
 
 			Style.Setup(this);
 		}
@@ -101,11 +103,15 @@ namespace VUI
 				toggle_.gameObject.SetActive(b);
 		}
 
-		private void OnClicked(bool b)
+		private void OnPointerDown(PointerEvent e)
+		{
+			e.Bubble = false;
+		}
+
+		private void OnValueChanged(bool b)
 		{
 			try
 			{
-				GetRoot().SetFocus(this);
 				checked_ = b;
 				Changed?.Invoke(b);
 			}

@@ -9,7 +9,7 @@
 		private VUI.TextBox box_;
 		private VUI.ToolButton clear_;
 
-		public SearchBox(string placeholder)
+		public SearchBox(string placeholder, bool autoComplete)
 		{
 			panel_ = new VUI.Panel(new VUI.BorderLayout());
 
@@ -29,6 +29,8 @@
 
 			panel_.Add(box_, VUI.BorderLayout.Center);
 			panel_.Add(clearPanel, VUI.BorderLayout.Center);
+
+			box_.AutoComplete.Enabled = autoComplete;
 		}
 
 		public VUI.Widget Widget
@@ -99,9 +101,10 @@
 				s.Width, s.Height));
 
 			tree_ = new VUI.TreeView();
+
 			panel_.Add(tree_, VUI.BorderLayout.Center);
 
-			search_ = new SearchBox("Search categories");
+			search_ = new SearchBox("Search categories", false);
 			search_.Changed += OnSearch;
 			panel_.Add(search_.Widget, VUI.BorderLayout.Bottom);
 
@@ -160,15 +163,37 @@
 
 		public void Toggle()
 		{
-			panel_.Visible = !panel_.Visible;
+			if (panel_.Visible)
+				Hide();
+			else
+				Show();
 		}
 
-		private bool ToggleClick(VUI.PointerEvent e)
+		public void Show()
+		{
+			panel_.Visible = true;
+			panel_.BringToTop();
+			panel_.GetRoot().FocusChanged += OnFocusChanged;
+		}
+
+		public void Hide()
+		{
+			panel_.Visible = false;
+			panel_.GetRoot().FocusChanged -= OnFocusChanged;
+		}
+
+		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)
+		{
+			if (!focused.HasParent(panel_))
+				Hide();
+		}
+
+		private void ToggleClick(VUI.PointerEvent e)
 		{
 			if (e.Button == VUI.PointerEvent.RightButton)
 				ResetCategory();
 
-			return false;
+			e.Bubble = false;
 		}
 
 		private void ResetCategory()
@@ -210,7 +235,7 @@
 
 		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
 		private VUI.Label count_ = new VUI.Label();
-		private SearchBox search_ = new SearchBox("Search");
+		private SearchBox search_ = new SearchBox("Search", true);
 		private CategoriesWidget cats_;
 
 		public Controls(GenderMorphUI ui)

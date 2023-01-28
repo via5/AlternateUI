@@ -70,6 +70,7 @@ namespace VUI
 			: base(items, selectionChanged)
 		{
 			Borders = new Insets(2);
+			Events.PointerDown += OnPointerDown;
 		}
 
 		protected override GameObject CreateGameObject()
@@ -173,6 +174,11 @@ namespace VUI
 				ItemActivated?.Invoke(s);
 				ItemIndexActivated?.Invoke(SelectedIndex);
 			}
+		}
+
+		private void OnPointerDown(PointerEvent e)
+		{
+			e.Bubble = false;
 		}
 	}
 }
