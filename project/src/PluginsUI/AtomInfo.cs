@@ -267,6 +267,11 @@ namespace AUI.PluginsUI
 			UpdateList();
 		}
 
+		private Transform GetParent()
+		{
+			return ui_.addPluginButton.transform.parent;
+		}
+
 		private void CreateUI()
 		{
 			// the popup list is below the panel in some places like
@@ -285,21 +290,20 @@ namespace AUI.PluginsUI
 				plugins_.Add(new Plugin(ui));
 			}
 
-			var parent = ui_.addPluginButton.transform.parent;
-
 			var o = UnityEngine.Object.Instantiate(pm_.configurablePopupPrefab);
 
 			o.name = ListName;
 
 			popup_ = o.GetComponent<UIDynamicPopup>();
-			popup_.label = "Add recent";
+			popup_.label = "Add recent:";
 			popup_.popup.onValueChangeHandlers += (s) =>
 			{
 				OnRecentSelection(s);
 				popup_.popup.currentValueNoCallback = "";
 			};
 
-			o.transform.SetParent(parent, false);
+			o.transform.SetParent(GetParent(), false);
+			o.transform.SetSiblingIndex(ui_.addPluginButton.transform.GetSiblingIndex());
 
 			var ce = ui_.addPluginButton.GetComponent<RectTransform>();
 			var rt = o.GetComponent<RectTransform>();
@@ -319,9 +323,7 @@ namespace AUI.PluginsUI
 
 		private void DestroyUI()
 		{
-			var parent = ui_.addPluginButton.transform.parent;
-
-			foreach (Transform t in parent)
+			foreach (Transform t in GetParent())
 			{
 				if (t.name.StartsWith(ListName))
 					Object.Destroy(t.gameObject);
@@ -331,10 +333,6 @@ namespace AUI.PluginsUI
 		private void UpdateList()
 		{
 			var ps = GetRecentPlugins();
-
-			if (ps.Count == 0)
-				Log.Info($"{a_.uid} {a_.category} {a_.type} empty");
-
 			var list = popup_.popup;
 
 			list.useDifferentDisplayValues = true;
