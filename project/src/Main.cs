@@ -61,6 +61,7 @@ namespace AUI
 				new SkinUI.SkinUI(),
 				new LogUI.LogUI(),
 				new Tweaks.EscapeDialogs(),
+				new Tweaks.RightClickPackagesReload(),
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),

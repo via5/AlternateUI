@@ -1,5 +1,8 @@
+using System;
+using System.Collections;
 using uFileBrowser;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace AUI.Tweaks
 {
@@ -236,6 +239,108 @@ namespace AUI.Tweaks
 				}
 
 				b?.onClick?.Invoke();
+			}
+		}
+	}
+
+
+	class RightClickPackagesReload : BasicFeature
+	{
+		private const string ButtonName = "ButtonOpenPackageManager";
+		private UnityEngine.UI.Button button_ = null;
+
+		class RightClickPackagesReloadMouseCallbacks : MonoBehaviour, IPointerClickHandler
+		{
+			private RightClickPackagesReload parent_ = null;
+
+			public void Set(RightClickPackagesReload p)
+			{
+				parent_ = p;
+			}
+
+			public void OnPointerClick(PointerEventData d)
+			{
+				try
+				{
+					if (d.button == PointerEventData.InputButton.Right)
+					{
+						SuperController.LogMessage("rescanning packages");
+						StartCoroutine(Rescan());
+					}
+				}
+				catch (Exception e)
+				{
+					SuperController.LogError(e.ToString());
+				}
+			}
+
+			private IEnumerator Rescan()
+			{
+				yield return new UnityEngine.WaitForEndOfFrame();
+				SuperController.singleton.RescanPackages();
+			}
+		}
+
+
+		public RightClickPackagesReload()
+			: base("reloadPackages", "Right-click packages reload", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Right-click the package manager button to reload all " +
+					"packages.";
+			}
+		}
+
+		protected override void DoInit()
+		{
+			button_ = VUI.Utilities.FindChildRecursive(
+				SuperController.singleton, ButtonName)
+					?.GetComponent<UnityEngine.UI.Button>();
+
+			if (button_ == null)
+			{
+				SuperController.LogError($"{ButtonName} not found");
+				return;
+			}
+
+			RemoveComponents();
+		}
+
+		protected override void DoEnable()
+		{
+			if (button_ == null)
+				return;
+
+			var c = button_.gameObject
+				.AddComponent<RightClickPackagesReloadMouseCallbacks>();
+
+			if (c == null)
+			{
+				SuperController.LogError("can't add component");
+				return;
+			}
+
+			c.Set(this);
+			c.enabled = true;
+		}
+
+		protected override void DoDisable()
+		{
+			RemoveComponents();
+		}
+
+		private void RemoveComponents()
+		{
+			foreach (Component c in button_.GetComponents<Component>())
+			{
+				if (c.ToString().Contains("RightClickPackagesReloadMouseCallbacks"))
+					UnityEngine.Object.Destroy(c);
 			}
 		}
 	}

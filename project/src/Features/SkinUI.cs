@@ -36,6 +36,7 @@ namespace AUI.SkinUI
 		}
 	}
 
+
 	class SkinUI : BasicFeature
 	{
 		private SuperController sc_ = SuperController.singleton;
