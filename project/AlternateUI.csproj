@@ -94,19 +94,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\LightUI\LightUI.cs" />
-    <Compile Include="src\LogUI\LogUI.cs" />
+    <Compile Include="src\Features\LightUI\LightUI.cs" />
+    <Compile Include="src\Features\LogUI\LogUI.cs" />
+    <Compile Include="src\Features\MorphUI\Categories.cs" />
+    <Compile Include="src\Features\MorphUI\Controls.cs" />
+    <Compile Include="src\Features\MorphUI\Filter.cs" />
+    <Compile Include="src\Features\MorphUI\MorphPanel.cs" />
+    <Compile Include="src\Features\MorphUI\MorphUI.cs" />
+    <Compile Include="src\Features\PluginsUI\AtomInfo.cs" />
+    <Compile Include="src\Features\PluginsUI\PluginsUI.cs" />
+    <Compile Include="src\Features\SelectUI\SelectUI.cs" />
+    <Compile Include="src\Features\SkinUI\SkinUI.cs" />
+    <Compile Include="src\Features\Tweaks\Tweaks.cs" />
     <Compile Include="src\Main.cs" />
-    <Compile Include="src\MorphUI\Categories.cs" />
-    <Compile Include="src\MorphUI\Controls.cs" />
-    <Compile Include="src\MorphUI\Filter.cs" />
-    <Compile Include="src\MorphUI\MorphPanel.cs" />
-    <Compile Include="src\MorphUI\MorphUI.cs" />
-    <Compile Include="src\PluginsUI\AtomInfo.cs" />
-    <Compile Include="src\PluginsUI\PluginsUI.cs" />
-    <Compile Include="src\SelectUI\SelectUI.cs" />
-    <Compile Include="src\SkinUI\SkinUI.cs" />
-    <Compile Include="src\Tweaks\Tweaks.cs" />
     <Compile Include="src\Utilities.cs" />
     <Compile Include="src\Version.cs" />
     <Compile Include="src\VUI\BorderLayout.cs" />
