@@ -94,8 +94,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\Features\LightUI\LightUI.cs" />
-    <Compile Include="src\Features\LogUI\LogUI.cs" />
+    <Compile Include="src\Features\LightUI.cs" />
+    <Compile Include="src\Features\LogUI.cs" />
     <Compile Include="src\Features\MorphUI\Categories.cs" />
     <Compile Include="src\Features\MorphUI\Controls.cs" />
     <Compile Include="src\Features\MorphUI\Filter.cs" />
@@ -103,9 +103,9 @@
     <Compile Include="src\Features\MorphUI\MorphUI.cs" />
     <Compile Include="src\Features\PluginsUI\AtomInfo.cs" />
     <Compile Include="src\Features\PluginsUI\PluginsUI.cs" />
-    <Compile Include="src\Features\SelectUI\SelectUI.cs" />
-    <Compile Include="src\Features\SkinUI\SkinUI.cs" />
-    <Compile Include="src\Features\Tweaks\Tweaks.cs" />
+    <Compile Include="src\Features\SelectUI.cs" />
+    <Compile Include="src\Features\SkinUI.cs" />
+    <Compile Include="src\Features\Tweaks.cs" />
     <Compile Include="src\Main.cs" />
     <Compile Include="src\Utilities.cs" />
     <Compile Include="src\Version.cs" />
