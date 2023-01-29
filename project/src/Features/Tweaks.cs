@@ -1,3 +1,4 @@
+using uFileBrowser;
 using UnityEngine;
 
 namespace AUI.Tweaks
@@ -123,7 +124,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class MoveNewLight: BasicFeature
+	class MoveNewLight : BasicFeature
 	{
 		public MoveNewLight()
 			: base("moveNewLight", "Move new lights", false)
@@ -158,6 +159,84 @@ namespace AUI.Tweaks
 					a.mainController.transform.position.x,
 					a.mainController.transform.position.y,
 					0.6f));
+			}
+		}
+	}
+
+
+	class EscapeDialogs : BasicFeature
+	{
+		private UnityEngine.UI.Button closePackageManager_;
+		private UnityEngine.UI.Button closePackageBuilder_;
+		private UnityEngine.UI.Button closeErrorLog_;
+		private UnityEngine.UI.Button closeMessageLog_;
+
+		public EscapeDialogs()
+			: base("escapeDialogs", "Escape closes dialogs", true)
+		{
+			VUI.Utilities.DumpComponentsAndDown(SuperController.singleton.errorLogPanel);
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Close dialogs with the escape key.";
+			}
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			if (Input.GetKey(KeyCode.Escape))
+			{
+				var sc = SuperController.singleton;
+
+				TryClose(sc.fileBrowserUI);
+				TryClose(sc.fileBrowserWorldUI);
+				TryClose(sc.templatesFileBrowserWorldUI);
+				TryClose(sc.mediaFileBrowserUI);
+				TryClose(sc.directoryBrowserUI);
+
+				TryCloseDialog(sc.packageManagerUI, ref closePackageManager_);
+				TryCloseDialog(sc.packageBuilderUI, ref closePackageBuilder_);
+
+				TryCloseLog(sc.errorLogPanel, ref closeErrorLog_);
+				TryCloseLog(sc.msgLogPanel, ref closeMessageLog_);
+			}
+		}
+
+		private void TryClose(FileBrowser b)
+		{
+			if (b?.isActiveAndEnabled ?? false)
+				b.CancelButtonClicked();
+		}
+
+		private void TryCloseDialog(Transform dlg, ref UnityEngine.UI.Button b)
+		{
+			if (dlg.gameObject.activeInHierarchy)
+			{
+				if (b == null)
+				{
+					var cb = VUI.Utilities.FindChildRecursive(dlg, "CloseMainUIButton");
+					b = cb.GetComponent<UnityEngine.UI.Button>();
+				}
+
+				b?.onClick?.Invoke();
+			}
+		}
+
+		private void TryCloseLog(Transform dlg, ref UnityEngine.UI.Button b)
+		{
+			if (dlg.gameObject.activeInHierarchy)
+			{
+				if (b == null)
+				{
+					var cb = VUI.Utilities.FindChildRecursive(dlg, "OKButton");
+					b = cb.GetComponent<UnityEngine.UI.Button>();
+				}
+
+				b?.onClick?.Invoke();
 			}
 		}
 	}

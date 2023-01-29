@@ -55,15 +55,16 @@ namespace AUI
 			return new BasicFeature[]
 			{
 				new MorphUI.MorphUI(),
+				new PluginsUI.PluginsUI(),
+				new LightUI.LightUI(),
 				new SelectUI.SelectUI(),
 				new SkinUI.SkinUI(),
 				new LogUI.LogUI(),
+				new Tweaks.EscapeDialogs(),
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
 				new Tweaks.MoveNewLight(),
-				new LightUI.LightUI(),
-				new PluginsUI.PluginsUI()
 			};
 		}
 

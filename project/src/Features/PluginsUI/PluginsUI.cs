@@ -50,7 +50,8 @@ namespace AUI.PluginsUI
 			get
 			{
 				return
-					"Adds a recent plugins list to the Plugins UI.";
+					"Adds a recent plugins list to the Plugins UI for all " +
+					"atoms.";
 			}
 		}
 
