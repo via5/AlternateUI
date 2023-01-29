@@ -62,6 +62,8 @@ namespace AUI
 				new LogUI.LogUI(),
 				new Tweaks.EscapeDialogs(),
 				new Tweaks.RightClickPackagesReload(),
+				new Tweaks.QuickSaveScreenshot(),
+				new Tweaks.QuickSave(),
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),

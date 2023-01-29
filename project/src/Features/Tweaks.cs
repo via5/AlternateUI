@@ -6,6 +6,89 @@ using UnityEngine.EventSystems;
 
 namespace AUI.Tweaks
 {
+	class QuickSaveScreenshot : BasicFeature
+	{
+		public QuickSaveScreenshot()
+			: base("quickSaveScreenshot", "Quick save with SS (Shift+F2)", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Saves the current scene without confirmation but asks " +
+					"for new screenshot.";
+			}
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			if (Input.GetKeyDown(KeyCode.F2) && Input.GetKey(KeyCode.LeftShift))
+			{
+				var sc = SuperController.singleton;
+
+				try
+				{
+					SuperController.LogError($"saving {sc.LoadedSceneName}");
+					sc.SaveConfirm("Overwrite Current");
+				}
+				catch (Exception e)
+				{
+					SuperController.LogError(e.ToString());
+				}
+			}
+		}
+	}
+
+
+	class QuickSave : BasicFeature
+	{
+		public QuickSave()
+			: base("quickSave", "Quick save no SS (Shift+F3)", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Saves the current scene without confirmation and keeps " +
+					"old screenshot.";
+			}
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			if (Input.GetKeyDown(KeyCode.F3) && Input.GetKey(KeyCode.LeftShift))
+			{
+				var sc = SuperController.singleton;
+
+				var oldCamera = sc.screenshotCamera;
+				var oldActiveUI = sc.activeUI;
+
+				try
+				{
+					sc.screenshotCamera = null;
+					SuperController.LogError($"saving {sc.LoadedSceneName}");
+					sc.SaveConfirm("Overwrite Current");
+					sc.activeUI = oldActiveUI;
+				}
+				catch (Exception e)
+				{
+					SuperController.LogError(e.ToString());
+				}
+				finally
+				{
+					sc.screenshotCamera = oldCamera;
+				}
+			}
+		}
+	}
+
+
 	class EditMode : BasicFeature
 	{
 		public EditMode()
