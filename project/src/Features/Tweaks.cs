@@ -174,7 +174,6 @@ namespace AUI.Tweaks
 		public EscapeDialogs()
 			: base("escapeDialogs", "Escape closes dialogs", true)
 		{
-			VUI.Utilities.DumpComponentsAndDown(SuperController.singleton.errorLogPanel);
 		}
 
 		public override string Description
