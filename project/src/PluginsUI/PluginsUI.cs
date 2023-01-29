@@ -5,6 +5,8 @@ namespace AUI.PluginsUI
 {
 	class PluginsUI : BasicAlternateUI
 	{
+		private const int MaxRecent = 30;
+
 		private const float DeferredCheckInterval = 2;
 		private const float ChangedCheckInterval = 2;
 
@@ -126,6 +128,9 @@ namespace AUI.PluginsUI
 
 			Log.Verbose($"{ai} new recent plugin: {p.lastUrl}");
 			list.Insert(0, p.lastUrl);
+
+			while (list.Count > MaxRecent)
+				list.RemoveAt(list.Count - 1);
 
 			ai.SaveRecentPlugins(list);
 		}
