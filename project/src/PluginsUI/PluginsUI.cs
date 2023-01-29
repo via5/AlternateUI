@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace AUI.PluginsUI
 {
-	class PluginsUI : BasicAlternateUI
+	class PluginsUI : BasicFeature
 	{
 		private const int MaxRecent = 30;
 

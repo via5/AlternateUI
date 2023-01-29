@@ -369,7 +369,7 @@ namespace AUI.MorphUI
 	}
 
 
-	class MorphUI : BasicAlternateUI
+	class MorphUI : BasicFeature
 	{
 		private SuperController sc_;
 		private readonly List<PersonMorphUI> uis_ = new List<PersonMorphUI>();

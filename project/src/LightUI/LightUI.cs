@@ -2,7 +2,7 @@
 
 namespace AUI.LightUI
 {
-	class LightUI : BasicAlternateUI
+	class LightUI : BasicFeature
 	{
 		private const string ButtonName = "aui.lightui.resetall";
 		private SkyshopLightControllerUI ui_ = null;

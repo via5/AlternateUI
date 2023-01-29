@@ -52,7 +52,7 @@ namespace AUI.SelectUI
 	}
 
 
-	class SelectUI : BasicAlternateUI
+	class SelectUI : BasicFeature
 	{
 		private const float Interval = 0.2f;
 

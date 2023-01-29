@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace AUI.Tweaks
 {
-	class EditMode : BasicAlternateUI
+	class EditMode : BasicFeature
 	{
 		public EditMode()
 			: base("editMode", "Edit mode on load", false)
@@ -37,7 +37,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class FocusHead : BasicAlternateUI
+	class FocusHead : BasicFeature
 	{
 		public FocusHead()
 			: base("focusHead", "Focus head on load", false)
@@ -88,7 +88,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class DisableLoadPosition : BasicAlternateUI
+	class DisableLoadPosition : BasicFeature
 	{
 		public DisableLoadPosition()
 			: base("disableLoadPosition", "Disable load position", false)
@@ -123,7 +123,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class MoveNewLight: BasicAlternateUI
+	class MoveNewLight: BasicFeature
 	{
 		public MoveNewLight()
 			: base("moveNewLight", "Move new lights", false)

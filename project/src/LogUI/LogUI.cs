@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace AUI.LogUI
 {
-	class LogUI : BasicAlternateUI
+	class LogUI : BasicFeature
 	{
 		private Text logText_ = null;
 		private int oldLogFontSize_ = -1;

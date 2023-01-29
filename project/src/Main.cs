@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace AUI
 {
-	interface IAlternateUI
+	interface IFeature
 	{
 		string Name { get; }
 		string DisplayName { get; }
@@ -20,14 +20,14 @@ namespace AUI
 	}
 
 
-	public abstract class BasicAlternateUI : IAlternateUI
+	public abstract class BasicFeature : IFeature
 	{
 		private readonly string name_, displayName_;
 		private readonly Logger log_;
 		private JSONStorableBool enabledParam_;
 		private bool enabled_;
 
-		protected BasicAlternateUI(string name, string displayName, bool defaultEnabled)
+		protected BasicFeature(string name, string displayName, bool defaultEnabled)
 		{
 			name_ = name;
 			displayName_ = displayName;
@@ -190,7 +190,7 @@ namespace AUI
 		private const string OldConfigFile = "Custom/PluginData/aui.json";
 
 		private Logger log_;
-		private BasicAlternateUI[] uis_ = null;
+		private BasicFeature[] features_ = null;
 		private bool inited_ = false;
 		private VUI.TimerManager tm_ = null;
 
@@ -215,20 +215,20 @@ namespace AUI
 			get { return log_; }
 		}
 
-		public T GetUI<T>() where T : class, IAlternateUI
+		public T GetFeature<T>() where T : class, IFeature
 		{
-			for (int i = 0; i < uis_.Length; ++i)
+			for (int i = 0; i < features_.Length; ++i)
 			{
-				if (uis_[i] is T)
-					return uis_[i] as T;
+				if (features_[i] is T)
+					return features_[i] as T;
 			}
 
 			return null;
 		}
 
-		private BasicAlternateUI[] CreateUIs()
+		private BasicFeature[] CreateUIs()
 		{
-			return new BasicAlternateUI[]
+			return new BasicFeature[]
 			{
 				new MorphUI.MorphUI(),
 				new SelectUI.SelectUI(),
@@ -266,8 +266,8 @@ namespace AUI
 			tm_.TickTimers(Time.deltaTime);
 			tm_.CheckTimers();
 
-			for (int i = 0; i < uis_.Length; ++i)
-				uis_[i].Update(Time.deltaTime);
+			for (int i = 0; i < features_.Length; ++i)
+				features_[i].Update(Time.deltaTime);
 		}
 
 		private void DoInit()
@@ -284,12 +284,12 @@ namespace AUI
 				(s) => Log.Error(s));
 
 			tm_ = new VUI.TimerManager();
-			uis_ = CreateUIs();
+			features_ = CreateUIs();
 
 			LoadConfig();
 
-			for (int i = 0; i < uis_.Length; ++i)
-				uis_[i].Init();
+			for (int i = 0; i < features_.Length; ++i)
+				features_[i].Init();
 
 			SaveConfig();
 			CreateUI();
@@ -297,7 +297,7 @@ namespace AUI
 
 		private void CreateUI()
 		{
-			for (int i = 0; i < uis_.Length; ++i)
+			for (int i = 0; i < features_.Length; ++i)
 			{
 				if (i > 0)
 				{
@@ -305,7 +305,7 @@ namespace AUI
 					s.height = 85;
 				}
 
-				uis_[i].CreateUI();
+				features_[i].CreateUI();
 			}
 		}
 
@@ -328,13 +328,13 @@ namespace AUI
 			if (j == null)
 				return;
 
-			for (int i = 0; i < uis_.Length; ++i)
+			for (int i = 0; i < features_.Length; ++i)
 			{
-				if (j.HasKey(uis_[i].Name))
+				if (j.HasKey(features_[i].Name))
 				{
-					var o = j[uis_[i].Name].AsObject;
+					var o = j[features_[i].Name].AsObject;
 					if (o != null)
-						uis_[i].Load(o);
+						features_[i].Load(o);
 				}
 			}
 		}
@@ -343,11 +343,11 @@ namespace AUI
 		{
 			var j = new JSONClass();
 
-			for (int i = 0; i < uis_.Length; ++i)
+			for (int i = 0; i < features_.Length; ++i)
 			{
-				var o = uis_[i].Save();
+				var o = features_[i].Save();
 				if (o != null)
-					j.Add(uis_[i].Name, o);
+					j.Add(features_[i].Name, o);
 			}
 
 			SaveJSON(j, ConfigFile);
@@ -365,10 +365,10 @@ namespace AUI
 		{
 			try
 			{
-				if (uis_ != null)
+				if (features_ != null)
 				{
-					for (int i = 0; i < uis_.Length; ++i)
-						uis_[i].OnPluginState(true);
+					for (int i = 0; i < features_.Length; ++i)
+						features_[i].OnPluginState(true);
 				}
 			}
 			catch (Exception e)
@@ -381,10 +381,10 @@ namespace AUI
 		{
 			try
 			{
-				if (uis_ != null)
+				if (features_ != null)
 				{
-					for (int i = 0; i < uis_.Length; ++i)
-						uis_[i].OnPluginState(false);
+					for (int i = 0; i < features_.Length; ++i)
+						features_[i].OnPluginState(false);
 				}
 			}
 			catch (Exception e)
