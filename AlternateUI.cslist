@@ -1,6 +1,7 @@
 project\src\Main.cs
 project\src\Utilities.cs
 project\src\Version.cs
+project\src\Features\Feature.cs
 project\src\Features\LightUI.cs
 project\src\Features\LogUI.cs
 project\src\Features\SelectUI.cs
