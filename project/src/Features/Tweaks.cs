@@ -359,7 +359,7 @@ namespace AUI.Tweaks
 
 			private IEnumerator Rescan()
 			{
-				yield return new UnityEngine.WaitForEndOfFrame();
+				yield return new UnityEngine.WaitForSeconds(0.5f);
 				SuperController.singleton.RescanPackages();
 			}
 		}

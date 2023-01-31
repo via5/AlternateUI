@@ -34,12 +34,12 @@ namespace VUI
 
 		public Size TextBoxMinimumSize
 		{
-			get { return new Size(100, 20); }
+			get { return new Size(100, 40); }
 		}
 
 		public Size TextBoxPreferredSize
 		{
-			get { return new Size(200, 20); }
+			get { return new Size(200, 40); }
 		}
 
 		public int TextBoxHorizontalPadding
