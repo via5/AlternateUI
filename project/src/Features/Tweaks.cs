@@ -361,6 +361,7 @@ namespace AUI.Tweaks
 			{
 				yield return new UnityEngine.WaitForSeconds(0.5f);
 				SuperController.singleton.RescanPackages();
+				SuperController.LogMessage("done");
 			}
 		}
 
