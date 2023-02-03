@@ -58,7 +58,8 @@ namespace AUI
 				new PluginsUI.PluginsUI(),
 				new LightUI.LightUI(),
 				new SelectUI.SelectUI(),
-				new SkinUI.SkinUI(),
+				new SkinUI.RightClickSkinReload(),
+				new SkinUI.SkinMaterialsReset(),
 				new LogUI.LogUI(),
 				new Tweaks.EscapeDialogs(),
 				new Tweaks.RightClickPackagesReload(),
@@ -75,6 +76,12 @@ namespace AUI
 		{
 			try
 			{
+				//if (Input.GetKeyUp(KeyCode.F5))
+				//{
+				//	ReloadPlugin();
+				//	return;
+				//}
+
 				DoUpdate();
 			}
 			catch (Exception e)
