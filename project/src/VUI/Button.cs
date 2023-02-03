@@ -36,15 +36,17 @@ namespace VUI
 		private int align_ = Label.AlignCenter | Label.AlignVCenter;
 		private Polishing polishing_ = Polishing.Default;
 
-		public Button(string t = "", Callback clicked = null)
+		public Button(string t = "", Callback clicked = null, string tooltip = null)
 		{
 			text_ = t;
 
 			if (clicked != null)
 				Clicked += clicked;
 
+			if (tooltip != null)
+				Tooltip.Text = tooltip;
+
 			Events.PointerDown += OnPointerDown;
-			Events.PointerClick += OnPointerClick;
 		}
 
 		public string Text
@@ -128,6 +130,7 @@ namespace VUI
 		protected override void DoCreate()
 		{
 			button_ = WidgetObject.GetComponent<UIDynamicButton>();
+			button_.button.onClick.AddListener(OnClicked);
 			button_.buttonText.text = text_;
 			button_.buttonText.alignment = Label.ToTextAnchor(align_);
 
@@ -160,20 +163,19 @@ namespace VUI
 				rt.offsetMin.y - 1 - Padding.Bottom);
 
 			rt.offsetMax = new Vector2(
-				rt.offsetMax.x + 2 - Padding.Right,
-				rt.offsetMax.y - Padding.Top);
+				rt.offsetMax.x + 2 + Padding.Right,
+				rt.offsetMax.y + Padding.Top);
 
 			// add padding around the text instead
 			rt = button_.buttonText.GetComponent<RectTransform>();
 			rt.offsetMin = new Vector2(Padding.Left, Padding.Bottom);
-			rt.offsetMax = new Vector2(Padding.Right, Padding.Top);
+			rt.offsetMax = new Vector2(-Padding.Right, -Padding.Top);
 		}
 
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			var s = Root.FitText(
-				Font, FontSize, text_, new Size(maxWidth, maxHeight));
+			var s = FitText(text_, new Size(maxWidth, maxHeight));
 
 			s += Style.Metrics.ButtonPadding;
 
@@ -182,7 +184,7 @@ namespace VUI
 
 		protected override Size DoGetMinimumSize()
 		{
-			var s = Root.TextSize(Font, FontSize, text_);
+			var s = TextSize(text_);
 			return Size.Max(s, Style.Metrics.ButtonMinimumSize);
 		}
 
@@ -197,15 +199,10 @@ namespace VUI
 			e.Bubble = false;
 		}
 
-		private void OnPointerClick(PointerEvent e)
+		private void OnClicked()
 		{
-			if (e.Button == PointerEvent.LeftButton)
-			{
-				Clicked?.Invoke();
-				button_.button.OnDeselect(new UnityEngine.EventSystems.BaseEventData(null));
-			}
-
-			e.Bubble = false;
+			Clicked?.Invoke();
+			button_.button.OnDeselect(new UnityEngine.EventSystems.BaseEventData(null));
 		}
 
 		public override string ToString()
@@ -229,7 +226,7 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			return new Size(Root.TextLength(Font, FontSize, Text) + 20, 40);
+			return new Size(TextLength(Text) + 20, 40);
 		}
 
 		protected override Size DoGetMinimumSize()
