@@ -305,7 +305,6 @@
 
 			search_.TextBox.AutoComplete.Enabled = true;
 			search_.TextBox.AutoComplete.File = GetAutoCompleteFile();
-
 			search_.TextBox.AutoComplete.Changed += OnAutoCompleteChanged;
 		}
 
