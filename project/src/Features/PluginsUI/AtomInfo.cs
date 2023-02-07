@@ -1,12 +1,44 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace AUI.PluginsUI
 {
 	class AtomInfo
 	{
+		class AUIPluginsUIMouseCallbacks : MonoBehaviour, IPointerClickHandler
+		{
+			private AtomInfo parent_ = null;
+			private int index_ = -1;
+
+			public void Set(AtomInfo p, int index)
+			{
+				parent_ = p;
+				index_ = index;
+			}
+
+			public void OnPointerClick(PointerEventData d)
+			{
+				try
+				{
+					if (parent_ == null)
+						return;
+
+					if (d.button == PointerEventData.InputButton.Right)
+						parent_.OnRightClick(index_);
+				}
+				catch (Exception e)
+				{
+					SuperController.LogError(e.ToString());
+				}
+			}
+		}
+
+
 		private const string RecentFileFormat = "aui.plugins.recent.{0}.json";
 		private const string ListName = "aui.plugins.recent";
 
@@ -24,15 +56,18 @@ namespace AUI.PluginsUI
 
 		private readonly PluginsUI pui_;
 		private readonly Atom a_;
+		private readonly Logger log_;
 		private MVRPluginManager pm_ = null;
 		private MVRPluginManagerUI ui_ = null;
 		private List<Plugin> plugins_ = new List<Plugin>();
 		private UIDynamicPopup popup_ = null;
+		private bool stale_ = true;
 
 		public AtomInfo(PluginsUI ui, Atom a)
 		{
 			pui_ = ui;
 			a_ = a;
+			log_ = new Logger($"aui.plugins[{a.uid}]");
 		}
 
 		public Atom Atom
@@ -42,7 +77,7 @@ namespace AUI.PluginsUI
 
 		public Logger Log
 		{
-			get { return pui_.Log; }
+			get { return log_; }
 		}
 
 		public bool Valid
@@ -65,6 +100,16 @@ namespace AUI.PluginsUI
 				s = "None";
 
 			return s;
+		}
+
+		public bool IsLike(AtomInfo other)
+		{
+			return GetCategory(a_) == GetCategory(other.a_);
+		}
+
+		public void MakeStale()
+		{
+			stale_ = true;
 		}
 
 		public string GetRecentFile()
@@ -174,7 +219,7 @@ namespace AUI.PluginsUI
 					var ui = panel.GetChild(j)?.GetComponent<MVRPluginUI>();
 					if (ui == null)
 					{
-						Log.Info("new plugin as no ui");
+						Log.Info("new plugin has no ui");
 						continue;
 					}
 
@@ -283,7 +328,7 @@ namespace AUI.PluginsUI
 				var ui = pp.GetComponent<MVRPluginUI>();
 				if (ui == null)
 				{
-					Log.Error("plugin as no ui");
+					Log.Error("plugin has no ui");
 					continue;
 				}
 
@@ -296,6 +341,14 @@ namespace AUI.PluginsUI
 
 			popup_ = o.GetComponent<UIDynamicPopup>();
 			popup_.label = "Add recent:";
+			popup_.popup.onOpenPopupHandlers += () =>
+			{
+				if (stale_)
+				{
+					stale_ = false;
+					UpdateList();
+				}
+			};
 			popup_.popup.onValueChangeHandlers += (s) =>
 			{
 				OnRecentSelection(s);
@@ -326,7 +379,7 @@ namespace AUI.PluginsUI
 			foreach (Transform t in GetParent())
 			{
 				if (t.name.StartsWith(ListName))
-					Object.Destroy(t.gameObject);
+					UnityEngine.Object.Destroy(t.gameObject);
 			}
 		}
 
@@ -334,6 +387,8 @@ namespace AUI.PluginsUI
 		{
 			var ps = GetRecentPlugins();
 			var list = popup_.popup;
+
+			RemoveHandlers();
 
 			list.useDifferentDisplayValues = true;
 
@@ -358,6 +413,66 @@ namespace AUI.PluginsUI
 			}
 
 			list.currentValue = list.popupValues[0];
+
+			AlternateUI.Instance.StartCoroutine(CoAddHandlers());
+		}
+
+		private void OnRightClick(int index)
+		{
+			var list = popup_.popup;
+
+			if (index < 0 || index >= list.numPopupValues)
+				return;
+
+			RemoveRecent(list.popupValues[index]);
+		}
+
+		private Transform PopupParent
+		{
+			get
+			{
+				if (popup_.popup.buttonParent != null)
+					return popup_.popup.buttonParent;
+				else
+					return popup_.popup.popupPanel;
+			}
+		}
+
+		private void RemoveHandlers()
+		{
+			foreach (var b in PopupParent.GetComponentsInChildren<Button>())
+			{
+				foreach (var c in b.gameObject.GetComponents<Component>())
+				{
+					if (c.ToString().Contains("AUIPluginsUIMouseCallbacks"))
+						UnityEngine.Object.Destroy(c);
+				}
+			}
+		}
+
+		private System.Collections.IEnumerator CoAddHandlers()
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			AddHandlers();
+		}
+
+		private void AddHandlers()
+		{
+			int i = 0;
+
+			foreach (var b in PopupParent.GetComponentsInChildren<Button>())
+			{
+				var c = b.gameObject.AddComponent<AUIPluginsUIMouseCallbacks>();
+				if (c == null)
+				{
+					Log.Error("failed to add mouse callback");
+					continue;
+				}
+
+				c.Set(this, i);
+				++i;
+			}
 		}
 
 		private void OnRecentSelection(string s)

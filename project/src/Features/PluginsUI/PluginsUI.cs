@@ -134,6 +134,7 @@ namespace AUI.PluginsUI
 				list.RemoveAt(list.Count - 1);
 
 			ai.SaveRecentPlugins(list);
+			UpdateOthers(ai);
 		}
 
 		public void RemoveRecent(AtomInfo ai, string s)
@@ -147,6 +148,7 @@ namespace AUI.PluginsUI
 			Log.Verbose($"{ai} removed {s}");
 
 			ai.SaveRecentPlugins(list);
+			UpdateOthers(ai);
 		}
 
 		public string GetPluginDisplayName(string p)
@@ -179,6 +181,19 @@ namespace AUI.PluginsUI
 
 			Log.Error($"can't parse plugin path '{p}'");
 			return p;
+		}
+
+		private void UpdateOthers(AtomInfo like)
+		{
+			for (int i = 0; i < atoms_.Count; ++i)
+			{
+				var a = atoms_[i];
+				if (a == like)
+					continue;
+
+				if (a.IsLike(like))
+					a.MakeStale();
+			}
 		}
 
 		private bool ValidAtom(Atom a)
