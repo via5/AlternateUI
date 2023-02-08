@@ -178,16 +178,16 @@ namespace AUI.PluginsUI
 			pm_ = a_.GetStorableByID("PluginManager") as MVRPluginManager;
 			if (pm_ == null)
 			{
-				if (log)
-					Log.Verbose($"{this}: no PluginManager");
+				//if (log)
+				//	Log.Verbose($"{this}: no PluginManager");
 
 				return false;
 			}
 
 			if (pm_.UITransform == null)
 			{
-				if (log)
-					Log.Verbose($"{this}: no UITransform");
+				//if (log)
+				//	Log.Verbose($"{this}: no UITransform");
 
 				return false;
 			}
@@ -195,8 +195,8 @@ namespace AUI.PluginsUI
 			ui_ = pm_.UITransform.GetComponentInChildren<MVRPluginManagerUI>();
 			if (ui_ == null)
 			{
-				if (log)
-					Log.Verbose($"{this} no MVRPluginManagerUI");
+				//if (log)
+				//	Log.Verbose($"{this} no MVRPluginManagerUI");
 
 				return false;
 			}

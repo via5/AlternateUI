@@ -62,9 +62,11 @@ namespace AUI
 				new SkinUI.SkinMaterialsReset(),
 				new LogUI.LogUI(),
 				new Tweaks.EscapeDialogs(),
+				new Tweaks.SpaceBarFreeze(),
 				new Tweaks.RightClickPackagesReload(),
 				new Tweaks.QuickSaveScreenshot(),
 				new Tweaks.QuickSave(),
+				new Tweaks.HideTargetsInVR(),
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
@@ -102,7 +104,17 @@ namespace AUI
 			tm_.CheckTimers();
 
 			for (int i = 0; i < features_.Length; ++i)
-				features_[i].Update(Time.deltaTime);
+			{
+				try
+				{
+					features_[i].Update(Time.deltaTime);
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in {features_[i].Name} Update:");
+					Log.Error(e.ToString());
+				}
+			}
 		}
 
 		private void DoInit()
@@ -124,7 +136,17 @@ namespace AUI
 			LoadConfig();
 
 			for (int i = 0; i < features_.Length; ++i)
-				features_[i].Init();
+			{
+				try
+				{
+					features_[i].Init();
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in {features_[i].Name} Init:");
+					Log.Error(e.ToString());
+				}
+			}
 
 			SaveConfig();
 			CreateUI();
@@ -140,7 +162,15 @@ namespace AUI
 					s.height = 85;
 				}
 
-				features_[i].CreateUI();
+				try
+				{
+					features_[i].CreateUI();
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in {features_[i].Name} CreateUI:");
+					Log.Error(e.ToString());
+				}
 			}
 		}
 
@@ -169,7 +199,17 @@ namespace AUI
 				{
 					var o = j[features_[i].Name].AsObject;
 					if (o != null)
-						features_[i].Load(o);
+					{
+						try
+						{
+							features_[i].Load(o);
+						}
+						catch (Exception e)
+						{
+							Log.Error($"exception in {features_[i].Name} Load:");
+							Log.Error(e.ToString());
+						}
+					}
 				}
 			}
 		}
@@ -180,9 +220,17 @@ namespace AUI
 
 			for (int i = 0; i < features_.Length; ++i)
 			{
-				var o = features_[i].Save();
-				if (o != null)
-					j.Add(features_[i].Name, o);
+				try
+				{
+					var o = features_[i].Save();
+					if (o != null)
+						j.Add(features_[i].Name, o);
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in {features_[i].Name} Save:");
+					Log.Error(e.ToString());
+				}
 			}
 
 			SaveJSON(j, ConfigFile);
@@ -203,7 +251,17 @@ namespace AUI
 				if (features_ != null)
 				{
 					for (int i = 0; i < features_.Length; ++i)
-						features_[i].OnPluginState(true);
+					{
+						try
+						{
+							features_[i].OnPluginState(true);
+						}
+						catch (Exception e)
+						{
+							Log.Error($"exception in {features_[i].Name} OnPluginState(true):");
+							Log.Error(e.ToString());
+						}
+					}
 				}
 			}
 			catch (Exception e)
@@ -219,7 +277,17 @@ namespace AUI
 				if (features_ != null)
 				{
 					for (int i = 0; i < features_.Length; ++i)
-						features_[i].OnPluginState(false);
+					{
+						try
+						{
+							features_[i].OnPluginState(false);
+						}
+						catch (Exception e)
+						{
+							Log.Error($"exception in {features_[i].Name} OnPluginState(false):");
+							Log.Error(e.ToString());
+						}
+					}
 				}
 			}
 			catch (Exception e)

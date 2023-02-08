@@ -7,8 +7,8 @@ namespace AUI.PluginsUI
 	{
 		private const int MaxRecent = 30;
 
-		private const float DeferredCheckInterval = 2;
-		private const float ChangedCheckInterval = 2;
+		private const float DeferredCheckInterval = 1;
+		private const float ChangedCheckInterval = 1;
 
 		private readonly List<AtomInfo> deferred_ = new List<AtomInfo>();
 		private readonly List<AtomInfo> atoms_ = new List<AtomInfo>();

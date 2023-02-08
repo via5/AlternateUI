@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using uFileBrowser;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -120,6 +121,179 @@ namespace AUI.Tweaks
 		{
 			SuperController.singleton.gameMode = SuperController.GameMode.Edit;
 			SuperController.singleton.ShowMainHUD();
+		}
+	}
+
+
+	class SpaceBarFreeze : BasicFeature
+	{
+		public SpaceBarFreeze()
+			: base("spaceBarFreeze", "Spacebar freeze", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Toggle freeze with spacebar.";
+			}
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			if (Input.GetKeyUp(KeyCode.Space))
+			{
+				SuperController.singleton.SetFreezeAnimation(
+					!SuperController.singleton.freezeAnimation);
+			}
+		}
+	}
+
+
+	class HideTargetsInVR : BasicFeature
+	{
+		private class AtomInfo
+		{
+			public readonly Atom atom;
+			public bool hidden = false;
+			public bool ignore = false;
+			public Collider collider = null;
+
+			public AtomInfo(Atom a)
+			{
+				atom = a;
+			}
+		}
+
+		private const float UpdateInterval = 2;
+
+		private AtomInfo[] atoms_ = new AtomInfo[0];
+		private float elapsed_ = 0;
+
+		public HideTargetsInVR()
+			: base("hideInVR", "Disable selecting hidden targets", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Targets that are Hidden and Not Interactable in Play " +
+					"Mode will never be targetable.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			SuperController.singleton.onSceneLoadedHandlers += UpdateAtoms;
+			SuperController.singleton.onAtomAddedHandlers += (a) => UpdateAtoms();
+			SuperController.singleton.onAtomRemovedHandlers += (a) => UpdateAtoms();
+
+			UpdateAtoms();
+			CheckAll();
+		}
+
+		protected override void DoDisable()
+		{
+			UnsetAll();
+
+			SuperController.singleton.onSceneLoadedHandlers -= UpdateAtoms;
+			SuperController.singleton.onAtomAddedHandlers -= (a) => UpdateAtoms();
+			SuperController.singleton.onAtomRemovedHandlers -= (a) => UpdateAtoms();
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			elapsed_ += s;
+			if (elapsed_ >= UpdateInterval)
+			{
+				elapsed_ = 0;
+				CheckAll();
+			}
+		}
+
+		private void CheckAll()
+		{
+			for (int i = 0; i < atoms_.Length; ++i)
+			{
+				var a = atoms_[i];
+
+				if (ShouldHide(a.atom))
+				{
+					if (!a.hidden)
+					{
+						a.hidden = true;
+						SetHidden(a, true);
+					}
+				}
+				else
+				{
+					if (a.hidden)
+					{
+						a.hidden = false;
+						SetHidden(a, false);
+					}
+				}
+			}
+		}
+
+		private bool ShouldHide(Atom a)
+		{
+			if (a?.mainController == null)
+				return false;
+
+			return (a.hidden && !a.mainController.interactableInPlayMode);
+		}
+
+		private void UpdateAtoms()
+		{
+			UnsetAll();
+
+			var list = new List<AtomInfo>();
+			var atoms = SuperController.singleton.GetAtoms();
+
+			for (int i = 0; i < atoms.Count; ++i)
+				list.Add(new AtomInfo(atoms[i]));
+
+			atoms_ = list.ToArray();
+		}
+
+		private void UnsetAll()
+		{
+			for (int i = 0; i < atoms_.Length; ++i)
+			{
+				if (atoms_[i].hidden)
+				{
+					atoms_[i].hidden = false;
+					SetHidden(atoms_[i], false);
+				}
+			}
+		}
+
+		private void SetHidden(AtomInfo a, bool b)
+		{
+			if (a.ignore)
+				return;
+
+			Log.Verbose($"set hidden {a.atom.uid} {b}");
+
+			if (a.collider == null)
+			{
+				a.collider = a.atom?.mainController?.GetComponent<Collider>();
+
+				if (a.collider == null)
+				{
+					Log.Error("no collider in mainController");
+					a.ignore = true;
+				}
+			}
+
+			if (a.collider != null)
+				a.collider.enabled = !b;
 		}
 	}
 
