@@ -1,6 +1,10 @@
 project\src\Main.cs
 project\src\Utilities.cs
 project\src\Version.cs
+project\src\Common\AtomUIModifier.cs
+project\src\Common\MRU\MRUAtomInfo.cs
+project\src\Common\MRU\MRUAtomUIModifier.cs
+project\src\Features\CuaUI.cs
 project\src\Features\Feature.cs
 project\src\Features\LightUI.cs
 project\src\Features\LogUI.cs

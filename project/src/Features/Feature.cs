@@ -109,13 +109,13 @@ namespace AUI
 
 		private void Enable()
 		{
-			Log.Info($"enable {Name}");
+			Log.Verbose($"enable {Name}");
 			DoEnable();
 		}
 
 		private void Disable()
 		{
-			Log.Info($"disable {Name}");
+			Log.Verbose($"disable {Name}");
 			DoDisable();
 		}
 

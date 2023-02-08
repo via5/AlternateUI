@@ -94,6 +94,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\Common\AtomUIModifier.cs" />
+    <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
+    <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
+    <Compile Include="src\Features\CuaUI.cs" />
     <Compile Include="src\Features\Feature.cs" />
     <Compile Include="src\Features\LightUI.cs" />
     <Compile Include="src\Features\LogUI.cs" />
