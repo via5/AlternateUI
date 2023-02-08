@@ -106,8 +106,7 @@
     <Compile Include="src\Features\MorphUI\Filter.cs" />
     <Compile Include="src\Features\MorphUI\MorphPanel.cs" />
     <Compile Include="src\Features\MorphUI\MorphUI.cs" />
-    <Compile Include="src\Features\PluginsUI\AtomInfo.cs" />
-    <Compile Include="src\Features\PluginsUI\PluginsUI.cs" />
+    <Compile Include="src\Features\PluginsUI.cs" />
     <Compile Include="src\Features\SelectUI.cs" />
     <Compile Include="src\Features\SkinUI.cs" />
     <Compile Include="src\Features\Tweaks.cs" />

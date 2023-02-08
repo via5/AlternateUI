@@ -8,6 +8,7 @@ project\src\Features\CuaUI.cs
 project\src\Features\Feature.cs
 project\src\Features\LightUI.cs
 project\src\Features\LogUI.cs
+project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
@@ -16,8 +17,6 @@ project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs
 project\src\Features\MorphUI\MorphPanel.cs
 project\src\Features\MorphUI\MorphUI.cs
-project\src\Features\PluginsUI\AtomInfo.cs
-project\src\Features\PluginsUI\PluginsUI.cs
 project\src\VUI\BorderLayout.cs
 project\src\VUI\Button.cs
 project\src\VUI\CheckBox.cs
