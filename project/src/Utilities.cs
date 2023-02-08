@@ -86,7 +86,7 @@ namespace AUI
 	}
 
 
-	class U
+	static class U
 	{
 		public static float Clamp(float val, float min, float max)
 		{
@@ -244,6 +244,30 @@ namespace AUI
 				return softResult;
 			}
 			return 0;
+		}
+
+		public static string PrettyFilename(string s)
+		{
+			var re = new Regex(@"(?:\w+\.(\w+)\.\d+:)?.*\/([^\/]*)(\.[^\.]+)?$");
+
+			var m = re.Match(s);
+			if (m == null)
+				return null;
+
+			string package = m.Groups[1]?.Value ?? "";
+			string file = m.Groups[2]?.Value ?? "";
+
+			if (string.IsNullOrEmpty(file))
+				return s;
+
+			string p;
+
+			if (package == "")
+				p = file;
+			else
+				p = package + ":" + file;
+
+			return p;
 		}
 	}
 

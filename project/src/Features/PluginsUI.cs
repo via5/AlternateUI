@@ -83,7 +83,7 @@ namespace AUI.PluginsUI
 
 		protected override string MakeDisplayValue(string p)
 		{
-			return uiMod_.GetPluginDisplayName(p);
+			return U.PrettyFilename(p);
 		}
 
 		public override bool Enable()
@@ -277,69 +277,12 @@ namespace AUI.PluginsUI
 		private const float ChangedCheckInterval = 1;
 
 		private readonly PluginsUI parent_;
-		private readonly Regex[] packageRegexes_;
-		private readonly Regex[] fileRegexes_;
 		private float changedElapsed_ = 0;
 
 		public PluginsUIModifier(PluginsUI parent)
 			: base("aui.plugins")
 		{
 			parent_ = parent;
-
-			string packageRe = @"\w+\.(\w+)\.\d+:\/";
-			string csRe = @".*\/([^\/]*\.cs)$";
-			string cslistRe = @".*\/([^\/]*\.cslist)$";
-			string dllRE = @".*\/([^\/]*\.dll)$";
-
-			var packageCs = new Regex(packageRe + csRe, RegexOptions.IgnoreCase);
-			var packageCslist = new Regex(packageRe + cslistRe, RegexOptions.IgnoreCase);
-			var packageDll = new Regex(packageRe + dllRE, RegexOptions.IgnoreCase);
-
-			var cs = new Regex(csRe, RegexOptions.IgnoreCase);
-			var cslist = new Regex(cslistRe, RegexOptions.IgnoreCase);
-			var dll = new Regex(dllRE, RegexOptions.IgnoreCase);
-
-			packageRegexes_ = new Regex[]
-			{
-				packageCs, packageCslist, packageDll
-			};
-
-			fileRegexes_ = new Regex[]
-			{
-				cs, cslist, dll
-			};
-		}
-
-		public string GetPluginDisplayName(string p)
-		{
-			for (int i = 0; i < packageRegexes_.Length; ++i)
-			{
-				var m = packageRegexes_[i].Match(p);
-				if (m != null && m.Success)
-				{
-					if (m.Groups.Count == 2)
-						return m.Groups[1].Value;
-					else if (m.Groups.Count == 3)
-						return m.Groups[1] + ":" + m.Groups[2];
-
-					break;
-				}
-			}
-
-			for (int i = 0; i < fileRegexes_.Length; ++i)
-			{
-				var m = fileRegexes_[i].Match(p);
-				if (m != null && m.Success)
-				{
-					if (m.Groups.Count == 2)
-						return m.Groups[1].Value;
-
-					break;
-				}
-			}
-
-			Log.Error($"can't parse plugin path '{p}'");
-			return p;
 		}
 
 		public override void Update(float s)
