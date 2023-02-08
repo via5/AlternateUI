@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Common\AtomUIModifier.cs" />
+    <Compile Include="src\Common\Common.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
     <Compile Include="src\Features\ClothingUI\ClothingUI.cs" />

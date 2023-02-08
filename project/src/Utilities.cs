@@ -269,6 +269,29 @@ namespace AUI
 
 			return p;
 		}
+
+		public static bool IsRegex(string s)
+		{
+			return (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/');
+		}
+
+		public static Regex CreateRegex(string s)
+		{
+			if (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/')
+			{
+				try
+				{
+					return new Regex(
+						s.Substring(1, s.Length - 2), RegexOptions.IgnoreCase);
+				}
+				catch (Exception)
+				{
+					return null;
+				}
+			}
+
+			return null;
+		}
 	}
 
 

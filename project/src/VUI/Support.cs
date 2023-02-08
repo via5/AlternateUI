@@ -363,12 +363,6 @@ namespace VUI
 			{
 				styleCheck_ = 0;
 				Style.CheckRoot(t_, rr_);
-
-				if (root_.activeInHierarchy)
-				{
-					foreach (Transform t in t_)
-						t.gameObject.SetActive(false);
-				}
 			}
 		}
 

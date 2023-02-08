@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text.RegularExpressions;
 
 namespace AUI.ClothingUI
 {
@@ -95,11 +96,11 @@ namespace AUI.ClothingUI
 					thumbnail_.Texture = null;
 					Borders = new VUI.Insets(1);
 
-					int forPage = parent_.Page;
+					DAZClothingItem forCi = ci_;
 
 					ci_.GetThumbnail((Texture2D t) =>
 					{
-						if (parent_.Page == forPage)
+						if (ci_ == forCi)
 							thumbnail_.Texture = t;
 					});
 				}
@@ -163,6 +164,8 @@ namespace AUI.ClothingUI
 		private readonly ClothingAtomInfo parent_;
 		private readonly VUI.IntTextSlider pages_;
 		private readonly VUI.Label pageCount_;
+		private readonly SearchBox search_ = new SearchBox("Search");
+		private readonly VUI.TreeView tags_ = new VUI.TreeView();
 		private bool ignore_ = false;
 
 		public Controls(ClothingAtomInfo parent)
@@ -173,26 +176,54 @@ namespace AUI.ClothingUI
 			Borders = new VUI.Insets(1);
 			Layout = new VUI.VerticalFlow(10);
 
-			var top = new VUI.Panel(new VUI.HorizontalFlow(
+			var pages = new VUI.Panel(new VUI.HorizontalFlow(
+				5, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
+
+			pages.Add(new VUI.Label("Pages"));
+			pages_ = pages.Add(new VUI.IntTextSlider(OnPageChanged));
+			pages.Add(new VUI.ToolButton("<", () => parent_.PreviousPage()));
+			pages.Add(new VUI.ToolButton(">", () => parent_.NextPage()));
+			pageCount_ = pages.Add(new VUI.Label("", VUI.Label.AlignLeft | VUI.Label.AlignVCenter));
+
+			var top = new VUI.Panel(new VUI.BorderLayout(10));
+			top.Add(pages, VUI.BorderLayout.Left);
+			top.Add(search_.Widget, VUI.BorderLayout.Center);
+
+
+			var left = new VUI.Panel(new VUI.HorizontalFlow(
 				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
-			top.Add(new VUI.Label("Pages"));
-			pages_ = top.Add(new VUI.IntTextSlider(OnPageChanged));
-			pageCount_ = top.Add(new VUI.Label("", VUI.Label.AlignLeft | VUI.Label.AlignVCenter));
+			left.Add(new VUI.CheckBox("Active", (b) => ToggleActive()));
 
-			var bottom = new VUI.Panel(new VUI.HorizontalFlow(
+
+			var right = new VUI.Panel(new VUI.HorizontalFlow(
 				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
-			bottom.Add(new VUI.CheckBox("Active", (b) => ToggleActive()));
+			right.Add(new VUI.Button("Tags", ToggleTags));
+
+			var bottom = new VUI.Panel(new VUI.BorderLayout(10));
+			bottom.Add(left, VUI.BorderLayout.Left);
+			bottom.Add(right, VUI.BorderLayout.Right);
+
 
 			Add(top);
 			Add(bottom);
+
+			search_.Changed += OnSearchChanged;
 		}
 
-		public void SetPages(int n)
+		public void Set(int current, int count)
 		{
-			pages_.Set(0, 1, n);
-			pageCount_.Text = $"/{n}";
+			try
+			{
+				ignore_ = true;
+				pages_.Set(current + 1, 1, count);
+				pageCount_.Text = $"/{count}";
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 
 		public void ToggleActive()
@@ -210,9 +241,20 @@ namespace AUI.ClothingUI
 			}
 		}
 
+		public void ToggleTags()
+		{
+		}
+
 		private void OnPageChanged(int i)
 		{
+			if (ignore_) return;
 			parent_.Page = i - 1;
+		}
+
+		private void OnSearchChanged(string s)
+		{
+			if (ignore_) return;
+			parent_.Search = s;
 		}
 	}
 
@@ -234,6 +276,7 @@ namespace AUI.ClothingUI
 
 		private int page_ = 0;
 		private bool active_ = false;
+		private string search_ = "";
 		private DAZClothingItem[] items_ = new DAZClothingItem[0];
 
 		public ClothingAtomInfo(AtomClothingUIModifier uiMod, Atom a)
@@ -250,8 +293,36 @@ namespace AUI.ClothingUI
 
 		public bool Active
 		{
-			get { return active_; }
-			set { active_ = value; Rebuild(); }
+			get
+			{
+				return active_;
+			}
+
+			set
+			{
+				if (active_ != value)
+				{
+					active_ = value;
+					Rebuild();
+				}
+			}
+		}
+
+		public string Search
+		{
+			get
+			{
+				return search_;
+			}
+
+			set
+			{
+				if (search_ != value)
+				{
+					search_ = value;
+					Rebuild();
+				}
+			}
 		}
 
 		public int PerPage
@@ -268,6 +339,18 @@ namespace AUI.ClothingUI
 				else
 					return items_.Length / PerPage + 1;
 			}
+		}
+
+		public void NextPage()
+		{
+			if (page_ < (PageCount - 1))
+				SetPage(page_ + 1);
+		}
+
+		public void PreviousPage()
+		{
+			if (page_ > 0)
+				SetPage(page_ - 1);
 		}
 
 		private void SetPage(int newPage)
@@ -296,29 +379,50 @@ namespace AUI.ClothingUI
 				else
 					panels_[i].Set(items_[ci]);
 			}
+
+			controls_.Set(page_, PageCount);
 		}
 
 		private void Rebuild()
 		{
-			if (active_)
+			if (!active_ && search_ == "")
+			{
+				items_ = cs_.clothingItems;
+			}
+			else
 			{
 				var list = new List<DAZClothingItem>();
 				var all = cs_.clothingItems;
 
+				var s = search_.ToLower().Trim();
+				Regex re = null;
+
+				if (s != "" && U.IsRegex(s))
+					re = U.CreateRegex(s);
+
 				for (int i = 0; i < all.Length; ++i)
 				{
-					if (all[i].active)
-						list.Add(all[i]);
+					if (active_ && !all[i].active)
+						continue;
+
+					if (re == null)
+					{
+						if (!all[i].displayName.ToLower().Contains(s))
+							continue;
+					}
+					else
+					{
+						if (!re.IsMatch(all[i].displayName))
+							continue;
+					}
+
+					list.Add(all[i]);
 				}
 
 				items_ = list.ToArray();
 			}
-			else
-			{
-				items_ = cs_.clothingItems;
-			}
 
-			controls_.SetPages(PageCount);
+			controls_.Set(page_, PageCount);
 			UpdatePage();
 		}
 

@@ -343,29 +343,6 @@ namespace AUI.MorphUI
 			}
 		}
 
-		private bool IsRegex(string s)
-		{
-			return (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/');
-		}
-
-		private Regex CreateRegex(string s)
-		{
-			if (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/')
-			{
-				try
-				{
-					return new Regex(
-						s.Substring(1, s.Length - 2), RegexOptions.IgnoreCase);
-				}
-				catch (Exception)
-				{
-					return null;
-				}
-			}
-
-			return null;
-		}
-
 		private void ProcessSearch()
 		{
 			var source = categorized_;
@@ -378,9 +355,9 @@ namespace AUI.MorphUI
 			{
 				searched_.Own(source.Get().Count);
 
-				if (IsRegex(search_))
+				if (U.IsRegex(search_))
 				{
-					var re = CreateRegex(search_);
+					var re = U.CreateRegex(search_);
 
 					if (re != null)
 					{
