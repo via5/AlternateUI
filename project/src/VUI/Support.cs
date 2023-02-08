@@ -232,7 +232,7 @@ namespace VUI
 
 		protected override Canvas GetCanvas()
 		{
-			return sui_?.GetComponentInChildren<Image>()?.canvas;
+			return sui_?.GetComponentInChildren<UnityEngine.UI.Image>()?.canvas;
 		}
 	}
 
@@ -363,12 +363,18 @@ namespace VUI
 			{
 				styleCheck_ = 0;
 				Style.CheckRoot(t_, rr_);
+
+				if (root_.activeInHierarchy)
+				{
+					foreach (Transform t in t_)
+						t.gameObject.SetActive(false);
+				}
 			}
 		}
 
 		protected override Canvas GetCanvas()
 		{
-			return t_?.GetComponentInChildren<Image>()?.canvas;
+			return t_?.GetComponentInChildren<UnityEngine.UI.Image>()?.canvas;
 		}
 	}
 
@@ -465,7 +471,7 @@ namespace VUI
 			fullscreenPanel_.transform.position = parent.position + offset_;
 
 
-			var bg = fullscreenPanel_.AddComponent<Image>();
+			var bg = fullscreenPanel_.AddComponent<UnityEngine.UI.Image>();
 			bg.color = new Color(0, 0, 0, 0);
 			bg.raycastTarget = false;
 
@@ -488,7 +494,7 @@ namespace VUI
 			hudPanel_ = new GameObject();
 			hudPanel_.transform.SetParent(fullscreenPanel_.transform, false);
 
-			var bg = hudPanel_.AddComponent<Image>();
+			var bg = hudPanel_.AddComponent<UnityEngine.UI.Image>();
 			var rt = hudPanel_.AddComponent<RectTransform>();
 			if (rt == null)
 				rt = hudPanel_.GetComponent<RectTransform>();
@@ -636,7 +642,7 @@ namespace VUI
 			fullscreenPanel_.transform.position = parent.position + offset_;
 
 
-			var bg = fullscreenPanel_.AddComponent<Image>();
+			var bg = fullscreenPanel_.AddComponent<UnityEngine.UI.Image>();
 			bg.color = new Color(0, 0, 0, 0);
 			bg.raycastTarget = false;
 
@@ -679,7 +685,7 @@ namespace VUI
 			hudPanel_ = new GameObject();
 			hudPanel_.transform.SetParent(fullscreenPanel_.transform, false);
 
-			var bg = hudPanel_.AddComponent<Image>();
+			var bg = hudPanel_.AddComponent<UnityEngine.UI.Image>();
 			var rt = hudPanel_.AddComponent<RectTransform>();
 			if (rt == null)
 				rt = hudPanel_.GetComponent<RectTransform>();
@@ -768,7 +774,7 @@ namespace VUI
 			ui_.transform.SetParent(panel_.transform, false);
 			rt_ = ui_.AddComponent<RectTransform>();
 
-			var bg = ui_.AddComponent<Image>();
+			var bg = ui_.AddComponent<UnityEngine.UI.Image>();
 			bg.color = new Color(0, 0, 0, 0.8f);
 			bg.raycastTarget = true;
 

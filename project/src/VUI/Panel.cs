@@ -8,7 +8,7 @@ namespace VUI
 		public override string TypeName { get { return "Panel"; } }
 
 		private GameObject bgObject_ = null;
-		private Image bgImage_ = null;
+		private UnityEngine.UI.Image bgImage_ = null;
 		private Color bgColor_ = new Color(0, 0, 0, 0);
 		private bool clickthrough_ = true;
 
@@ -94,7 +94,7 @@ namespace VUI
 			{
 				bgObject_ = new GameObject("WidgetBackground");
 				bgObject_.transform.SetParent(MainObject.transform, false);
-				bgImage_ = bgObject_.AddComponent<Image>();
+				bgImage_ = bgObject_.AddComponent<UnityEngine.UI.Image>();
 			}
 
 			if (bgObject_ != null)

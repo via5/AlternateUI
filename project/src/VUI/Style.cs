@@ -552,7 +552,7 @@ namespace VUI
 					ClampScrollView(scrollView);
 
 					// main background color
-					ForComponent<Image>(scrollView, (bg) =>
+					ForComponent<UnityEngine.UI.Image>(scrollView, (bg) =>
 					{
 						rr.originalBg = bg.color;
 						bg.color = theme_.BackgroundColor;
@@ -561,7 +561,7 @@ namespace VUI
 			}
 			else
 			{
-				var bg = t.GetComponent<Image>();
+				var bg = t.GetComponent<UnityEngine.UI.Image>();
 				if (bg != null)
 				{
 					rr.originalBg = bg.color;
@@ -577,7 +577,7 @@ namespace VUI
 		//
 		public static void CheckRoot(Transform t, RootRestore rr)
 		{
-			var bg = t.GetComponent<Image>();
+			var bg = t.GetComponent<UnityEngine.UI.Image>();
 			if (bg != null)
 			{
 				if (bg.color != theme_.BackgroundColor)
@@ -597,7 +597,7 @@ namespace VUI
 					// main background color
 					if (rr != null)
 					{
-						var bg = scrollView.GetComponent<Image>();
+						var bg = scrollView.GetComponent<UnityEngine.UI.Image>();
 						if (bg != null)
 							bg.color = rr.originalBg;
 					}
@@ -605,7 +605,7 @@ namespace VUI
 			}
 			else
 			{
-				var bg = t.GetComponent<Image>();
+				var bg = t.GetComponent<UnityEngine.UI.Image>();
 				if (bg != null)
 					bg.color = rr.originalBg;
 			}
@@ -873,7 +873,7 @@ namespace VUI
 		public static void Polish(TextBox e)
 		{
 			// textbox background
-			ForComponentInChildren<Image>(e.WidgetObject, (bg) =>
+			ForComponentInChildren<UnityEngine.UI.Image>(e.WidgetObject, (bg) =>
 			{
 				if (e.Enabled)
 					bg.color = theme_.EditableBackgroundColor;
@@ -970,7 +970,7 @@ namespace VUI
 
 		private static void Polish(UnityEngine.UI.Button e, Button.Polishing p, Info info)
 		{
-			ForComponent<Image>(e, (i) =>
+			ForComponent<UnityEngine.UI.Image>(e, (i) =>
 			{
 				i.color = Color.white;
 			});
@@ -1217,7 +1217,7 @@ namespace VUI
 				}
 				else
 				{
-					ForComponent<Image>(e.popupPanel, (bg) =>
+					ForComponent<UnityEngine.UI.Image>(e.popupPanel, (bg) =>
 					{
 						bg.color = theme_.BackgroundColor;
 					});
@@ -1226,7 +1226,7 @@ namespace VUI
 				// background color of the scroll view inside the popup; this must
 				// be transparent for the background color set above to appear
 				// correctly
-				ForComponent<Image>(scrollView, (bg) =>
+				ForComponent<UnityEngine.UI.Image>(scrollView, (bg) =>
 				{
 					bg.color = new Color(0, 0, 0, 0);
 				});
@@ -1258,13 +1258,13 @@ namespace VUI
 				}
 
 				// scrollbar background color
-				ForComponent<Image>(scrollbar, (bg) =>
+				ForComponent<UnityEngine.UI.Image>(scrollbar, (bg) =>
 				{
 					bg.color = theme_.SliderBackgroundColor;
 				});
 
 				// scrollbar handle color
-				ForComponent<Image>(scrollbarHandle, (i) =>
+				ForComponent<UnityEngine.UI.Image>(scrollbarHandle, (i) =>
 				{
 					i.color = theme_.ButtonBackgroundColor;
 				});
@@ -1321,7 +1321,7 @@ namespace VUI
 		private static void Polish(UIDynamicColorPicker picker, Info info)
 		{
 			// background
-			ForComponent<Image>(picker, (bg) =>
+			ForComponent<UnityEngine.UI.Image>(picker, (bg) =>
 			{
 				bg.color = new Color(0, 0, 0, 0);
 			});
@@ -1483,7 +1483,7 @@ namespace VUI
 				{
 					ForChildRecursive(parent, "Panel", (panel) =>
 					{
-						ForComponent<Image>(panel, (bg) =>
+						ForComponent<UnityEngine.UI.Image>(panel, (bg) =>
 						{
 							bg.color = new Color(0, 0, 0, 0);
 						});
@@ -1563,7 +1563,7 @@ namespace VUI
 		private static void Polish(UnityEngine.UI.Slider e, Info info)
 		{
 			// slider background color
-			ForComponent<Image>(e, (bg) =>
+			ForComponent<UnityEngine.UI.Image>(e, (bg) =>
 			{
 				bg.color = theme_.SliderBackgroundColor;
 			});
@@ -1578,7 +1578,7 @@ namespace VUI
 
 			ForChildRecursive(e, "Fill", (fill) =>
 			{
-				ForComponent<Image>(fill, (bg) =>
+				ForComponent<UnityEngine.UI.Image>(fill, (bg) =>
 				{
 					bg.color = new Color(0, 0, 0, 0);
 				});

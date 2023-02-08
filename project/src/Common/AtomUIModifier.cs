@@ -12,10 +12,17 @@ namespace AUI
 	public abstract class BasicAtomUIInfo : IAtomUIInfo
 	{
 		private readonly Atom atom_;
+		private readonly Logger log_;
 
-		protected BasicAtomUIInfo(Atom a)
+		protected BasicAtomUIInfo(Atom a, string logPrefix)
 		{
 			atom_ = a;
+			log_ = new Logger(logPrefix + "." + Atom.uid);
+		}
+
+		public Logger Log
+		{
+			get { return log_; }
 		}
 
 		public Atom Atom
@@ -23,9 +30,14 @@ namespace AUI
 			get { return atom_; }
 		}
 
-		public abstract void Disable();
 		public abstract bool Enable();
+		public abstract void Disable();
 		public abstract bool IsLike(BasicAtomUIInfo other);
+
+		public virtual void Update(float s)
+		{
+			// no-op
+		}
 	}
 
 	abstract class AtomUIModifier
@@ -56,6 +68,9 @@ namespace AUI
 		public virtual void Update(float s)
 		{
 			CheckDeferred(s);
+
+			for (int i = 0; i < atoms_.Count; ++i)
+				atoms_[i].Update(s);
 		}
 
 		public void Enable()

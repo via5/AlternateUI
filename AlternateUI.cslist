@@ -12,6 +12,7 @@ project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
+project\src\Features\ClothingUI\ClothingUI.cs
 project\src\Features\MorphUI\Categories.cs
 project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs
@@ -26,6 +27,7 @@ project\src\VUI\Dialog.cs
 project\src\VUI\Events.cs
 project\src\VUI\Glue.cs
 project\src\VUI\GridLayout.cs
+project\src\VUI\Image.cs
 project\src\VUI\Label.cs
 project\src\VUI\Layout.cs
 project\src\VUI\ListView.cs

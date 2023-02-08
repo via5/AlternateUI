@@ -324,8 +324,8 @@ namespace VUI
 
 				string s = new string(' ', indent * 2) + c.ToString();
 
-				if (c is Image)
-					s += $" {(c as Image).color}";
+				if (c is UnityEngine.UI.Image)
+					s += $" {(c as UnityEngine.UI.Image).color}";
 				else if (c is Text)
 					s += $" '{(c as Text).text}'";
 

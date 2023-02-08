@@ -42,7 +42,6 @@ namespace AUI
 		private const int MaxRecent = 30;
 
 		private readonly MRUAtomUIModifier uiMod_;
-		private readonly Logger log_;
 		private Transform parent_ = null;
 		private UIDynamicPopup popup_ = null;
 		private bool stale_ = true;
@@ -53,15 +52,9 @@ namespace AUI
 		protected abstract bool OnSelected(string entry);
 
 		public MRUAtomInfo(MRUAtomUIModifier uiMod, Atom a)
-			: base(a)
+			: base(a, uiMod.Log.Prefix)
 		{
 			uiMod_ = uiMod;
-			log_ = new Logger(uiMod_.Log.Prefix + "." + Atom.uid);
-		}
-
-		public Logger Log
-		{
-			get { return log_; }
 		}
 
 		public List<string> GetRecentEntries()

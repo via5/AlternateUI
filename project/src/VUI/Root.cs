@@ -34,7 +34,7 @@ namespace VUI
 	{
 		public override string TypeName { get { return "Overlay"; } }
 
-		private Image graphics_ = null;
+		private UnityEngine.UI.Image graphics_ = null;
 
 		public Overlay(Rectangle b)
 		{
@@ -45,7 +45,7 @@ namespace VUI
 		{
 			base.DoCreate();
 
-			graphics_ = MainObject.AddComponent<Image>();
+			graphics_ = MainObject.AddComponent<UnityEngine.UI.Image>();
 			graphics_.color = new Color(0, 0, 0, 0.7f);
 			graphics_.raycastTarget = true;
 

@@ -97,6 +97,7 @@
     <Compile Include="src\Common\AtomUIModifier.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
+    <Compile Include="src\Features\ClothingUI\ClothingUI.cs" />
     <Compile Include="src\Features\CuaUI.cs" />
     <Compile Include="src\Features\Feature.cs" />
     <Compile Include="src\Features\LightUI.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="src\VUI\Events.cs" />
     <Compile Include="src\VUI\Glue.cs" />
     <Compile Include="src\VUI\GridLayout.cs" />
+    <Compile Include="src\VUI\Image.cs" />
     <Compile Include="src\VUI\Label.cs" />
     <Compile Include="src\VUI\Layout.cs" />
     <Compile Include="src\VUI\ListView.cs" />
