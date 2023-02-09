@@ -6,6 +6,9 @@ namespace AUI.ClothingUI
 {
 	class ClothingAtomInfo : BasicAtomUIInfo
 	{
+		public delegate void Handler();
+		public event Handler TagsChanged;
+
 		private const int Columns = 3;
 		private const int Rows = 7;
 
@@ -29,6 +32,7 @@ namespace AUI.ClothingUI
 		private bool active_ = false;
 		private string search_ = "";
 		private readonly HashSet<string> tags_ = new HashSet<string>();
+		private bool tagsAnd_ = true;
 		private DAZClothingItem[] items_ = new DAZClothingItem[0];
 
 		public ClothingAtomInfo(AtomClothingUIModifier uiMod, Atom a)
@@ -92,6 +96,23 @@ namespace AUI.ClothingUI
 			get { return tags_; }
 		}
 
+		public bool TagsAnd
+		{
+			get
+			{
+				return tagsAnd_;
+			}
+
+			set
+			{
+				if (tagsAnd_ != value)
+				{
+					tagsAnd_ = value;
+					Rebuild();
+				}
+			}
+		}
+
 		public int PerPage
 		{
 			get { return Columns * Rows; }
@@ -123,12 +144,14 @@ namespace AUI.ClothingUI
 		public void AddTag(string s)
 		{
 			tags_.Add(s);
+			TagsChanged?.Invoke();
 			Rebuild();
 		}
 
 		public void RemoveTag(string s)
 		{
 			tags_.Remove(s);
+			TagsChanged?.Invoke();
 			Rebuild();
 		}
 
@@ -137,6 +160,7 @@ namespace AUI.ClothingUI
 			if (tags_.Count > 0)
 			{
 				tags_.Clear();
+				TagsChanged?.Invoke();
 				Rebuild();
 			}
 		}
@@ -208,14 +232,32 @@ namespace AUI.ClothingUI
 
 					if (tags_.Count > 0)
 					{
-						bool matched = false;
+						bool matched;
 
-						foreach (string t in tags_)
+						if (tagsAnd_)
 						{
-							if (ci.CheckMatchTag(t))
+							matched = true;
+
+							foreach (string t in tags_)
 							{
-								matched = true;
-								break;
+								if (!ci.CheckMatchTag(t))
+								{
+									matched = false;
+									break;
+								}
+							}
+						}
+						else
+						{
+							matched = false;
+
+							foreach (string t in tags_)
+							{
+								if (ci.CheckMatchTag(t))
+								{
+									matched = true;
+									break;
+								}
 							}
 						}
 
@@ -333,8 +375,8 @@ namespace AUI.ClothingUI
 			grid_.Layout = gl;
 
 			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
-			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Center);
-			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Bottom);
+			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
+			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
 			var panels = new List<ClothingPanel>();
 

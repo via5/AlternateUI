@@ -195,7 +195,7 @@ namespace VUI
 		protected virtual void OnOpen()
 		{
 			GetRoot().SetFocus(this);
-			GetRoot().SetOpenedPopup(Popup.popup);
+			GetRoot().SetOpenedPopup(this, Popup.popup);
 			Utilities.BringToTop(Popup.popup.popupPanel);
 
 			UpdateFilterBounds();

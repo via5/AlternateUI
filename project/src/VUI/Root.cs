@@ -151,6 +151,7 @@ namespace VUI
 		private bool visible_ = true;
 		private GameObject rootObject_ = null;
 
+		private Widget openedPopupWidget_ = null;
 		private UIPopup openedPopup_ = null;
 		private Widget focused_ = null;
 		private Point lastMouse_ = new Point(-10000, -10000);
@@ -252,8 +253,9 @@ namespace VUI
 			get { return rootObject_.transform; }
 		}
 
-		public void SetOpenedPopup(UIPopup p)
+		public void SetOpenedPopup(Widget w, UIPopup p)
 		{
+			openedPopupWidget_ = w;
 			openedPopup_ = p;
 		}
 
@@ -279,7 +281,7 @@ namespace VUI
 				if (openedPopup_.visible)
 					openedPopup_.Toggle();
 
-				openedPopup_ = null;
+				SetOpenedPopup(null, null);
 			}
 
 			FocusChanged?.Invoke(oldFocus, focused_);
@@ -351,7 +353,7 @@ namespace VUI
 			tooltips_?.Destroy();
 			support_?.Destroy();
 
-			openedPopup_ = null;
+			SetOpenedPopup(null, null);
 			focused_ = null;
 		}
 
@@ -478,6 +480,14 @@ namespace VUI
 			return support_.ToLocal(v);
 		}
 
+		public Rectangle ToLocal(Rectangle v)
+		{
+			var tl = support_.ToLocal(new Vector2(v.Left, v.Top));
+			var br = support_.ToLocal(new Vector2(v.Right, v.Bottom));
+
+			return new Rectangle(tl, br);
+		}
+
 		public Point MousePosition
 		{
 			get
@@ -488,11 +498,23 @@ namespace VUI
 
 		public Widget WidgetAt(Point p)
 		{
-			var w = FloatingPanel.WidgetAt(p);
+			if (openedPopup_ != null)
+			{
+				if (openedPopup_.visible)
+				{
+					var r = Utilities.RectTransformBounds(
+						this, openedPopup_.popupPanel);
+
+					if (r.Contains(p))
+						return openedPopupWidget_;
+				}
+			}
+
+			var w = FloatingPanel.WidgetAtInternal(p);
 			if (w != null)
 				return w;
 
-			w = ContentPanel.WidgetAt(p);
+			w = ContentPanel.WidgetAtInternal(p);
 			if (w != null)
 				return w;
 

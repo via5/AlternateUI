@@ -1111,7 +1111,11 @@ namespace VUI
 		private void OnHover(PointerEvent e)
 		{
 			if (IsVisibleOnScreen())
-				SetHovered(NodeAt(e.Pointer));
+			{
+				var w = GetRoot().WidgetAt(e.Pointer);
+				if (w.HasParent(this))
+					SetHovered(NodeAt(e.Pointer));
+			}
 
 			e.Bubble = false;
 		}

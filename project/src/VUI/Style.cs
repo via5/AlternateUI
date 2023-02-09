@@ -249,6 +249,11 @@ namespace VUI
 			get { return new Color(0.4f, 0.4f, 0.4f); }
 		}
 
+		public Color ActiveOverlayColor
+		{
+			get { return new Color(0, 0, 0, 0.5f); }
+		}
+
 		public int SliderTextSize
 		{
 			get { return 20; }

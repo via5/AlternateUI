@@ -111,12 +111,16 @@
 			panel_.Visible = true;
 			panel_.BringToTop();
 			panel_.GetRoot().FocusChanged += OnFocusChanged;
+			panel_.GetRoot().FloatingPanel.Clickthrough = false;
+			panel_.GetRoot().FloatingPanel.BackgroundColor = VUI.Style.Theme.ActiveOverlayColor;
 		}
 
 		public void Hide()
 		{
 			panel_.Visible = false;
 			panel_.GetRoot().FocusChanged -= OnFocusChanged;
+			panel_.GetRoot().FloatingPanel.Clickthrough = true;
+			panel_.GetRoot().FloatingPanel.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
 		}
 
 		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)

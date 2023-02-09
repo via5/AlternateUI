@@ -223,16 +223,16 @@ namespace VUI
 			}
 		}
 
-		public virtual Widget WidgetAt(Point p)
+		public Widget WidgetAtInternal(Point p)
 		{
 			if (!IsVisibleOnScreen())
 				return null;
 
-			if (AbsoluteClientBounds.Contains(p))
+			if (BoundsContainPoint(p))
 			{
 				for (int i = 0; i < children_.Count; ++i)
 				{
-					var w = children_[i].WidgetAt(p);
+					var w = children_[i].WidgetAtInternal(p);
 					if (w != null)
 						return w;
 				}
@@ -242,6 +242,11 @@ namespace VUI
 			}
 
 			return null;
+		}
+
+		protected virtual bool BoundsContainPoint(Point p)
+		{
+			return AbsoluteClientBounds.Contains(p);
 		}
 
 		public bool HasParent(Widget w)
