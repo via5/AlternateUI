@@ -13,7 +13,9 @@ project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
+project\src\Features\ClothingUI\ClothingPanel.cs
 project\src\Features\ClothingUI\ClothingUI.cs
+project\src\Features\ClothingUI\Controls.cs
 project\src\Features\MorphUI\Categories.cs
 project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs
