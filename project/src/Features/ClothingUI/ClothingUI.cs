@@ -7,6 +7,13 @@ namespace AUI.ClothingUI
 {
 	class Filter
 	{
+		public const int SortAZ = 0;
+		public const int SortZA = 1;
+		public const int SortNew = 2;
+		public const int SortOld = 3;
+		public const int SortAuthor = 4;
+		public const int SortCount = 5;
+
 		public delegate void Handler();
 		public event Handler TagsChanged, AuthorsChanged;
 
@@ -14,6 +21,7 @@ namespace AUI.ClothingUI
 
 		private bool active_ = false;
 		private string search_ = "";
+		private int sort_ = SortNew;
 
 		private readonly HashSet<string> tags_ = new HashSet<string>();
 		private bool tagsAnd_ = true;
@@ -25,6 +33,19 @@ namespace AUI.ClothingUI
 		public Filter(ClothingAtomInfo parent)
 		{
 			parent_ = parent;
+		}
+
+		public static string SortToString(int i)
+		{
+			switch (i)
+			{
+				case SortAZ: return "A to Z";
+				case SortZA: return "Z to A";
+				case SortNew: return "New to old";
+				case SortOld: return "Old to new";
+				case SortAuthor: return "Creator";
+				default: return $"?{i}";
+			}
 		}
 
 		public bool Active
@@ -56,6 +77,23 @@ namespace AUI.ClothingUI
 				if (search_ != value)
 				{
 					search_ = value;
+					parent_.CriteriaChangedInternal();
+				}
+			}
+		}
+
+		public int Sort
+		{
+			get
+			{
+				return sort_;
+			}
+
+			set
+			{
+				if (sort_ != value)
+				{
+					sort_ = value;
 					parent_.CriteriaChangedInternal();
 				}
 			}
@@ -138,8 +176,15 @@ namespace AUI.ClothingUI
 
 		public DAZClothingItem[] Filtered(DAZClothingItem[] all)
 		{
+			var list = Culled(all);
+			Sorted(list);
+			return list.ToArray();
+		}
+
+		private List<DAZClothingItem> Culled(DAZClothingItem[] all)
+		{
 			if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
-				return all;
+				return new List<DAZClothingItem>(all);
 
 			authorsLc_.Clear();
 			foreach (string a in authors_)
@@ -179,7 +224,43 @@ namespace AUI.ClothingUI
 				list.Add(ci);
 			}
 
-			return list.ToArray();
+			return list;
+		}
+
+		private void Sorted(List<DAZClothingItem> list)
+		{
+			switch (sort_)
+			{
+				case SortAZ:
+				{
+					list.Sort((a, b) => U.CompareNatural(a.displayName, b.displayName));
+					break;
+				}
+
+				case SortZA:
+				{
+					list.Sort((a, b) => U.CompareNatural(b.displayName, a.displayName));
+					break;
+				}
+
+				case SortNew:
+				{
+					list.Reverse();
+					break;
+				}
+
+				case SortOld:
+				{
+					// no-op, default sort
+					break;
+				}
+
+				case SortAuthor:
+				{
+					list.Sort((a, b) => U.CompareNatural(a.creatorName, b.creatorName));
+					break;
+				}
+			}
 		}
 
 		private bool TagsMatch(DAZClothingItem ci)
@@ -348,6 +429,8 @@ namespace AUI.ClothingUI
 		private void Rebuild()
 		{
 			items_ = filter_.Filtered(cs_.clothingItems);
+
+			page_ = 0;
 			controls_.Set(page_, PageCount);
 			UpdatePage();
 		}

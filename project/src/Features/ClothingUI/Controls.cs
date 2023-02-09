@@ -355,12 +355,37 @@ namespace AUI.ClothingUI
 	}
 
 
+	class Sorter
+	{
+		private readonly Controls c_;
+		private readonly VUI.ComboBox<string> cb_;
+
+		public Sorter(Controls c)
+		{
+			c_ = c;
+			cb_ = new VUI.ComboBox<string>();
+
+			for (int i = 0; i < Filter.SortCount; ++i)
+				cb_.AddItem(Filter.SortToString(i));
+
+			cb_.Select(c_.ClothingAtomInfo.Filter.Sort);
+			cb_.SelectionIndexChanged += (i) => c_.ClothingAtomInfo.Filter.Sort = i;
+		}
+
+		public VUI.Widget Widget
+		{
+			get { return cb_; }
+		}
+	}
+
+
 	class Controls : VUI.Panel
 	{
 		private readonly ClothingAtomInfo parent_;
 		private readonly VUI.IntTextSlider pages_;
 		private readonly VUI.Label pageCount_;
 		private readonly SearchBox search_ = new SearchBox("Search");
+		private readonly Sorter sorter_;
 		private readonly TagsControls tags_;
 		private readonly AuthorControls authors_;
 		private bool ignore_ = false;
@@ -368,6 +393,7 @@ namespace AUI.ClothingUI
 		public Controls(ClothingAtomInfo parent)
 		{
 			parent_ = parent;
+			sorter_ = new Sorter(this);
 			tags_ = new TagsControls(this);
 			authors_ = new AuthorControls(this);
 
@@ -398,6 +424,7 @@ namespace AUI.ClothingUI
 			var right = new VUI.Panel(new VUI.HorizontalFlow(
 				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
+			right.Add(sorter_.Widget);
 			right.Add(authors_.Button);
 			right.Add(tags_.Button);
 
