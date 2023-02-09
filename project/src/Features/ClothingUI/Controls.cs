@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AUI.ClothingUI
@@ -355,6 +356,88 @@ namespace AUI.ClothingUI
 	}
 
 
+	class MoreControls
+	{
+		private readonly Controls controls_;
+		private readonly ToggledPanel panel_;
+
+		public MoreControls(Controls c)
+		{
+			controls_ = c;
+			panel_ = new ToggledPanel("...", true, true);
+
+			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+
+			AddButton(p, "Remove all", OnRemoveAll);
+			AddButton(p, "Undress all", () => OnDressAll(false));
+			AddButton(p, "Re-dress all", () => OnDressAll(true));
+
+			panel_.Panel.Add(p, VUI.BorderLayout.Top);
+		}
+
+		public VUI.Widget Widget
+		{
+			get { return panel_.Button; }
+		}
+
+		private void AddButton(VUI.Panel p, string t, Action f)
+		{
+			var b = new VUI.ToolButton(t);
+
+			b.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+			b.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignVCenter;
+			b.Padding = new VUI.Insets(10, 5, 60, 5);
+
+			b.Clicked += () =>
+			{
+				panel_.Hide();
+				f();
+			};
+
+			p.Add(b);
+		}
+
+		private void OnRemoveAll()
+		{
+			var cs = controls_.ClothingAtomInfo.CharacterSelector;
+			var items = cs.clothingItems;
+
+			for (int i = 0; i < items.Length; ++i)
+			{
+				if (items[i].active)
+					cs.SetActiveClothingItem(items[i], false);
+			}
+		}
+
+		private void OnDressAll(bool b)
+		{
+			var cs = controls_.ClothingAtomInfo.CharacterSelector;
+			var items = cs.clothingItems;
+
+			for (int i = 0; i < items.Length; ++i)
+			{
+				if (items[i].active)
+				{
+					var csc = items[i].GetComponentsInChildren<ClothSimControl>();
+
+					for (int j = 0; j < csc.Length; ++j)
+					{
+						var allowDetach = csc[j].GetBoolJSONParam("allowDetach");
+						if (allowDetach != null)
+							allowDetach.val = !b;
+
+						if (b)
+						{
+							var r = csc[j].GetAction("Reset");
+							r?.actionCallback?.Invoke();
+						}
+					}
+				}
+			}
+		}
+	}
+
+
 	class Sorter
 	{
 		private readonly Controls c_;
@@ -385,6 +468,7 @@ namespace AUI.ClothingUI
 		private readonly VUI.IntTextSlider pages_;
 		private readonly VUI.Label pageCount_;
 		private readonly SearchBox search_ = new SearchBox("Search");
+		private readonly MoreControls more_;
 		private readonly Sorter sorter_;
 		private readonly TagsControls tags_;
 		private readonly AuthorControls authors_;
@@ -393,6 +477,7 @@ namespace AUI.ClothingUI
 		public Controls(ClothingAtomInfo parent)
 		{
 			parent_ = parent;
+			more_ = new MoreControls(this);
 			sorter_ = new Sorter(this);
 			tags_ = new TagsControls(this);
 			authors_ = new AuthorControls(this);
@@ -424,6 +509,7 @@ namespace AUI.ClothingUI
 			var right = new VUI.Panel(new VUI.HorizontalFlow(
 				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
+			right.Add(more_.Widget);
 			right.Add(sorter_.Widget);
 			right.Add(authors_.Button);
 			right.Add(tags_.Button);

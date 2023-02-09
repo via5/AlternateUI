@@ -1,4 +1,7 @@
-﻿namespace AUI
+﻿using System.Collections;
+using UnityEngine;
+
+namespace AUI
 {
 	class SearchBox
 	{
@@ -61,10 +64,17 @@
 		private readonly VUI.Button button_;
 		private readonly VUI.Panel panel_;
 		private bool firstShow_ = true;
+		private bool autoSize_ = false;
 
-		public ToggledPanel(string buttonText)
+		public ToggledPanel(string buttonText, bool toolButton=false, bool autoSize=false)
 		{
-			button_ = new VUI.Button(buttonText, Toggle);
+			if (toolButton)
+				button_ = new VUI.ToolButton(buttonText, Toggle);
+			else
+				button_ = new VUI.Button(buttonText, Toggle);
+
+			autoSize_ = autoSize;
+
 			button_.Events.PointerClick += ToggleClick;
 
 			panel_ = new VUI.Panel();
@@ -73,8 +83,10 @@
 			panel_.BorderColor = VUI.Style.Theme.BorderColor;
 			panel_.Borders = new VUI.Insets(1);
 			panel_.Clickthrough = false;
-			panel_.MinimumSize = Size;
 			panel_.Visible = false;
+
+			if (!autoSize_)
+				panel_.MinimumSize = Size;
 		}
 
 		public VUI.Button Button
@@ -113,6 +125,32 @@
 					bounds.Translate(-(bounds.Right - root.FloatingPanel.AbsoluteClientBounds.Right), 0);
 
 				panel_.SetBounds(bounds);
+				AlternateUI.Instance.StartCoroutine(CoDoShow());
+			}
+			else
+			{
+				DoShow();
+			}
+		}
+
+		private IEnumerator CoDoShow()
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			DoShow();
+		}
+
+		private void DoShow()
+		{
+			if (autoSize_)
+			{
+				var s = panel_.GetRealPreferredSize(Size.Width, Size.Height);
+
+				var r = panel_.Bounds;
+				r.Width = s.Width;
+				r.Height = s.Height;
+
+				panel_.SetBounds(r);
 			}
 
 			panel_.Visible = true;
