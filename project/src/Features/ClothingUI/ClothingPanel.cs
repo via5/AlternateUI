@@ -29,11 +29,11 @@ namespace AUI.ClothingUI
 			Clickthrough = false;
 			Events.PointerClick += (e) => ToggleActive();
 
-			var top = new VUI.Panel(new VUI.HorizontalFlow(5));
-			active_ = top.Add(new VUI.CheckBox("", (b) => ToggleActive()));
-			author_ = top.Add(new VUI.Label());
+			var top = new VUI.Panel(new VUI.BorderLayout(5));
+			active_ = top.Add(new VUI.CheckBox("", (b) => ToggleActive()), VUI.BorderLayout.Left);
+			author_ = top.Add(new VUI.Label(), VUI.BorderLayout.Center);
 
-			var center = new VUI.Panel(new VUI.VerticalFlow(5, false));
+			var center = new VUI.Panel(new VUI.VerticalFlow(5));
 			center.Add(top);
 			name_ = center.Add(new VUI.Label());
 
@@ -59,6 +59,9 @@ namespace AUI.ClothingUI
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignTop;
 			name_.AutoTooltip = true;
+
+			name_.MinimumSize = new VUI.Size(DontCare, 60);
+			name_.MaximumSize = new VUI.Size(DontCare, 60);
 
 			thumbnail_.MinimumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 			thumbnail_.MaximumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
@@ -104,8 +107,7 @@ namespace AUI.ClothingUI
 
 					ci_.GetThumbnail((Texture2D t) =>
 					{
-						if (ci_ == forCi)
-							thumbnail_.Texture = t;
+						AlternateUI.Instance.StartCoroutine(CoSetTexture(forCi, t));
 					});
 				}
 
@@ -116,6 +118,14 @@ namespace AUI.ClothingUI
 			{
 				ignore_ = false;
 			}
+		}
+
+		private IEnumerator CoSetTexture(DAZClothingItem forCi, Texture2D t)
+		{
+			yield return new WaitForEndOfFrame();
+
+			if (ci_ == forCi)
+				thumbnail_.Texture = t;
 		}
 
 		public void ToggleActive()

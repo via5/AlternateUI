@@ -42,10 +42,7 @@ namespace VUI
 		private void UpdateTexture()
 		{
 			if (raw_ != null)
-			{
 				raw_.texture = tex_;
-				NeedsLayout("texture changed");
-			}
 		}
 
 		protected override Size DoGetPreferredSize(

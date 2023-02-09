@@ -216,6 +216,7 @@ namespace VUI
 			tooltips_ = new TooltipManager(this);
 
 			content_.Clickthrough = false;
+			content_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
 
 			AttachTo(support);
 		}
@@ -636,7 +637,7 @@ namespace VUI
 			return size;
 		}
 
-		public static Size FitText(Font font, int fontSize, FontStyle fontStyle, string s, Size maxSize)
+		public static Size FitText(Font font, int fontSize, FontStyle fontStyle, string s, Size maxSize, bool vertOverflow=false)
 		{
 			var ts = GetTS();
 			ts.font = font ?? Style.Theme.DefaultFont;
@@ -664,7 +665,11 @@ namespace VUI
 			else
 			{
 				extents.y = maxSize.Height;
-				ts.verticalOverflow = VerticalWrapMode.Truncate;
+
+				if (vertOverflow)
+					ts.verticalOverflow = VerticalWrapMode.Overflow;
+				else
+					ts.verticalOverflow = VerticalWrapMode.Truncate;
 			}
 
 			ts.textAnchor = TextAnchor.UpperLeft;
@@ -693,8 +698,11 @@ namespace VUI
 			if (maxSize.Width != Widget.DontCare)
 				size.Width = Math.Min(size.Width, maxSize.Width);
 
-			if (maxSize.Height != Widget.DontCare)
-				size.Height = Math.Min(size.Height, maxSize.Height);
+			if (!vertOverflow)
+			{
+				if (maxSize.Height != Widget.DontCare)
+					size.Height = Math.Min(size.Height, maxSize.Height);
+			}
 
 			return size;
 		}

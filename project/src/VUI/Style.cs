@@ -228,7 +228,7 @@ namespace VUI
 
 		public Color BackgroundColor
 		{
-			get { return new Color(0.15f, 0.15f, 0.15f); }
+			get { return new Color(0.12f, 0.12f, 0.12f); }
 		}
 
 		public Color ButtonBackgroundColor

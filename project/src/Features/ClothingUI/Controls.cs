@@ -494,6 +494,7 @@ namespace AUI.ClothingUI
 			pages.Add(new VUI.ToolButton("<", () => parent_.PreviousPage()));
 			pages.Add(new VUI.ToolButton(">", () => parent_.NextPage()));
 			pageCount_ = pages.Add(new VUI.Label("", VUI.Label.AlignLeft | VUI.Label.AlignVCenter));
+			pageCount_.MinimumSize = new VUI.Size(80, DontCare);
 
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 			top.Add(pages, VUI.BorderLayout.Left);
