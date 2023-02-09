@@ -355,9 +355,9 @@ namespace AUI.MorphUI
 			{
 				searched_.Own(source.Get().Count);
 
-				if (U.IsRegex(search_))
+				if (VUI.Utilities.IsRegex(search_))
 				{
-					var re = U.CreateRegex(search_);
+					var re = VUI.Utilities.CreateRegex(search_);
 
 					if (re != null)
 					{

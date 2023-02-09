@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -166,6 +167,29 @@ namespace VUI
 				return max;
 			else
 				return val;
+		}
+
+		public static bool IsRegex(string s)
+		{
+			return (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/');
+		}
+
+		public static Regex CreateRegex(string s)
+		{
+			if (s.Length >= 2 && s[0] == '/' && s[s.Length - 1] == '/')
+			{
+				try
+				{
+					return new Regex(
+						s.Substring(1, s.Length - 2), RegexOptions.IgnoreCase);
+				}
+				catch (Exception)
+				{
+					return null;
+				}
+			}
+
+			return null;
 		}
 
 		public static void DebugTimeThis(string what, Action a)

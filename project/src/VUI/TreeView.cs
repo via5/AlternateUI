@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -768,6 +769,7 @@ namespace VUI
 		private Item selected_ = null;
 		private Timer staleTimer_ = null;
 		private string filterString_ = "";
+		private string filterStringLc_ = "";
 		private Func<Item, bool> filterFunc_ = null;
 
 		public TreeView()
@@ -857,6 +859,7 @@ namespace VUI
 				if (filterString_ != value)
 				{
 					filterString_ = value ?? "";
+					filterStringLc_ = filterString_.ToLower();
 					VisibilityChangedInternal(null);
 				}
 			}
@@ -921,12 +924,25 @@ namespace VUI
 			}
 		}
 
+		private bool BuiltinFilterFunc(Item i)
+		{
+			Regex re = null;
+
+			if (Utilities.IsRegex(filterString_))
+				re = Utilities.CreateRegex(filterString_);
+
+			if (re == null)
+				return i.Text.ToLower().Contains(filterStringLc_);
+			else
+				return re.IsMatch(i.Text);
+		}
+
 		private Func<Item, bool> GetFilterFunc()
 		{
 			Func<Item, bool> f = null;
 
 			if (filterFunc_ == null && filterString_ != "")
-				f = (i) => i.Text.ToLower().Contains(filterString_.ToLower());
+				f = BuiltinFilterFunc;
 			else
 				f = filterFunc_;
 

@@ -209,8 +209,8 @@ namespace AUI.ClothingUI
 				var s = search_.ToLower().Trim();
 				Regex re = null;
 
-				if (s != "" && U.IsRegex(s))
-					re = U.CreateRegex(s);
+				if (s != "" && VUI.Utilities.IsRegex(s))
+					re = VUI.Utilities.CreateRegex(s);
 
 				for (int i = 0; i < all.Length; ++i)
 				{
