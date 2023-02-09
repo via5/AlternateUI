@@ -1,8 +1,5 @@
-﻿using Battlehub.RTHandles;
-using System.Collections.Generic;
-using System;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using System.Text.RegularExpressions;
 
 namespace AUI.ClothingUI
@@ -264,6 +261,9 @@ namespace AUI.ClothingUI
 		private const int Columns = 3;
 		private const int Rows = 7;
 
+		private const float DisableCheckInterval = 1;
+		private const float DisableCheckTries = 5;
+
 		private readonly AtomClothingUIModifier uiMod_;
 		private DAZCharacter char_ = null;
 		private DAZCharacterSelector cs_ = null;
@@ -273,6 +273,9 @@ namespace AUI.ClothingUI
 		private VUI.Panel grid_ = null;
 		private ClothingPanel[] panels_ = null;
 		private Controls controls_ = null;
+
+		private float disableElapsed_ = 0;
+		private int disableTries_ = 0;
 
 		private int page_ = 0;
 		private bool active_ = false;
@@ -449,7 +452,28 @@ namespace AUI.ClothingUI
 		public override void Update(float s)
 		{
 			if (root_ != null)
+			{
 				root_.Update();
+
+				// vam will sometimes enable the clothing ui after the root has
+				// been created, make sure everything is off for the first few
+				// seconds
+				if (disableTries_ < DisableCheckTries)
+				{
+					disableElapsed_ += s;
+					if (disableElapsed_ >= 1)
+					{
+						disableElapsed_ = 0;
+						++disableTries_;
+
+						foreach (Transform t in ui_.transform.parent)
+						{
+							if (t != root_.RootSupport.RootParent)
+								t.gameObject.SetActive(false);
+						}
+					}
+				}
+			}
 		}
 
 		private bool GetInfo()
