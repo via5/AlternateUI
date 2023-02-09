@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace AUI.ClothingUI
 {
@@ -11,6 +12,8 @@ namespace AUI.ClothingUI
 		private readonly VUI.Label author_ = null;
 		private readonly VUI.Label name_ = null;
 		private readonly VUI.Button customize_ = null;
+		private readonly VUI.Button physics_ = null;
+		private readonly VUI.Button adjustments_ = null;
 		private readonly VUI.Image thumbnail_ = null;
 
 		private DAZClothingItem ci_ = null;
@@ -33,7 +36,13 @@ namespace AUI.ClothingUI
 			var center = new VUI.Panel(new VUI.VerticalFlow(5, false));
 			center.Add(top);
 			name_ = center.Add(new VUI.Label());
-			customize_ = center.Add(new VUI.ToolButton("...", Customize));
+
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(5));
+			customize_ = buttons.Add(new VUI.ToolButton("...", OpenCustomize));
+			adjustments_ = buttons.Add(new VUI.ToolButton("A", OpenAdjustments));
+			physics_ = buttons.Add(new VUI.ToolButton("P", OpenPhysics));
+
+			center.Add(buttons);
 
 			var right = new VUI.Panel(new VUI.VerticalFlow(5));
 			thumbnail_ = right.Add(new VUI.Image());
@@ -126,25 +135,60 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		public void Customize()
+		public void OpenCustomize()
 		{
 			ci_.OpenUI();
 		}
 
+		public void OpenPhysics()
+		{
+			ci_.OpenUI();
+			SetTab("Physics");
+		}
+
+		public void OpenAdjustments()
+		{
+			ci_.OpenUI();
+			SetTab("Adjustments");
+		}
+
+		private void SetTab(string name)
+		{
+			DoSetTab(name);
+			AlternateUI.Instance.StartCoroutine(CoSetTab(name));
+		}
+
+		private IEnumerator CoSetTab(string name)
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			DoSetTab(name);
+		}
+
+		private void DoSetTab(string name)
+		{
+			var ts = ci_.customizationUI.GetComponentInChildren<UITabSelector>();
+			ts?.SetActiveTab(name);
+		}
+
 		private void ActiveChanged()
 		{
-			if (ci_ != null && ci_.active)
+			bool b = (ci_ != null && ci_.active);
+
+			if (b)
 			{
 				BackgroundColor = new Color(0.12f, 0.12f, 0.20f);
 				BorderColor = new Color(1, 1, 1);
-				customize_.Enabled = true;
 			}
 			else
 			{
 				BackgroundColor = new Color(0, 0, 0, 0);
 				BorderColor = VUI.Style.Theme.BorderColor;
-				customize_.Enabled = false;
 			}
+
+			customize_.Enabled = b;
+			physics_.Enabled = b;
+			adjustments_.Enabled = b;
 		}
 	}
 }
