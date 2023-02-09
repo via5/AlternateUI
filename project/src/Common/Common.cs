@@ -65,6 +65,7 @@ namespace AUI
 		private readonly VUI.Panel panel_;
 		private bool firstShow_ = true;
 		private bool autoSize_ = false;
+		private bool disableOverlay_ = true;
 
 		public ToggledPanel(string buttonText, bool toolButton=false, bool autoSize=false)
 		{
@@ -87,6 +88,12 @@ namespace AUI
 
 			if (!autoSize_)
 				panel_.MinimumSize = Size;
+		}
+
+		public bool DisableOverlay
+		{
+			get { return disableOverlay_; }
+			set { disableOverlay_ = value; }
 		}
 
 		public VUI.Button Button
@@ -156,21 +163,30 @@ namespace AUI
 			panel_.Visible = true;
 			panel_.BringToTop();
 			panel_.GetRoot().FocusChanged += OnFocusChanged;
-			panel_.GetRoot().FloatingPanel.Clickthrough = false;
-			panel_.GetRoot().FloatingPanel.BackgroundColor = VUI.Style.Theme.ActiveOverlayColor;
-			button_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
 
+			if (disableOverlay_)
+			{
+				panel_.GetRoot().FloatingPanel.BackgroundColor = VUI.Style.Theme.ActiveOverlayColor;
+				panel_.GetRoot().FloatingPanel.Clickthrough = false;
+			}
+
+			button_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
 			Toggled?.Invoke(panel_.Visible);
 		}
 
 		public void Hide()
 		{
 			panel_.Visible = false;
-			panel_.GetRoot().FocusChanged -= OnFocusChanged;
-			panel_.GetRoot().FloatingPanel.Clickthrough = true;
-			panel_.GetRoot().FloatingPanel.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
-			button_.BackgroundColor = VUI.Style.Theme.ButtonBackgroundColor;
 
+			panel_.GetRoot().FocusChanged -= OnFocusChanged;
+
+			if (disableOverlay_)
+			{
+				panel_.GetRoot().FloatingPanel.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+				panel_.GetRoot().FloatingPanel.Clickthrough = true;
+			}
+
+			button_.BackgroundColor = VUI.Style.Theme.ButtonBackgroundColor;
 			Toggled?.Invoke(panel_.Visible);
 		}
 

@@ -365,6 +365,7 @@ namespace AUI.ClothingUI
 		{
 			controls_ = c;
 			panel_ = new ToggledPanel("...", true, true);
+			panel_.DisableOverlay = false;
 
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));
 
@@ -407,6 +408,8 @@ namespace AUI.ClothingUI
 				if (items[i].active)
 					cs.SetActiveClothingItem(items[i], false);
 			}
+
+			controls_.ClothingAtomInfo.UpdatePanels();
 		}
 
 		private void OnDressAll(bool b)
@@ -524,6 +527,20 @@ namespace AUI.ClothingUI
 			Add(bottom);
 
 			search_.Changed += OnSearchChanged;
+
+			search_.TextBox.AutoComplete.Enabled = true;
+			search_.TextBox.AutoComplete.File = parent_.GetAutoCompleteFile();
+			search_.TextBox.AutoComplete.Changed += OnAutoCompleteChanged;
+		}
+
+		private void OnAutoCompleteChanged()
+		{
+			parent_.NotifyAutoCompleteChanged();
+		}
+
+		public void UpdateAutoComplete()
+		{
+			search_?.TextBox?.AutoComplete?.Reload();
 		}
 
 		public ClothingAtomInfo ClothingAtomInfo

@@ -1,4 +1,6 @@
-﻿namespace AUI.MorphUI
+﻿using UnityEngine;
+
+namespace AUI.MorphUI
 {
 	class MorphPanel : VUI.Panel
 	{
@@ -113,6 +115,19 @@
 				ignore_ = true;
 				slider_.Set(morph_.morphValue, morph_.min, morph_.max);
 				fav_.Checked = morph_.favorite;
+
+				bool active = (morph_.morphValue != morph_.startValue);
+
+				if (active)
+				{
+					BackgroundColor = new Color(0.12f, 0.12f, 0.20f);
+					BorderColor = new Color(1, 1, 1);
+				}
+				else
+				{
+					BackgroundColor = new Color(0, 0, 0, 0);
+					BorderColor = VUI.Style.Theme.BorderColor;
+				}
 			}
 			finally
 			{

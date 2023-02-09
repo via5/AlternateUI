@@ -342,6 +342,31 @@ namespace AUI.ClothingUI
 			filter_ = new Filter(this);
 		}
 
+		public string GetAutoCompleteFile()
+		{
+			string g;
+
+			if (char_.isMale)
+				g = "male";
+			else
+				g = "female";
+
+			return AlternateUI.Instance.GetConfigFilePath(
+				$"aui.clothing.{g}.autocomplete.json");
+		}
+
+		public void NotifyAutoCompleteChanged()
+		{
+			foreach (ClothingAtomInfo a in uiMod_.Atoms)
+			{
+				if (a == this)
+					continue;
+
+				if (a.char_.isMale == char_.isMale)
+					a.controls_.UpdateAutoComplete();
+			}
+		}
+
 		public DAZCharacterSelector CharacterSelector
 		{
 			get { return cs_; }
@@ -389,6 +414,12 @@ namespace AUI.ClothingUI
 		{
 			if (page_ > 0)
 				SetPage(page_ - 1);
+		}
+
+		public void UpdatePanels()
+		{
+			for (int i = 0; i < panels_.Length; ++i)
+				panels_[i].Update();
 		}
 
 		private void SetPage(int newPage)

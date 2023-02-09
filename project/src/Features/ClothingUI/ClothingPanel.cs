@@ -81,7 +81,7 @@ namespace AUI.ClothingUI
 			Update();
 		}
 
-		private void Update()
+		public void Update()
 		{
 			try
 			{

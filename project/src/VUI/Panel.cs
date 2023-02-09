@@ -57,8 +57,11 @@ namespace VUI
 
 			set
 			{
-				bgColor_ = value;
-				SetBackground();
+				if (bgColor_ != value)
+				{
+					bgColor_ = value;
+					SetBackground();
+				}
 			}
 		}
 

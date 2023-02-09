@@ -1231,7 +1231,7 @@ namespace VUI
 				{
 					ForComponent<UnityEngine.UI.Image>(e.popupPanel, (bg) =>
 					{
-						bg.color = theme_.BackgroundColor;
+						bg.color = new Color(0, 0, 0, 0);
 					});
 				}
 
