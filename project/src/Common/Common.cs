@@ -50,6 +50,9 @@
 
 	class ToggledPanel
 	{
+		public delegate void ToggledHandler(bool b);
+		public event ToggledHandler Toggled;
+
 		private readonly VUI.Size Size = new VUI.Size(500, 800);
 
 		public delegate void Handler();
@@ -99,13 +102,17 @@
 				firstShow_ = false;
 
 				var root = button_.GetRoot();
-
 				root.FloatingPanel.Add(panel_);
 
-				panel_.SetBounds(VUI.Rectangle.FromSize(
-					root.FloatingPanel.RelativeBounds.Left + button_.Bounds.Right - Size.Width,
+				var bounds = VUI.Rectangle.FromSize(
+					root.FloatingPanel.RelativeBounds.Left + button_.Bounds.Left,
 					root.FloatingPanel.RelativeBounds.Top + button_.Bounds.Bottom,
-					Size.Width, Size.Height));
+					Size.Width, Size.Height);
+
+				if (bounds.Right >= root.FloatingPanel.AbsoluteClientBounds.Right)
+					bounds.Translate(-(bounds.Right - root.FloatingPanel.AbsoluteClientBounds.Right), 0);
+
+				panel_.SetBounds(bounds);
 			}
 
 			panel_.Visible = true;
@@ -113,6 +120,9 @@
 			panel_.GetRoot().FocusChanged += OnFocusChanged;
 			panel_.GetRoot().FloatingPanel.Clickthrough = false;
 			panel_.GetRoot().FloatingPanel.BackgroundColor = VUI.Style.Theme.ActiveOverlayColor;
+			button_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
+
+			Toggled?.Invoke(panel_.Visible);
 		}
 
 		public void Hide()
@@ -121,6 +131,9 @@
 			panel_.GetRoot().FocusChanged -= OnFocusChanged;
 			panel_.GetRoot().FloatingPanel.Clickthrough = true;
 			panel_.GetRoot().FloatingPanel.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+			button_.BackgroundColor = VUI.Style.Theme.ButtonBackgroundColor;
+
+			Toggled?.Invoke(panel_.Visible);
 		}
 
 		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)

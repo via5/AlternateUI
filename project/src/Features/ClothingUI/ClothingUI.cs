@@ -1,14 +1,236 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using System;
 
 namespace AUI.ClothingUI
 {
-	class ClothingAtomInfo : BasicAtomUIInfo
+	class Filter
 	{
 		public delegate void Handler();
-		public event Handler TagsChanged;
+		public event Handler TagsChanged, AuthorsChanged;
 
+		private readonly ClothingAtomInfo parent_;
+
+		private bool active_ = false;
+		private string search_ = "";
+
+		private readonly HashSet<string> tags_ = new HashSet<string>();
+		private bool tagsAnd_ = true;
+
+		private readonly HashSet<string> authors_ = new HashSet<string>();
+		private readonly HashSet<string> authorsLc_ = new HashSet<string>();
+
+
+		public Filter(ClothingAtomInfo parent)
+		{
+			parent_ = parent;
+		}
+
+		public bool Active
+		{
+			get
+			{
+				return active_;
+			}
+
+			set
+			{
+				if (active_ != value)
+				{
+					active_ = value;
+					parent_.CriteriaChangedInternal();
+				}
+			}
+		}
+
+		public string Search
+		{
+			get
+			{
+				return search_;
+			}
+
+			set
+			{
+				if (search_ != value)
+				{
+					search_ = value;
+					parent_.CriteriaChangedInternal();
+				}
+			}
+		}
+
+		public HashSet<string> Tags
+		{
+			get { return tags_; }
+		}
+
+		public HashSet<string> Authors
+		{
+			get { return authors_; }
+		}
+
+		public bool TagsAnd
+		{
+			get
+			{
+				return tagsAnd_;
+			}
+
+			set
+			{
+				if (tagsAnd_ != value)
+				{
+					tagsAnd_ = value;
+					parent_.CriteriaChangedInternal();
+				}
+			}
+		}
+
+		public void AddTag(string s)
+		{
+			tags_.Add(s);
+			TagsChanged?.Invoke();
+			parent_.CriteriaChangedInternal();
+		}
+
+		public void RemoveTag(string s)
+		{
+			tags_.Remove(s);
+			TagsChanged?.Invoke();
+			parent_.CriteriaChangedInternal();
+		}
+
+		public void ClearTags()
+		{
+			if (tags_.Count > 0)
+			{
+				tags_.Clear();
+				TagsChanged?.Invoke();
+				parent_.CriteriaChangedInternal();
+			}
+		}
+
+		public void AddAuthor(string s)
+		{
+			authors_.Add(s);
+			AuthorsChanged?.Invoke();
+			parent_.CriteriaChangedInternal();
+		}
+
+		public void RemoveAuthor(string s)
+		{
+			authors_.Remove(s);
+			AuthorsChanged?.Invoke();
+			parent_.CriteriaChangedInternal();
+		}
+
+		public void ClearAuthors()
+		{
+			if (authors_.Count > 0)
+			{
+				authors_.Clear();
+				AuthorsChanged?.Invoke();
+				parent_.CriteriaChangedInternal();
+			}
+		}
+
+		public DAZClothingItem[] Filtered(DAZClothingItem[] all)
+		{
+			if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
+				return all;
+
+			authorsLc_.Clear();
+			foreach (string a in authors_)
+				authorsLc_.Add(a.ToLower());
+
+			var list = new List<DAZClothingItem>();
+			var s = search_.ToLower().Trim();
+
+			Regex re = null;
+			if (s != "" && VUI.Utilities.IsRegex(s))
+				re = VUI.Utilities.CreateRegex(s);
+
+			for (int i = 0; i < all.Length; ++i)
+			{
+				var ci = all[i];
+
+				if (active_ && !ci.active)
+					continue;
+
+				if (re == null)
+				{
+					if (!ci.displayName.ToLower().Contains(s))
+						continue;
+				}
+				else
+				{
+					if (!re.IsMatch(ci.displayName))
+						continue;
+				}
+
+				if (!TagsMatch(ci))
+					continue;
+
+				if (!AuthorsMatch(ci))
+					continue;
+
+				list.Add(ci);
+			}
+
+			return list.ToArray();
+		}
+
+		private bool TagsMatch(DAZClothingItem ci)
+		{
+			if (tags_.Count == 0)
+				return true;
+
+			bool matched;
+
+			if (tagsAnd_)
+			{
+				matched = true;
+
+				foreach (string t in tags_)
+				{
+					if (!ci.CheckMatchTag(t))
+					{
+						matched = false;
+						break;
+					}
+				}
+			}
+			else
+			{
+				matched = false;
+
+				foreach (string t in tags_)
+				{
+					if (ci.CheckMatchTag(t))
+					{
+						matched = true;
+						break;
+					}
+				}
+			}
+
+			return matched;
+		}
+
+		private bool AuthorsMatch(DAZClothingItem ci)
+		{
+			if (authors_.Count == 0)
+				return true;
+
+			return authorsLc_.Contains(ci.creatorName.ToLower());
+		}
+	}
+
+
+	class ClothingAtomInfo : BasicAtomUIInfo
+	{
 		private const int Columns = 3;
 		private const int Rows = 7;
 
@@ -29,16 +251,14 @@ namespace AUI.ClothingUI
 		private int disableTries_ = 0;
 
 		private int page_ = 0;
-		private bool active_ = false;
-		private string search_ = "";
-		private readonly HashSet<string> tags_ = new HashSet<string>();
-		private bool tagsAnd_ = true;
+		private readonly Filter filter_;
 		private DAZClothingItem[] items_ = new DAZClothingItem[0];
 
 		public ClothingAtomInfo(AtomClothingUIModifier uiMod, Atom a)
 			: base(a, uiMod.Log.Prefix)
 		{
 			uiMod_ = uiMod;
+			filter_ = new Filter(this);
 		}
 
 		public DAZCharacterSelector CharacterSelector
@@ -57,60 +277,9 @@ namespace AUI.ClothingUI
 			set { SetPage(value); }
 		}
 
-		public bool Active
+		public Filter Filter
 		{
-			get
-			{
-				return active_;
-			}
-
-			set
-			{
-				if (active_ != value)
-				{
-					active_ = value;
-					Rebuild();
-				}
-			}
-		}
-
-		public string Search
-		{
-			get
-			{
-				return search_;
-			}
-
-			set
-			{
-				if (search_ != value)
-				{
-					search_ = value;
-					Rebuild();
-				}
-			}
-		}
-
-		public HashSet<string> Tags
-		{
-			get { return tags_; }
-		}
-
-		public bool TagsAnd
-		{
-			get
-			{
-				return tagsAnd_;
-			}
-
-			set
-			{
-				if (tagsAnd_ != value)
-				{
-					tagsAnd_ = value;
-					Rebuild();
-				}
-			}
+			get { return filter_; }
 		}
 
 		public int PerPage
@@ -139,30 +308,6 @@ namespace AUI.ClothingUI
 		{
 			if (page_ > 0)
 				SetPage(page_ - 1);
-		}
-
-		public void AddTag(string s)
-		{
-			tags_.Add(s);
-			TagsChanged?.Invoke();
-			Rebuild();
-		}
-
-		public void RemoveTag(string s)
-		{
-			tags_.Remove(s);
-			TagsChanged?.Invoke();
-			Rebuild();
-		}
-
-		public void ClearTags()
-		{
-			if (tags_.Count > 0)
-			{
-				tags_.Clear();
-				TagsChanged?.Invoke();
-				Rebuild();
-			}
 		}
 
 		private void SetPage(int newPage)
@@ -195,82 +340,14 @@ namespace AUI.ClothingUI
 			controls_.Set(page_, PageCount);
 		}
 
+		public void CriteriaChangedInternal()
+		{
+			Rebuild();
+		}
+
 		private void Rebuild()
 		{
-			if (!active_ && search_ == "" && tags_.Count == 0)
-			{
-				items_ = cs_.clothingItems;
-			}
-			else
-			{
-				var list = new List<DAZClothingItem>();
-				var all = cs_.clothingItems;
-
-				var s = search_.ToLower().Trim();
-				Regex re = null;
-
-				if (s != "" && VUI.Utilities.IsRegex(s))
-					re = VUI.Utilities.CreateRegex(s);
-
-				for (int i = 0; i < all.Length; ++i)
-				{
-					var ci = all[i];
-
-					if (active_ && !ci.active)
-						continue;
-
-					if (re == null)
-					{
-						if (!ci.displayName.ToLower().Contains(s))
-							continue;
-					}
-					else
-					{
-						if (!re.IsMatch(ci.displayName))
-							continue;
-					}
-
-					if (tags_.Count > 0)
-					{
-						bool matched;
-
-						if (tagsAnd_)
-						{
-							matched = true;
-
-							foreach (string t in tags_)
-							{
-								if (!ci.CheckMatchTag(t))
-								{
-									matched = false;
-									break;
-								}
-							}
-						}
-						else
-						{
-							matched = false;
-
-							foreach (string t in tags_)
-							{
-								if (ci.CheckMatchTag(t))
-								{
-									matched = true;
-									break;
-								}
-							}
-						}
-
-						if (!matched)
-							continue;
-					}
-
-					list.Add(ci);
-				}
-
-				items_ = list.ToArray();
-			}
-
+			items_ = filter_.Filtered(cs_.clothingItems);
 			controls_.Set(page_, PageCount);
 			UpdatePage();
 		}
@@ -281,7 +358,20 @@ namespace AUI.ClothingUI
 				return false;
 
 			if (root_ == null)
-				CreateUI();
+			{
+				try
+				{
+					CreateUI();
+				}
+				catch (Exception)
+				{
+					if (root_ != null)
+						root_.Visible = false;
+
+					throw;
+				}
+			}
+
 
 			if (root_ != null)
 				root_.Visible = true;

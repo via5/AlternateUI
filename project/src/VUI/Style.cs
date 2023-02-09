@@ -116,6 +116,13 @@ namespace VUI
 			get { return 5; }
 		}
 
+		// space between the checkbox and label
+		//
+		public float TreeCheckboxSpacing
+		{
+			get { return 10; }
+		}
+
 		public float ScrollBarWidth
 		{
 			get { return 40; }

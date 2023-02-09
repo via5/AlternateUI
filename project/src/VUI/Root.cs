@@ -154,6 +154,7 @@ namespace VUI
 		private Widget openedPopupWidget_ = null;
 		private UIPopup openedPopup_ = null;
 		private Widget focused_ = null;
+		private Widget captured_ = null;
 		private Point lastMouse_ = new Point(-10000, -10000);
 		private List<Widget> track_ = new List<Widget>();
 
@@ -285,6 +286,21 @@ namespace VUI
 			}
 
 			FocusChanged?.Invoke(oldFocus, focused_);
+		}
+
+		public void SetCapture(Widget w)
+		{
+			if (captured_ == null)
+				captured_ = w;
+		}
+
+		public void ReleaseCapture(Widget w)
+		{
+			if (captured_ == w)
+			{
+				captured_ = null;
+				UpdateTracking(true);
+			}
 		}
 
 		public void AttachTo(IRootSupport support)
@@ -427,25 +443,33 @@ namespace VUI
 					content_.Update(forceLayout);
 					floating_.Update(forceLayout);
 
-					var mp = MousePosition;
-
-					if (track_.Count > 0 && mp != lastMouse_)
-					{
-						for (int i = 0; i < track_.Count; ++i)
-						{
-							var r = track_[i].AbsoluteClientBounds;
-							if (r.Contains(mp))
-								track_[i].OnPointerMoveInternal();
-						}
-					}
-
-					lastMouse_ = mp;
+					UpdateTracking();
 				}
 			}
 			catch (Exception e)
 			{
 				Glue.LogErrorST(e.ToString());
 			}
+		}
+
+		private void UpdateTracking(bool force=false)
+		{
+			var mp = MousePosition;
+
+			if (track_.Count > 0 && (mp != lastMouse_ || force))
+			{
+				for (int i = 0; i < track_.Count; ++i)
+				{
+					if (captured_ == null || captured_ == track_[i])
+					{
+						var r = track_[i].AbsoluteClientBounds;
+						if (r.Contains(mp))
+							track_[i].OnPointerMoveInternal();
+					}
+				}
+			}
+
+			lastMouse_ = mp;
 		}
 
 		public void SupportBoundsChanged()

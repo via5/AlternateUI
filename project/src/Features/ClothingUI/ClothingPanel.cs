@@ -100,12 +100,7 @@ namespace AUI.ClothingUI
 					});
 				}
 
-				active_.Render = (ci_ != null);
-				author_.Render = (ci_ != null);
-				name_.Render = (ci_ != null);
-				thumbnail_.Render = (ci_ != null);
-				customize_.Render = (ci_ != null);
-
+				Render = (ci_ != null);
 				ActiveChanged();
 			}
 			finally

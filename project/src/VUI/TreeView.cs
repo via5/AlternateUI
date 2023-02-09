@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace VUI
 {
@@ -30,6 +28,8 @@ namespace VUI
 			dragging_ = true;
 			dragStart_ = e.Pointer;
 			initialBounds_ = AbsoluteClientBounds;
+
+			SetCapture();
 		}
 
 		public void OnDrag(DragEvent e)
@@ -63,6 +63,7 @@ namespace VUI
 		public void OnDragEnd(DragEvent e)
 		{
 			dragging_ = false;
+			ReleaseCapture();
 		}
 	}
 
@@ -617,12 +618,6 @@ namespace VUI
 				}
 			}
 
-			private void UpdatePanel(Rectangle r)
-			{
-				panel_.SetBounds(r);
-				panel_.Render = true;
-			}
-
 			private void CreateToggle(Rectangle r)
 			{
 				if (toggle_ == null)
@@ -655,20 +650,33 @@ namespace VUI
 				}
 			}
 
+			private void UpdatePanel(Rectangle r)
+			{
+				panel_.SetBounds(r);
+				panel_.Render = true;
+			}
+
 			private void UpdateToggle(Rectangle r)
 			{
 				if (item_ == null)
 					return;
 
-				if (item_.Expanded)
-					toggle_.Text = "-";
+				if (item_.Parent == tree_.RootItem && !tree_.RootToggles)
+				{
+					toggle_.Render = false;
+				}
 				else
-					toggle_.Text = "+";
+				{
+					if (item_.Expanded)
+						toggle_.Text = "-";
+					else
+						toggle_.Text = "+";
 
-				var tr = r;
-				tr.Width = Style.Metrics.TreeToggleWidth;
-				toggle_.SetBounds(tr);
-				toggle_.Render = true;
+					var tr = r;
+					tr.Width = Style.Metrics.TreeToggleWidth;
+					toggle_.SetBounds(tr);
+					toggle_.Render = true;
+				}
 			}
 
 			private void UpdateCheckbox(Rectangle r)
@@ -679,7 +687,10 @@ namespace VUI
 				if (item_.Checkable)
 				{
 					var tr = r;
-					tr.Left += Style.Metrics.TreeToggleWidth + 5;
+
+					if (item_.Parent != tree_.RootItem || tree_.RootToggles)
+						tr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeToggleSpacing;
+
 					tr.Width = Style.Metrics.TreeToggleWidth;
 
 					checkbox_.SetBounds(tr);
@@ -699,16 +710,12 @@ namespace VUI
 					return;
 
 				var lr = r;
-				lr.Left +=
-					Style.Metrics.TreeToggleWidth +
-					Style.Metrics.TreeToggleSpacing;
+
+				if (item_.Parent != tree_.RootItem || tree_.RootToggles)
+					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeToggleSpacing;
 
 				if (tree_.CheckBoxes && item_.Checkable)
-				{
-					lr.Left +=
-						Style.Metrics.TreeToggleWidth +
-						Style.Metrics.TreeToggleSpacing;
-				}
+					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeCheckboxSpacing;
 
 				label_.Text = item_.Text;
 				label_.SetBounds(lr);
@@ -761,6 +768,7 @@ namespace VUI
 		private List<Node> nodes_ = new List<Node>();
 		private ScrollBar vsb_ = new ScrollBar();
 		private bool checkboxes_ = false;
+		private bool rootToggles_ = true;
 		private int topItemIndex_ = 0;
 		private int itemCount_ = 0;
 		private int visibleCount_ = 0;
@@ -845,6 +853,12 @@ namespace VUI
 		{
 			get { return checkboxes_; }
 			set { checkboxes_ = value; }
+		}
+
+		public bool RootToggles
+		{
+			get { return rootToggles_; }
+			set { rootToggles_ = value; }
 		}
 
 		public string Filter

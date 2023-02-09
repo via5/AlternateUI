@@ -213,30 +213,40 @@ namespace AUI.MorphUI
 
 			root_ = new VUI.Root(new VUI.TransformUIRootSupport(rt));
 
-			controls_ = new Controls(this);
-			cats_ = new Categories();
-			cats_.Update(all_);
-			controls_?.UpdateCategories();
-
-			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
-			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
-			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
-
-			var gl = new VUI.GridLayout(Columns);
-			gl.UniformWidth = true;
-			gl.Spacing = 5;
-			grid_.Layout = gl;
-
-			for (int i = 0; i < Columns * Rows; ++i)
+			try
 			{
-				var p = new MorphPanel();
-				panels_.Add(p);
-				grid_.Add(p);
+				controls_ = new Controls(this);
+				cats_ = new Categories();
+				cats_.Update(all_);
+				controls_?.UpdateCategories();
+
+				root_.ContentPanel.Layout = new VUI.BorderLayout(10);
+				root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
+				root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
+
+				var gl = new VUI.GridLayout(Columns);
+				gl.UniformWidth = true;
+				gl.Spacing = 5;
+				grid_.Layout = gl;
+
+				for (int i = 0; i < Columns * Rows; ++i)
+				{
+					var p = new MorphPanel();
+					panels_.Add(p);
+					grid_.Add(p);
+				}
+
+				PageChanged();
+
+				return true;
 			}
+			catch (Exception)
+			{
+				if (root_ != null)
+					root_.Visible = false;
 
-			PageChanged();
-
-			return true;
+				throw;
+			}
 		}
 
 		public void Enable()

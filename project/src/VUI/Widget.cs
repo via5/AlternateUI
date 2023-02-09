@@ -305,7 +305,7 @@ namespace VUI
 			if (mainObject_ == null)
 				return render_ && visible_;
 			else
-				return mainObject_.activeInHierarchy;
+				return render_ && mainObject_.activeInHierarchy;
 		}
 
 		public bool Enabled
@@ -508,6 +508,16 @@ namespace VUI
 		{
 			bounds_ = r;
 			fixedBounds_ = isFixed;
+		}
+
+		public void SetCapture()
+		{
+			GetRoot()?.SetCapture(this);
+		}
+
+		public void ReleaseCapture()
+		{
+			GetRoot()?.ReleaseCapture(this);
 		}
 
 		public List<Widget> Children
@@ -961,18 +971,27 @@ namespace VUI
 
 		public void OnPointerEnterInternal(PointerEventData d)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			GetRoot()?.WidgetEntered(this);
 			events_.FirePointerEnter(this, d);
 		}
 
 		public void OnPointerExitInternal(PointerEventData d)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			GetRoot()?.WidgetExited(this);
 			events_.FirePointerExit(this, d);
 		}
 
 		public virtual void OnPointerDownInternal(PointerEventData d, bool setFocus=true)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			if (setFocus)
 			{
 				GetRoot()?.PointerDown(this);
@@ -991,6 +1010,9 @@ namespace VUI
 
 		public void OnPointerUpInternal(PointerEventData d)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			bool bubble = events_.FirePointerUp(this, d);
 			if (bubble && parent_ != null)
 				parent_.OnPointerUpInternal(d);
@@ -998,6 +1020,9 @@ namespace VUI
 
 		public void OnPointerClickInternal(PointerEventData d)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			bool bubble = events_.FirePointerClick(this, d);
 			if (bubble && parent_ != null)
 				parent_.OnPointerClickInternal(d);
@@ -1005,6 +1030,9 @@ namespace VUI
 
 		public void OnPointerMoveInternal()
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			bool bubble = events_.FirePointerMove(this, null);
 			if (bubble && parent_ != null)
 				parent_.OnPointerMoveInternal();
@@ -1027,6 +1055,9 @@ namespace VUI
 
 		public void OnWheelInternal(PointerEventData d)
 		{
+			if (!IsVisibleOnScreen())
+				return;
+
 			bool bubble = events_.FireWheel(this, d);
 			if (bubble && parent_ != null)
 				parent_.OnWheelInternal(d);

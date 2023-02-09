@@ -3,53 +3,81 @@ using System.Linq;
 
 namespace AUI.ClothingUI
 {
-	class TagsControls
+	abstract class TreeFilter
 	{
-		private readonly Controls controls_;
-		private readonly ToggledPanel tagsPanel_ = new ToggledPanel("Tags");
-		private readonly VUI.TreeView tags_ = new VUI.TreeView();
-		private readonly SearchBox tagsSearch_;
-		private readonly VUI.ComboBox<string> and_;
+		public delegate void Handler();
+		public event Handler Cleared;
+
+		public delegate void ItemHandler(VUI.TreeView.Item item);
+		public event ItemHandler ItemAdded, ItemRemoved;
+
+		public delegate void AndHandler(bool b);
+		public event AndHandler AndChanged;
+
+		private readonly ToggledPanel panel_ = new ToggledPanel("");
+		private readonly VUI.TreeView tree_ = new VUI.TreeView();
+		private readonly SearchBox search_;
+		private readonly VUI.ComboBox<string> and_ = null;
 		private bool ignore_ = false;
 
+		private bool firstShow_ = true;
 		private bool one_ = true;
 
-		public TagsControls(Controls controls)
+		public TreeFilter(string searchPlaceholder, bool supportsAnd)
 		{
-			controls_ = controls;
-			controls_.ClothingAtomInfo.TagsChanged += OnTagsChanged;
+			panel_.Toggled += (b) =>
+			{
+				if (b && firstShow_)
+				{
+					firstShow_ = false;
+					Rebuild();
+				}
+			};
 
-			tags_.CheckBoxes = true;
-			tags_.ItemClicked += OnTagClicked;
+			tree_.CheckBoxes = true;
+			tree_.ItemClicked += OnTagClicked;
 
-			tagsSearch_ = new SearchBox("Search tags");
-			tagsSearch_.Changed += OnTagsSearch;
+			search_ = new SearchBox(searchPlaceholder);
+			search_.Changed += OnTagsSearch;
 
 			var top = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeftVCenter));
 			top.Padding = new VUI.Insets(5);
 			top.Add(new VUI.CheckBox("Only one", OnOneChanged, one_));
-			and_ = top.Add(new VUI.ComboBox<string>(new string[] { "And", "Or" }, OnAndChanged));
+
+			if (supportsAnd)
+				and_ = top.Add(new VUI.ComboBox<string>(new string[] { "And", "Or" }, OnAndChanged));
 
 			var bottom = new VUI.Panel(new VUI.VerticalFlow(10));
-			bottom.Add(tagsSearch_.Widget);
+			bottom.Add(search_.Widget);
 
-			tagsPanel_.RightClick += ClearTags;
-			tagsPanel_.Panel.Add(top, VUI.BorderLayout.Top);
-			tagsPanel_.Panel.Add(tags_, VUI.BorderLayout.Center);
-			tagsPanel_.Panel.Add(bottom, VUI.BorderLayout.Bottom);
-
-			var sui = controls_.ClothingAtomInfo.SelectorUI;
-
-			tags_.RootItem.Add(MakeTagItem("Regions", sui.regionTags));
-			tags_.RootItem.Add(MakeTagItem("Types", sui.typeTags));
-			tags_.RootItem.Add(MakeTagItem("Others", sui.GetOtherTags()));
+			panel_.RightClick += ClearTags;
+			panel_.Panel.Add(top, VUI.BorderLayout.Top);
+			panel_.Panel.Add(tree_, VUI.BorderLayout.Center);
+			panel_.Panel.Add(bottom, VUI.BorderLayout.Bottom);
 
 			UpdateAnd();
 		}
 
+		protected abstract void Rebuild();
+
 		public VUI.Button Button
 		{
-			get { return tagsPanel_.Button; }
+			get { return panel_.Button; }
+		}
+
+		public VUI.TreeView Tree
+		{
+			get { return tree_; }
+		}
+
+		public VUI.TreeView.Item RootItem
+		{
+			get { return tree_.RootItem; }
+		}
+
+		public void SetButtonText(string s)
+		{
+			panel_.Button.Text = s;
 		}
 
 		public bool OnlyOne
@@ -78,8 +106,8 @@ namespace AUI.ClothingUI
 			try
 			{
 				ignore_ = true;
-				UncheckAll(tags_.RootItem);
-				controls_.ClothingAtomInfo.ClearTags();
+				UncheckAll(tree_.RootItem);
+				Cleared?.Invoke();
 			}
 			finally
 			{
@@ -87,37 +115,16 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		private VUI.TreeView.Item MakeTagItem(string name, IEnumerable<string> e)
-		{
-			var list = new List<string>(e);
-			U.NatSort(list);
-
-			var item = new VUI.TreeView.Item(name);
-			for (int i = 0; i < list.Count; ++i)
-			{
-				if (list[i].Trim() == "")
-					continue;
-
-				var c = new VUI.TreeView.Item(list[i]);
-
-				c.Checkable = true;
-				c.CheckedChanged += (b) => OnCheckedChanged(c, b);
-
-				item.Add(c);
-			}
-
-			return item;
-		}
-
 		private void UpdateAnd()
 		{
-			and_.Enabled = !one_;
+			if (and_ != null)
+				and_.Enabled = !one_;
 		}
 
 		private void UncheckAllExceptFirst()
 		{
 			bool found = false;
-			UncheckAllExceptFirst(tags_.RootItem, ref found);
+			UncheckAllExceptFirst(tree_.RootItem, ref found);
 		}
 
 		private void UncheckAll(VUI.TreeView.Item item)
@@ -152,7 +159,7 @@ namespace AUI.ClothingUI
 
 		private void UncheckAllExcept(VUI.TreeView.Item item)
 		{
-			UncheckAllExcept(item, tags_.RootItem);
+			UncheckAllExcept(item, tree_.RootItem);
 		}
 
 		private void UncheckAllExcept(VUI.TreeView.Item except, VUI.TreeView.Item item)
@@ -167,7 +174,7 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		private void OnCheckedChanged(VUI.TreeView.Item i, bool b)
+		protected void OnCheckedChanged(VUI.TreeView.Item i, bool b)
 		{
 			if (ignore_) return;
 
@@ -176,27 +183,15 @@ namespace AUI.ClothingUI
 				if (one_)
 					UncheckAllExcept(i);
 
-				controls_.ClothingAtomInfo.AddTag(i.Text);
+				ItemAdded?.Invoke(i);
 			}
 			else
 			{
-				controls_.ClothingAtomInfo.RemoveTag(i.Text);
+				ItemRemoved?.Invoke(i);
 			}
 
 			if (one_)
-				tagsPanel_.Hide();
-		}
-
-		private void OnTagsChanged()
-		{
-			var tags = controls_.ClothingAtomInfo.Tags;
-
-			if (tags.Count == 0)
-				tagsPanel_.Button.Text = "Tags";
-			else if (tags.Count == 1)
-				tagsPanel_.Button.Text = tags.First();
-			else
-				tagsPanel_.Button.Text = $"{tags.First()} +{tags.Count - 1}";
+				panel_.Hide();
 		}
 
 		private void OnTagClicked(VUI.TreeView.Item i)
@@ -211,7 +206,7 @@ namespace AUI.ClothingUI
 
 		private void OnTagsSearch(string s)
 		{
-			tags_.Filter = s;
+			tree_.Filter = s;
 		}
 
 		private void OnOneChanged(bool b)
@@ -222,7 +217,140 @@ namespace AUI.ClothingUI
 
 		private void OnAndChanged(int i)
 		{
-			controls_.ClothingAtomInfo.TagsAnd = (i == 0);
+			AndChanged?.Invoke(i == 0);
+		}
+	}
+
+
+	class TagsControls : TreeFilter
+	{
+		private readonly Controls controls_;
+
+		public TagsControls(Controls c)
+			: base("Search tags", true)
+		{
+			controls_ = c;
+			controls_.ClothingAtomInfo.Filter.TagsChanged += UpdateButton;
+
+			ItemAdded += (i) => controls_.ClothingAtomInfo.Filter.AddTag(i.Text);
+			ItemRemoved += (i) => controls_.ClothingAtomInfo.Filter.RemoveTag(i.Text);
+			Cleared += () => controls_.ClothingAtomInfo.Filter.ClearTags();
+			AndChanged += (b) => controls_.ClothingAtomInfo.Filter.TagsAnd = b;
+
+			UpdateButton();
+		}
+
+		protected override void Rebuild()
+		{
+			var root = RootItem;
+
+			root.Clear();
+
+			var sui = controls_.ClothingAtomInfo.SelectorUI;
+			root.Add(MakeTagItem("Regions", sui.regionTags));
+			root.Add(MakeTagItem("Types", sui.typeTags));
+			root.Add(MakeTagItem("Others", sui.GetOtherTags()));
+		}
+
+		private VUI.TreeView.Item MakeTagItem(string name, IEnumerable<string> e)
+		{
+			var list = new List<string>(e);
+			U.NatSort(list);
+
+			var item = new VUI.TreeView.Item(name);
+			for (int i = 0; i < list.Count; ++i)
+			{
+				if (list[i].Trim() == "")
+					continue;
+
+				var c = new VUI.TreeView.Item(list[i]);
+
+				c.Checkable = true;
+				c.CheckedChanged += (b) => OnCheckedChanged(c, b);
+
+				item.Add(c);
+			}
+
+			return item;
+		}
+
+		private void UpdateButton()
+		{
+			var tags = controls_.ClothingAtomInfo.Filter.Tags;
+
+			if (tags.Count == 0)
+				SetButtonText("Tags");
+			else if (tags.Count == 1)
+				SetButtonText(tags.First());
+			else
+				SetButtonText($"{tags.First()} +{tags.Count - 1}");
+		}
+	}
+
+
+	class AuthorControls : TreeFilter
+	{
+		private readonly Controls controls_;
+
+		public AuthorControls(Controls c)
+			: base("Search creators", false)
+		{
+			controls_ = c;
+			controls_.ClothingAtomInfo.Filter.AuthorsChanged += UpdateButton;
+
+			ItemAdded += (i) => controls_.ClothingAtomInfo.Filter.AddAuthor(i.Text);
+			ItemRemoved += (i) => controls_.ClothingAtomInfo.Filter.RemoveAuthor(i.Text);
+			Cleared += () => controls_.ClothingAtomInfo.Filter.ClearAuthors();
+
+			Tree.RootToggles = false;
+
+			UpdateButton();
+		}
+
+		protected override void Rebuild()
+		{
+			var root = RootItem;
+
+			root.Clear();
+
+			var sui = controls_.ClothingAtomInfo.SelectorUI;
+
+			var authors = new HashSet<string>();
+			var items = controls_.ClothingAtomInfo.CharacterSelector.clothingItems;
+
+			for (int i = 0; i < items.Length; ++i)
+			{
+				var s = items[i].creatorName.Trim();
+				if (s == "")
+					continue;
+
+				authors.Add(s);
+			}
+
+			var list = new List<string>(authors);
+			U.NatSort(list);
+
+			for (int i = 0; i < list.Count; ++i)
+			{
+				var item = new VUI.TreeView.Item(list[i]);
+
+				item.Checkable = true;
+				item.CheckedChanged += (b) => OnCheckedChanged(item, b);
+
+				root.Add(item);
+			}
+		}
+
+		private void UpdateButton()
+		{
+			var authors = controls_.ClothingAtomInfo.Filter.Authors;
+
+			if (authors.Count == 0)
+				SetButtonText("Creators");
+			else if (authors.Count == 1)
+				SetButtonText(authors.First());
+			else
+				SetButtonText($"{authors.First()} +{authors.Count - 1}");
 		}
 	}
 
@@ -234,12 +362,14 @@ namespace AUI.ClothingUI
 		private readonly VUI.Label pageCount_;
 		private readonly SearchBox search_ = new SearchBox("Search");
 		private readonly TagsControls tags_;
+		private readonly AuthorControls authors_;
 		private bool ignore_ = false;
 
 		public Controls(ClothingAtomInfo parent)
 		{
 			parent_ = parent;
 			tags_ = new TagsControls(this);
+			authors_ = new AuthorControls(this);
 
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
@@ -268,6 +398,7 @@ namespace AUI.ClothingUI
 			var right = new VUI.Panel(new VUI.HorizontalFlow(
 				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
+			right.Add(authors_.Button);
 			right.Add(tags_.Button);
 
 			var bottom = new VUI.Panel(new VUI.BorderLayout(10));
@@ -307,7 +438,7 @@ namespace AUI.ClothingUI
 			try
 			{
 				ignore_ = true;
-				parent_.Active = !parent_.Active;
+				parent_.Filter.Active = !parent_.Filter.Active;
 			}
 			finally
 			{
@@ -324,7 +455,7 @@ namespace AUI.ClothingUI
 		private void OnSearchChanged(string s)
 		{
 			if (ignore_) return;
-			parent_.Search = s;
+			parent_.Filter.Search = s;
 		}
 	}
 }
