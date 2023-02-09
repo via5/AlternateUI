@@ -62,7 +62,7 @@ namespace AUI.CuaUI
 		{
 			if (Atom.UITransform == null)
 			{
-				Log.Error($"no UITransform");
+				Log.Verbose($"no UITransform");
 				return false;
 			}
 
