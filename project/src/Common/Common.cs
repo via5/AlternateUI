@@ -46,4 +46,91 @@
 			get { return box_; }
 		}
 	}
+
+
+	class ToggledPanel
+	{
+		private readonly VUI.Size Size = new VUI.Size(500, 800);
+
+		public delegate void Handler();
+		public event Handler RightClick;
+
+		private readonly VUI.Button button_;
+		private readonly VUI.Panel panel_;
+		private bool firstShow_ = true;
+
+		public ToggledPanel(string buttonText)
+		{
+			button_ = new VUI.Button(buttonText, Toggle);
+			button_.Events.PointerClick += ToggleClick;
+
+			panel_ = new VUI.Panel();
+			panel_.Layout = new VUI.BorderLayout();
+			panel_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
+			panel_.BorderColor = VUI.Style.Theme.BorderColor;
+			panel_.Borders = new VUI.Insets(1);
+			panel_.Clickthrough = false;
+			panel_.MinimumSize = Size;
+			panel_.Visible = false;
+		}
+
+		public VUI.Button Button
+		{
+			get { return button_; }
+		}
+
+		public VUI.Panel Panel
+		{
+			get { return panel_; }
+		}
+
+		public void Toggle()
+		{
+			if (panel_.Visible)
+				Hide();
+			else
+				Show();
+		}
+
+		public void Show()
+		{
+			if (firstShow_)
+			{
+				firstShow_ = false;
+
+				var root = button_.GetRoot();
+
+				root.FloatingPanel.Add(panel_);
+
+				panel_.SetBounds(VUI.Rectangle.FromSize(
+					root.FloatingPanel.RelativeBounds.Left + button_.Bounds.Right - Size.Width,
+					root.FloatingPanel.RelativeBounds.Top + button_.Bounds.Bottom,
+					Size.Width, Size.Height));
+			}
+
+			panel_.Visible = true;
+			panel_.BringToTop();
+			panel_.GetRoot().FocusChanged += OnFocusChanged;
+		}
+
+		public void Hide()
+		{
+			panel_.Visible = false;
+			panel_.GetRoot().FocusChanged -= OnFocusChanged;
+		}
+
+		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)
+		{
+			if (!focused.HasParent(panel_) && focused != button_)
+				Hide();
+		}
+
+		private void ToggleClick(VUI.PointerEvent e)
+		{
+			if (e.Button == VUI.PointerEvent.RightButton)
+				RightClick?.Invoke();
+
+			e.Bubble = false;
+		}
+	}
 }

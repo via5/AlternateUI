@@ -28,12 +28,23 @@ namespace AUI.ClothingUI
 		private int page_ = 0;
 		private bool active_ = false;
 		private string search_ = "";
+		private readonly HashSet<string> tags_ = new HashSet<string>();
 		private DAZClothingItem[] items_ = new DAZClothingItem[0];
 
 		public ClothingAtomInfo(AtomClothingUIModifier uiMod, Atom a)
 			: base(a, uiMod.Log.Prefix)
 		{
 			uiMod_ = uiMod;
+		}
+
+		public DAZCharacterSelector CharacterSelector
+		{
+			get { return cs_; }
+		}
+
+		public GenerateDAZClothingSelectorUI SelectorUI
+		{
+			get { return ui_; }
 		}
 
 		public int Page
@@ -76,6 +87,11 @@ namespace AUI.ClothingUI
 			}
 		}
 
+		public HashSet<string> Tags
+		{
+			get { return tags_; }
+		}
+
 		public int PerPage
 		{
 			get { return Columns * Rows; }
@@ -102,6 +118,27 @@ namespace AUI.ClothingUI
 		{
 			if (page_ > 0)
 				SetPage(page_ - 1);
+		}
+
+		public void AddTag(string s)
+		{
+			tags_.Add(s);
+			Rebuild();
+		}
+
+		public void RemoveTag(string s)
+		{
+			tags_.Remove(s);
+			Rebuild();
+		}
+
+		public void ClearTags()
+		{
+			if (tags_.Count > 0)
+			{
+				tags_.Clear();
+				Rebuild();
+			}
 		}
 
 		private void SetPage(int newPage)
@@ -136,7 +173,7 @@ namespace AUI.ClothingUI
 
 		private void Rebuild()
 		{
-			if (!active_ && search_ == "")
+			if (!active_ && search_ == "" && tags_.Count == 0)
 			{
 				items_ = cs_.clothingItems;
 			}
@@ -153,21 +190,40 @@ namespace AUI.ClothingUI
 
 				for (int i = 0; i < all.Length; ++i)
 				{
-					if (active_ && !all[i].active)
+					var ci = all[i];
+
+					if (active_ && !ci.active)
 						continue;
 
 					if (re == null)
 					{
-						if (!all[i].displayName.ToLower().Contains(s))
+						if (!ci.displayName.ToLower().Contains(s))
 							continue;
 					}
 					else
 					{
-						if (!re.IsMatch(all[i].displayName))
+						if (!re.IsMatch(ci.displayName))
 							continue;
 					}
 
-					list.Add(all[i]);
+					if (tags_.Count > 0)
+					{
+						bool matched = false;
+
+						foreach (string t in tags_)
+						{
+							if (ci.CheckMatchTag(t))
+							{
+								matched = true;
+								break;
+							}
+						}
+
+						if (!matched)
+							continue;
+					}
+
+					list.Add(ci);
 				}
 
 				items_ = list.ToArray();
@@ -209,7 +265,7 @@ namespace AUI.ClothingUI
 				if (disableTries_ < DisableCheckTries)
 				{
 					disableElapsed_ += s;
-					if (disableElapsed_ >= 1)
+					if (disableElapsed_ >= DisableCheckInterval)
 					{
 						disableElapsed_ = 0;
 						++disableTries_;

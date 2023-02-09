@@ -2,11 +2,10 @@
 {
 	class CategoriesWidget
 	{
-		private GenderMorphUI ui_;
-		private VUI.Button button_;
-		private VUI.Panel panel_;
-		private VUI.TreeView tree_;
-		private SearchBox search_;
+		private readonly GenderMorphUI ui_;
+		private readonly VUI.TreeView tree_;
+		private readonly SearchBox search_;
+		private readonly ToggledPanel catsPanel_;
 		private Categories cats_ = null;
 		private bool ignore_ = false;
 
@@ -37,40 +36,22 @@
 		{
 			ui_ = ui;
 
-			var s = new VUI.Size(500, 800);
-
-			button_ = new VUI.Button("Categories", Toggle);
-			button_.Events.PointerClick += ToggleClick;
-
-			panel_ = new VUI.Panel("CategoriesWidgetPanel");
-			panel_.Layout = new VUI.BorderLayout();
-			panel_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
-			panel_.BorderColor = VUI.Style.Theme.BorderColor;
-			panel_.Borders = new VUI.Insets(1);
-			panel_.Clickthrough = false;
-			panel_.MinimumSize = s;
-			panel_.Visible = false;
-			panel_.SetBounds(VUI.Rectangle.FromSize(
-				ui_.Root.FloatingPanel.RelativeBounds.Width - s.Width - 20,
-				ui_.Root.FloatingPanel.RelativeBounds.Top + 50,
-				s.Width, s.Height));
-
+			catsPanel_ = new ToggledPanel("Categories");
 			tree_ = new VUI.TreeView();
-
-			panel_.Add(tree_, VUI.BorderLayout.Center);
 
 			search_ = new SearchBox("Search categories");
 			search_.Changed += OnSearch;
-			panel_.Add(search_.Widget, VUI.BorderLayout.Bottom);
 
-			ui_.Root.FloatingPanel.Add(panel_);
+			catsPanel_.Panel.Add(tree_, VUI.BorderLayout.Center);
+			catsPanel_.Panel.Add(search_.Widget, VUI.BorderLayout.Bottom);
+			catsPanel_.RightClick += ResetCategory;
 
 			tree_.ItemClicked += OnSelection;
 		}
 
 		public VUI.Button Button
 		{
-			get { return button_; }
+			get { return catsPanel_.Button; }
 		}
 
 		public void Set(Categories cats)
@@ -116,45 +97,10 @@
 			}
 		}
 
-		public void Toggle()
-		{
-			if (panel_.Visible)
-				Hide();
-			else
-				Show();
-		}
-
-		public void Show()
-		{
-			panel_.Visible = true;
-			panel_.BringToTop();
-			panel_.GetRoot().FocusChanged += OnFocusChanged;
-		}
-
-		public void Hide()
-		{
-			panel_.Visible = false;
-			panel_.GetRoot().FocusChanged -= OnFocusChanged;
-		}
-
-		private void OnFocusChanged(VUI.Widget blurred, VUI.Widget focused)
-		{
-			if (!focused.HasParent(panel_) && focused != button_)
-				Hide();
-		}
-
-		private void ToggleClick(VUI.PointerEvent e)
-		{
-			if (e.Button == VUI.PointerEvent.RightButton)
-				ResetCategory();
-
-			e.Bubble = false;
-		}
-
 		private void ResetCategory()
 		{
 			ui_.Filter.Category = null;
-			button_.Text = "Categories";
+			catsPanel_.Button.Text = "Categories";
 		}
 
 		private void OnSelection(VUI.TreeView.Item item)
@@ -170,10 +116,10 @@
 			else
 			{
 				ui_.Filter.Category = c.Node;
-				button_.Text = c.Node.Name;
+				catsPanel_.Button.Text = c.Node.Name;
 			}
 
-			panel_.Visible = false;
+			catsPanel_.Hide();
 		}
 
 		private void OnSearch(string s)
