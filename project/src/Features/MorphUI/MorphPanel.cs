@@ -26,6 +26,8 @@
 
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.FontSize = 24;
+			name_.MinimumSize = new VUI.Size(DontCare, 60);
+			name_.MaximumSize = new VUI.Size(DontCare, 60);
 
 			slider_.Decimals = 3;
 			slider_.TickValue = 0.01f;
