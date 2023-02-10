@@ -216,7 +216,6 @@ namespace VUI
 			tooltips_ = new TooltipManager(this);
 
 			content_.Clickthrough = false;
-			content_.BackgroundColor = VUI.Style.Theme.BackgroundColor;
 
 			AttachTo(support);
 		}
