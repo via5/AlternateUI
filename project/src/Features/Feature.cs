@@ -35,7 +35,7 @@ namespace AUI
 			{
 				if (enabled_ != enabledParam_.val)
 				{
-					Log.Info($"{Name}: enabled changed to {enabledParam_.val}");
+					Log.Info($"enabled changed to {enabledParam_.val}");
 
 					enabled_ = enabledParam_.val;
 

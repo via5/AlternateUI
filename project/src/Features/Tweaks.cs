@@ -424,6 +424,40 @@ namespace AUI.Tweaks
 	}
 
 
+	class DisableCuaCollision : BasicFeature
+	{
+		public DisableCuaCollision()
+			: base("disableCuaCollision", "Disable collison on new CUAs", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Disable collision on new CustomUnityAssets.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			SuperController.singleton.onAtomAddedHandlers += OnAtomAdded;
+		}
+
+		protected override void DoDisable()
+		{
+			SuperController.singleton.onAtomAddedHandlers -= OnAtomAdded;
+		}
+
+		private void OnAtomAdded(Atom a)
+		{
+			if (a.type == "CustomUnityAsset")
+				a.collisionEnabled = false;
+		}
+	}
+
+
 	class EscapeDialogs : BasicFeature
 	{
 		private UnityEngine.UI.Button closePackageManager_;

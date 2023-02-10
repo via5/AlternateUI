@@ -64,6 +64,7 @@ namespace AUI
 				new LogUI.LogUI(),
 				new CuaUI.CuaUI(),
 				new Tweaks.EscapeDialogs(),
+				new Tweaks.DisableCuaCollision(),
 				new Tweaks.SpaceBarFreeze(),
 				new Tweaks.RightClickPackagesReload(),
 				new Tweaks.QuickSaveScreenshot(),
