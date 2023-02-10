@@ -272,7 +272,7 @@ namespace VUI
 		protected override void LayoutImpl()
 		{
 			var r = new Rectangle(Parent.Bounds);
-			var d = GetCellPreferredSizes(DontCare, DontCare);
+			var d = GetCellPreferredSizes(r.Width, r.Height);
 
 
 			var extraWidth = new List<float>();
@@ -453,6 +453,10 @@ namespace VUI
 		{
 			var d = new PreferredSizesData(widgets_.ColumnCount, widgets_.RowCount);
 
+			float maxCellHeight = maxHeight;
+			if (uniformHeight_ && maxHeight != DontCare)
+				maxCellHeight = (maxHeight - (VerticalSpacing  * (widgets_.RowCount - 1))) / widgets_.RowCount;
+
 			for (int rowIndex = 0; rowIndex < widgets_.RowCount; ++rowIndex)
 			{
 				var row = widgets_.Row(rowIndex);
@@ -473,6 +477,9 @@ namespace VUI
 						var ps = w.GetRealPreferredSize(maxWidth, maxHeight);
 						cellPs.Width = Math.Max(cellPs.Width, ps.Width);
 						cellPs.Height = Math.Max(cellPs.Height, ps.Height);
+
+						if (maxCellHeight != DontCare)
+							cellPs.Height = Math.Min(cellPs.Height, maxCellHeight);
 					}
 
 					d.sizes.Set(colIndex, rowIndex, cellPs);

@@ -77,13 +77,16 @@ namespace VUI
 		{
 			if (dirty_ || forceLayout)
 			{
-				var start = Time.realtimeSinceStartup;
-				DoLayout();
-				var t = Time.realtimeSinceStartup - start;
+				if (root_.RootSupport.RootParent.gameObject.activeInHierarchy)
+				{
+					var start = Time.realtimeSinceStartup;
+					DoLayout();
+					var t = Time.realtimeSinceStartup - start;
 
-				Glue.LogVerbose($"layout {Name}: {t:0.000:}s");
+					Glue.LogVerbose($"layout {Name}: {t:0.000:}s");
 
-				dirty_ = false;
+					dirty_ = false;
+				}
 			}
 		}
 

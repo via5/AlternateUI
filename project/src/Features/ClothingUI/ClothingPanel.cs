@@ -5,8 +5,6 @@ namespace AUI.ClothingUI
 {
 	class ClothingPanel : VUI.Panel
 	{
-		private const float ThumbnailSize = 150;
-
 		private readonly ClothingAtomInfo parent_;
 		private readonly VUI.CheckBox active_ = null;
 		private readonly VUI.Label author_ = null;
@@ -45,7 +43,7 @@ namespace AUI.ClothingUI
 
 			center.Add(buttons);
 
-			var right = new VUI.Panel(new VUI.VerticalFlow(5));
+			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
 			thumbnail_ = right.Add(new VUI.Image());
 
 			Add(center, VUI.BorderLayout.Center);
@@ -63,9 +61,6 @@ namespace AUI.ClothingUI
 
 			name_.MinimumSize = new VUI.Size(DontCare, 60);
 			name_.MaximumSize = new VUI.Size(DontCare, 60);
-
-			thumbnail_.MinimumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
-			thumbnail_.MaximumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 
 			Update();
 		}

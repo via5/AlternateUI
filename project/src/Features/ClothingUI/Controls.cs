@@ -356,6 +356,101 @@ namespace AUI.ClothingUI
 	}
 
 
+	class OptionsControls
+	{
+		private readonly Controls controls_;
+		private readonly ToggledPanel panel_;
+		private readonly VUI.IntTextSlider cols_, rows_;
+		private bool ignore_ = false;
+
+		public OptionsControls(Controls c)
+		{
+			controls_ = c;
+			panel_ = new ToggledPanel("...", true, true);
+
+			var p = new VUI.Panel(new VUI.GridLayout(3, 10));
+
+			p.Add(new VUI.Label("Columns"));
+			cols_ = p.Add(new VUI.IntTextSlider(
+				controls_.ClothingAtomInfo.Columns,
+				ClothingAtomInfo.MinColumns,
+				ClothingAtomInfo.MaxColumns,
+				OnColumns));
+			p.Add(new VUI.ToolButton("R", () => OnColumns(ClothingAtomInfo.DefaultColumns)));
+
+			p.Add(new VUI.Label("Rows"));
+			rows_ = p.Add(new VUI.IntTextSlider(
+				controls_.ClothingAtomInfo.Rows,
+				ClothingAtomInfo.MinRows,
+				ClothingAtomInfo.MaxRows,
+				OnRows));
+			p.Add(new VUI.ToolButton("R", () => OnRows(ClothingAtomInfo.DefaultRows)));
+
+			panel_.Panel.Add(p, VUI.BorderLayout.Top);
+			panel_.Panel.Padding = new VUI.Insets(20);
+
+			panel_.Toggled += OnToggled;
+		}
+
+		public VUI.Button Button
+		{
+			get { return panel_.Button; }
+		}
+
+		private void OnColumns(int i)
+		{
+			if (ignore_) return;
+
+			try
+			{
+				ignore_ = true;
+
+				cols_.Value = i;
+				controls_.ClothingAtomInfo.Columns = i;
+			}
+			finally
+			{
+				ignore_ = false;
+			}
+		}
+
+		private void OnRows(int i)
+		{
+			if (ignore_) return;
+
+			try
+			{
+				ignore_ = true;
+
+				rows_.Value = i;
+				controls_.ClothingAtomInfo.Rows = i;
+			}
+			finally
+			{
+				ignore_ = false;
+			}
+		}
+
+		private void OnToggled(bool b)
+		{
+			if (b)
+			{
+				try
+				{
+					ignore_ = true;
+					cols_.Value = controls_.ClothingAtomInfo.Columns;
+					rows_.Value = controls_.ClothingAtomInfo.Rows;
+				}
+				finally
+				{
+					ignore_ = false;
+				}
+			}
+		}
+	}
+
+
+
 	class CurrentControls
 	{
 		class ItemPanel : VUI.Panel
@@ -684,6 +779,7 @@ namespace AUI.ClothingUI
 		private readonly Sorter sorter_;
 		private readonly TagsControls tags_;
 		private readonly AuthorControls authors_;
+		private readonly OptionsControls options_;
 		private bool ignore_ = false;
 
 		public Controls(ClothingAtomInfo parent)
@@ -693,6 +789,7 @@ namespace AUI.ClothingUI
 			sorter_ = new Sorter(this);
 			tags_ = new TagsControls(this);
 			authors_ = new AuthorControls(this);
+			options_ = new OptionsControls(this);
 
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
@@ -726,6 +823,7 @@ namespace AUI.ClothingUI
 			right.Add(cc_.Widget);
 			right.Add(authors_.Button);
 			right.Add(tags_.Button);
+			right.Add(options_.Button);
 
 			var bottom = new VUI.Panel(new VUI.BorderLayout(10));
 			bottom.Add(left, VUI.BorderLayout.Left);

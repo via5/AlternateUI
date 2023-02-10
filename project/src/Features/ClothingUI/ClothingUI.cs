@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Text.RegularExpressions;
 using System;
 using System.Collections;
+using MVR.FileManagementSecure;
+using SimpleJSON;
 
 namespace AUI.ClothingUI
 {
@@ -313,8 +315,13 @@ namespace AUI.ClothingUI
 
 	class ClothingAtomInfo : BasicAtomUIInfo
 	{
-		private const int Columns = 3;
-		private const int Rows = 7;
+		public const int MinColumns = 1;
+		public const int MaxColumns = 3;
+		public const int DefaultColumns = 3;
+
+		public const int MinRows = 2;
+		public const int MaxRows = 7;
+		public const int DefaultRows = 7;
 
 		private const float DisableCheckInterval = 1;
 		private const float DisableCheckTries = 5;
@@ -326,6 +333,8 @@ namespace AUI.ClothingUI
 
 		private VUI.Root root_ = null;
 		private VUI.Panel grid_ = null;
+		private int cols_ = DefaultColumns;
+		private int rows_ = DefaultRows;
 		private ClothingPanel[] panels_ = null;
 		private Controls controls_ = null;
 
@@ -341,6 +350,7 @@ namespace AUI.ClothingUI
 		{
 			uiMod_ = uiMod;
 			filter_ = new Filter(this);
+			LoadOptions();
 		}
 
 		public string GetAutoCompleteFile()
@@ -356,6 +366,40 @@ namespace AUI.ClothingUI
 				$"aui.clothing.{g}.autocomplete.json");
 		}
 
+		public string GetOptionsFile()
+		{
+			return AlternateUI.Instance.GetConfigFilePath(
+				$"aui.clothing.json");
+		}
+
+		private void LoadOptions()
+		{
+			var f = GetOptionsFile();
+
+			if (FileManagerSecure.FileExists(f))
+			{
+				var j = SuperController.singleton.LoadJSON(f)?.AsObject;
+				if (j == null)
+					return;
+
+				if (j.HasKey("columns"))
+					cols_ = U.Clamp(j["columns"].AsInt, MinColumns, MaxColumns);
+
+				if (j.HasKey("rows"))
+					rows_ = U.Clamp(j["rows"].AsInt, MinRows, MaxRows);
+			}
+		}
+
+		private void SaveOptions()
+		{
+			var j = new JSONClass();
+
+			j["columns"] = new JSONData(cols_);
+			j["rows"] = new JSONData(rows_);
+
+			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+		}
+
 		public void NotifyAutoCompleteChanged()
 		{
 			foreach (ClothingAtomInfo a in uiMod_.Atoms)
@@ -365,6 +409,18 @@ namespace AUI.ClothingUI
 
 				if (a.char_.isMale == char_.isMale)
 					a.controls_.UpdateAutoComplete();
+			}
+		}
+
+		public void NotifyGridChanged()
+		{
+			foreach (ClothingAtomInfo a in uiMod_.Atoms)
+			{
+				if (a == this)
+					continue;
+
+				a.LoadOptions();
+				a.GridChanged(false);
 			}
 		}
 
@@ -389,9 +445,21 @@ namespace AUI.ClothingUI
 			get { return filter_; }
 		}
 
+		public int Columns
+		{
+			get { return cols_; }
+			set { cols_ = value; GridChanged(); }
+		}
+
+		public int Rows
+		{
+			get { return rows_; }
+			set { rows_ = value; GridChanged(); }
+		}
+
 		public int PerPage
 		{
-			get { return Columns * Rows; }
+			get { return cols_ * rows_; }
 		}
 
 		public int PageCount
@@ -570,22 +638,30 @@ namespace AUI.ClothingUI
 		private void CreateUI()
 		{
 			root_ = new VUI.Root(new VUI.TransformUIRootSupport(ui_.transform.parent));
-			controls_ = new Controls(this);
+			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
+			controls_ = new Controls(this);
 			grid_ = new VUI.Panel();
 
-			var gl = new VUI.GridLayout(Columns);
-			gl.UniformWidth = true;
-			gl.Spacing = 5;
-			grid_.Layout = gl;
-
-			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
 			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
 			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
+			GridChanged(false);
+		}
+
+		private void GridChanged(bool notify=true)
+		{
+			grid_.RemoveAllChildren();
+
+			var gl = new VUI.GridLayout(cols_);
+			gl.UniformWidth = true;
+			gl.Spacing = 5;
+
+			grid_.Layout = gl;
+
 			var panels = new List<ClothingPanel>();
 
-			for (int i = 0; i < Columns * Rows; ++i)
+			for (int i = 0; i < PerPage; ++i)
 			{
 				var p = new ClothingPanel(this);
 
@@ -595,6 +671,11 @@ namespace AUI.ClothingUI
 
 			panels_ = panels.ToArray();
 			Rebuild();
+
+			SaveOptions();
+
+			if (notify)
+				NotifyGridChanged();
 		}
 	}
 

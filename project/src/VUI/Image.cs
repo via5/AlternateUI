@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace VUI
@@ -39,6 +40,12 @@ namespace VUI
 			UpdateTexture();
 		}
 
+		public override void UpdateBounds()
+		{
+			base.UpdateBounds();
+
+		}
+
 		private void UpdateTexture()
 		{
 			if (raw_ != null)
@@ -48,10 +55,29 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			if (tex_ == null)
-				return new Size(40, 40);
+			Size s;
 
-			return new Size(tex_.width, tex_.height);
+			if (tex_ == null)
+			{
+				s = new Size(
+					Math.Max(maxWidth, maxHeight),
+					Math.Max(maxWidth, maxHeight));
+			}
+			else
+			{
+				s = new Size(tex_.width, tex_.height);
+
+				if (maxWidth != DontCare)
+					s.Width = Math.Min(maxWidth, s.Width);
+
+				if (maxHeight != DontCare)
+					s.Height = Math.Min(maxHeight, s.Height);
+			}
+
+			s.Width = Math.Min(s.Width, s.Height);
+			s.Height = Math.Min(s.Width, s.Height);
+
+			return s;
 		}
 	}
 }
