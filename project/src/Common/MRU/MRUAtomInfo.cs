@@ -154,12 +154,7 @@ namespace AUI
 				return;
 
 			var list = GetRecentEntries();
-
-			for (int i = 0; i < list.Count; ++i)
-			{
-				if (list[i] == s)
-					return;
-			}
+			list.Remove(s);
 
 			Log.Verbose($"{this} new recent plugin: {s}");
 			list.Insert(0, s);
