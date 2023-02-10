@@ -492,6 +492,7 @@ namespace AUI.ClothingUI
 
 				var center = new VUI.Panel(new VUI.BorderLayout());
 				name_ = center.Add(new VUI.Label(), VUI.BorderLayout.Center);
+				name_.MinimumSize = new VUI.Size(300, DontCare);
 				name_.MaximumSize = new VUI.Size(300, DontCare);
 				name_.WrapMode = VUI.Label.ClipEllipsis;
 				name_.AutoTooltip = true;
@@ -627,13 +628,17 @@ namespace AUI.ClothingUI
 			panel_ = new ToggledPanel("Current", false, true);
 			itemsPanel_ = new VUI.Panel(new VUI.VerticalFlow(0));
 
-			var p = new VUI.Panel(new VUI.VerticalFlow(0));
+			var p = new VUI.Panel(new VUI.VerticalFlow(10));
 
-			AddButton(p, "Remove all", OnRemoveAll);
-			AddButton(p, "Undress all", () => OnDressAll(false));
-			AddButton(p, "Re-dress all", () => OnDressAll(true));
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10));
+			buttons.Add(new VUI.ToolButton("Remove all", OnRemoveAll));
+			buttons.Add(new VUI.ToolButton("Undress all", () => OnDressAll(false)));
+			buttons.Add(new VUI.ToolButton("Re-dress all", () => OnDressAll(true)));
+
+			p.Add(buttons);
 			p.Add(itemsPanel_);
 
+			panel_.Panel.Padding = new VUI.Insets(10);
 			panel_.Panel.Add(p, VUI.BorderLayout.Top);
 			panel_.Toggled += OnToggled;
 		}
@@ -683,22 +688,6 @@ namespace AUI.ClothingUI
 		public VUI.Widget Widget
 		{
 			get { return panel_.Button; }
-		}
-
-		private void AddButton(VUI.Panel p, string t, Action f)
-		{
-			var b = new VUI.ToolButton(t);
-
-			b.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
-			b.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignVCenter;
-			b.Padding = new VUI.Insets(10, 5, 60, 5);
-
-			b.Clicked += () =>
-			{
-				f();
-			};
-
-			p.Add(b);
 		}
 
 		private void OnRemoveAll()
