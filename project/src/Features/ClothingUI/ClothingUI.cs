@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Text.RegularExpressions;
 using System;
+using System.Collections;
 
 namespace AUI.ClothingUI
 {
@@ -227,7 +228,7 @@ namespace AUI.ClothingUI
 			return list;
 		}
 
-		private void Sorted(List<DAZClothingItem> list)
+		public void Sorted(List<DAZClothingItem> list)
 		{
 			switch (sort_)
 			{
@@ -419,7 +420,7 @@ namespace AUI.ClothingUI
 		public void UpdatePanels()
 		{
 			for (int i = 0; i < panels_.Length; ++i)
-				panels_[i].Update();
+				panels_[i].Update(false);
 		}
 
 		private void SetPage(int newPage)
@@ -637,6 +638,40 @@ namespace AUI.ClothingUI
 				return
 					"Complete overhaul of the clothing panel.";
 			}
+		}
+
+		public static void OpenClothingUI(DAZClothingItem ci, string tab = null)
+		{
+			if (ci == null)
+				return;
+
+			ci.OpenUI();
+
+			if (!string.IsNullOrEmpty(tab))
+				SetTab(ci, tab);
+		}
+
+		private static void SetTab(DAZClothingItem ci, string name)
+		{
+			DoSetTab(ci, name);
+			AlternateUI.Instance.StartCoroutine(CoSetTab(ci, name));
+		}
+
+		private static IEnumerator CoSetTab(DAZClothingItem ci, string name)
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			DoSetTab(ci, name);
+		}
+
+		private static void DoSetTab(DAZClothingItem ci, string name)
+		{
+			var ts = ci.customizationUI.GetComponentInChildren<UITabSelector>();
+			if (ts == null)
+				return;
+
+			if (ts.HasTab(name))
+				ts.SetActiveTab(name);
 		}
 
 		protected override void DoEnable()

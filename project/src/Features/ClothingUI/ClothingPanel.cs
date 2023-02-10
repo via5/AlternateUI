@@ -12,8 +12,8 @@ namespace AUI.ClothingUI
 		private readonly VUI.Label author_ = null;
 		private readonly VUI.Label name_ = null;
 		private readonly VUI.Button customize_ = null;
-		private readonly VUI.Button physics_ = null;
 		private readonly VUI.Button adjustments_ = null;
+		private readonly VUI.Button physics_ = null;
 		private readonly VUI.Image thumbnail_ = null;
 
 		private DAZClothingItem ci_ = null;
@@ -30,7 +30,8 @@ namespace AUI.ClothingUI
 			Events.PointerClick += (e) => ToggleActive();
 
 			var top = new VUI.Panel(new VUI.BorderLayout(5));
-			active_ = top.Add(new VUI.CheckBox("", (b) => ToggleActive()), VUI.BorderLayout.Left);
+			active_ = top.Add(new VUI.CheckBox(
+				"", (b) => ToggleActive(), false, "Active"), VUI.BorderLayout.Left);
 			author_ = top.Add(new VUI.Label(), VUI.BorderLayout.Center);
 
 			var center = new VUI.Panel(new VUI.VerticalFlow(5));
@@ -38,9 +39,9 @@ namespace AUI.ClothingUI
 			name_ = center.Add(new VUI.Label());
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(5));
-			customize_ = buttons.Add(new VUI.ToolButton("...", OpenCustomize));
-			adjustments_ = buttons.Add(new VUI.ToolButton("A", OpenAdjustments));
-			physics_ = buttons.Add(new VUI.ToolButton("P", OpenPhysics));
+			customize_ = buttons.Add(new VUI.ToolButton("...", OpenCustomize, "Customize"));
+			adjustments_ = buttons.Add(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
+			physics_ = buttons.Add(new VUI.ToolButton("P", OpenPhysics, "Physics"));
 
 			center.Add(buttons);
 
@@ -81,7 +82,7 @@ namespace AUI.ClothingUI
 			Update();
 		}
 
-		public void Update()
+		public void Update(bool updateThumbnail=true)
 		{
 			try
 			{
@@ -100,15 +101,19 @@ namespace AUI.ClothingUI
 					active_.Checked = ci_.active;
 					author_.Text = ci_.creatorName;
 					name_.Text = ci_.displayName;
-					thumbnail_.Texture = null;
 					Borders = new VUI.Insets(1);
 
-					DAZClothingItem forCi = ci_;
-
-					ci_.GetThumbnail((Texture2D t) =>
+					if (updateThumbnail)
 					{
-						AlternateUI.Instance.StartCoroutine(CoSetTexture(forCi, t));
-					});
+						thumbnail_.Texture = null;
+
+						DAZClothingItem forCi = ci_;
+
+						ci_.GetThumbnail((Texture2D t) =>
+						{
+							AlternateUI.Instance.StartCoroutine(CoSetTexture(forCi, t));
+						});
+					}
 				}
 
 				Render = (ci_ != null);
@@ -147,38 +152,17 @@ namespace AUI.ClothingUI
 
 		public void OpenCustomize()
 		{
-			ci_.OpenUI();
+			ClothingUI.OpenClothingUI(ci_);
 		}
 
 		public void OpenPhysics()
 		{
-			ci_.OpenUI();
-			SetTab("Physics");
+			ClothingUI.OpenClothingUI(ci_, "Physics");
 		}
 
 		public void OpenAdjustments()
 		{
-			ci_.OpenUI();
-			SetTab("Adjustments");
-		}
-
-		private void SetTab(string name)
-		{
-			DoSetTab(name);
-			AlternateUI.Instance.StartCoroutine(CoSetTab(name));
-		}
-
-		private IEnumerator CoSetTab(string name)
-		{
-			yield return new WaitForEndOfFrame();
-			yield return new WaitForEndOfFrame();
-			DoSetTab(name);
-		}
-
-		private void DoSetTab(string name)
-		{
-			var ts = ci_.customizationUI.GetComponentInChildren<UITabSelector>();
-			ts?.SetActiveTab(name);
+			ClothingUI.OpenClothingUI(ci_, "Adjustments");
 		}
 
 		private void ActiveChanged()

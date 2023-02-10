@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 
 namespace VUI
 {
@@ -17,6 +16,11 @@ namespace VUI
 		{
 		}
 
+		private void OnPointerDown(PointerEvent e)
+		{
+			e.Bubble = clickthrough_;
+		}
+
 		public Panel(string name = "", Layout ly = null)
 			: base(name)
 		{
@@ -24,6 +28,7 @@ namespace VUI
 				Layout = ly;
 
 			WantsFocus = false;
+			Events.PointerDown += OnPointerDown;
 		}
 
 		public bool Clickthrough

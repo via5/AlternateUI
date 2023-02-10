@@ -224,7 +224,7 @@ namespace VUI
 					if (TextTooLong())
 					{
 						var ellipsisSize = TextSize("...");
-						ellipsisSize.Width += 5;
+						ellipsisSize.Width += 8;
 
 						if (ellipsis_ == null)
 							CreateEllipsis();

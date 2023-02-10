@@ -122,16 +122,6 @@ namespace AUI
 
 				var root = button_.GetRoot();
 				root.FloatingPanel.Add(panel_);
-
-				var bounds = VUI.Rectangle.FromSize(
-					root.FloatingPanel.RelativeBounds.Left + button_.Bounds.Left,
-					root.FloatingPanel.RelativeBounds.Top + button_.Bounds.Bottom,
-					Size.Width, Size.Height);
-
-				if (bounds.Right >= root.FloatingPanel.AbsoluteClientBounds.Right)
-					bounds.Translate(-(bounds.Right - root.FloatingPanel.AbsoluteClientBounds.Right), 0);
-
-				panel_.SetBounds(bounds);
 				AlternateUI.Instance.StartCoroutine(CoDoShow());
 			}
 			else
@@ -149,16 +139,39 @@ namespace AUI
 
 		private void DoShow()
 		{
+			Toggled?.Invoke(!panel_.Visible);
+
+			VUI.Size size;
+
+			var root = button_.GetRoot();
+
 			if (autoSize_)
 			{
-				var s = panel_.GetRealPreferredSize(Size.Width, Size.Height);
+				var s = panel_.GetRealPreferredSize(
+					root.FloatingPanel.Bounds.Width,
+					root.FloatingPanel.Bounds.Height);
 
 				var r = panel_.Bounds;
 				r.Width = s.Width;
 				r.Height = s.Height;
 
 				panel_.SetBounds(r);
+				size = r.Size;
 			}
+			else
+			{
+				size = Size;
+			}
+
+			var bounds = VUI.Rectangle.FromSize(
+				root.FloatingPanel.Bounds.Left + button_.Bounds.Left,
+				root.FloatingPanel.Bounds.Top + button_.Bounds.Bottom,
+				size.Width, size.Height);
+
+			if (bounds.Right >= root.FloatingPanel.Bounds.Right)
+				bounds.Translate(-(bounds.Right - root.FloatingPanel.AbsoluteClientBounds.Right), 0);
+
+			panel_.SetBounds(bounds);
 
 			panel_.Visible = true;
 			panel_.BringToTop();
@@ -170,8 +183,9 @@ namespace AUI
 				panel_.GetRoot().FloatingPanel.Clickthrough = false;
 			}
 
+			panel_.DoLayout();
+
 			button_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
-			Toggled?.Invoke(panel_.Visible);
 		}
 
 		public void Hide()

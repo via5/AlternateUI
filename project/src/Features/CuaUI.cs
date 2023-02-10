@@ -69,7 +69,7 @@ namespace AUI.CuaUI
 			cua_ = Atom.GetComponentInChildren<CustomUnityAssetLoader>();
 			if (cua_ == null)
 			{
-				Log.Error($"no CustomUnityAssetLoader");
+				Log.Verbose($"no CustomUnityAssetLoader");
 				return false;
 			}
 
@@ -83,19 +83,19 @@ namespace AUI.CuaUI
 			ui_ = Atom.UITransform.GetComponentInChildren<CustomUnityAssetLoaderUI>();
 			if (ui_ == null)
 			{
-				Log.Error($"no CustomUnityAssetLoaderUI");
+				Log.Verbose($"no CustomUnityAssetLoaderUI");
 				return false;
 			}
 
 			if (ui_.fileBrowseButton == null)
 			{
-				Log.Error($"no fileBrowseButton");
+				Log.Verbose($"no fileBrowseButton");
 				return false;
 			}
 
 			if (ui_.clearButton == null)
 			{
-				Log.Error($"no clearButton");
+				Log.Verbose($"no clearButton");
 				return false;
 			}
 
