@@ -264,6 +264,7 @@ namespace AUI.MorphUI
 		private void Refilter()
 		{
 			filtered_ = filter_.Process();
+			page_ = 0;
 			PageChanged();
 		}
 	}
