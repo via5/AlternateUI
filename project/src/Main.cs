@@ -2,6 +2,7 @@
 using SimpleJSON;
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace AUI
 {
@@ -157,6 +158,8 @@ namespace AUI
 
 		private void CreateUI()
 		{
+			CreateVersion();
+
 			for (int i = 0; i < features_.Length; ++i)
 			{
 				if (i > 0)
@@ -175,6 +178,20 @@ namespace AUI
 					Log.Error(e.ToString());
 				}
 			}
+		}
+
+		private void CreateVersion()
+		{
+			var t = CreateButton($"AlternateUI {Version.String}");
+			t.buttonColor = new Color(0, 0, 0, 0);
+			t.buttonText.alignment = TextAnchor.MiddleLeft;
+			t.button.interactable = false;
+			t.height = 15;
+			t.GetComponent<LayoutElement>().minHeight = 15;
+
+			var sp = CreateSpacer(true);
+			sp.height = 50;
+			sp.GetComponent<LayoutElement>().minHeight = 50;
 		}
 
 		public string GetConfigFilePath(string filename)
