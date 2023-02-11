@@ -4,9 +4,9 @@ AlternateUI mainly replaces the male and female morphs UI, but also has several 
 ## Usage
 Add `AlternateUI.cslist` from `via5.AlternateUI.x` as a session plugin. To load the plugin every time VaM starts, save it as the default session plugin preset. The plugin UI contains toggles for every feature.
 
-<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png" width="300"></a>
-<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png" width="300"></a>
-<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png" width="300"></a>
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugins.png" width="250"></a>
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/session-plugin-presets.png" width="250"></a>
+<a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/plugin-ui.png" width="250"></a>
 
 ## Morphs UI
 <a href="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui.png"><img src="https://raw.githubusercontent.com/via5/AlternateUI/master/doc/morphs-ui.png" width="400" align="right"></a>
