@@ -99,7 +99,7 @@ Right-clicking the `Open Package Manager` button will rescan packages.
 ### Quick save with SS
 `Shift+F2` will save the current scene without confirmation but with a new screenshot.
 
-### Quick save no SSS
+### Quick save no SS
 `Shift+F3` will save the current scene without confirmation and with the old screenshot.
 
 ### Disable selecting hidden targets
