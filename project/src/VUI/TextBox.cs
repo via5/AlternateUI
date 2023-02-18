@@ -939,7 +939,12 @@ namespace VUI
 		private void OnBlur(FocusEvent e)
 		{
 			if (!ac_.Enabled || !ac_.Visible || !e.Other.HasParent(ac_.Widget))
+			{
+				if (ac_.Enabled && ac_.Visible)
+					ac_.Add(text_);
+
 				ac_.Hide();
+			}
 		}
 	}
 

@@ -210,6 +210,8 @@ namespace VUI
 			private bool visible_ = true;
 			private bool checkable_ = false;
 			private bool checked_ = false;
+			private string tooltip_ = null;
+			private bool gotChildren_ = false;
 
 			public Item(string text = "")
 			{
@@ -231,6 +233,12 @@ namespace VUI
 			{
 				get { return parent_; }
 				set { parent_ = value; }
+			}
+
+			public string Tooltip
+			{
+				get { return tooltip_; }
+				set { tooltip_ = value; }
 			}
 
 			public string Text
@@ -329,7 +337,7 @@ namespace VUI
 
 				set
 				{
-					expanded_ = value;
+					SetExpanded(value);
 					NodesChanged();
 				}
 			}
@@ -391,9 +399,25 @@ namespace VUI
 				TreeView?.VisibilityChangedInternal(this);
 			}
 
-			private void SetExpandedRecursive(bool b, bool visibleOnly)
+			private void SetExpanded(bool b)
 			{
 				expanded_ = b;
+
+				if (expanded_ && !gotChildren_)
+				{
+					gotChildren_ = true;
+					GetChildren();
+				}
+			}
+
+			protected virtual void GetChildren()
+			{
+				// no-op
+			}
+
+			private void SetExpandedRecursive(bool b, bool visibleOnly)
+			{
+				SetExpanded(b);
 
 				if (children_ != null)
 				{
@@ -462,6 +486,7 @@ namespace VUI
 
 				children_.Add(child);
 				child.Parent = this;
+				gotChildren_ = true;
 			}
 
 			public void Clear()
@@ -473,6 +498,8 @@ namespace VUI
 
 					children_.Clear();
 				}
+
+				gotChildren_ = false;
 			}
 
 			public void FireCheckedChanged(bool b)
@@ -623,6 +650,9 @@ namespace VUI
 				if (toggle_ == null)
 				{
 					toggle_ = new ToolButton("", OnToggle);
+					toggle_.BackgroundColor = new Color(0, 0, 0, 0);
+					toggle_.Borders = new Insets(1);
+
 					panel_.Add(toggle_);
 					toggle_.Create();
 				}
@@ -643,7 +673,9 @@ namespace VUI
 				if (label_ == null)
 				{
 					label_ = new Label();
-					label_.WrapMode = VUI.Label.Clip;
+					label_.WrapMode = VUI.Label.ClipEllipsis;
+					label_.FontSize = tree_.FontSize;
+
 					panel_.Add(label_);
 					label_.Create();
 					label_.Events.PointerClick += (e) => { e.Bubble = true; };
@@ -673,7 +705,11 @@ namespace VUI
 						toggle_.Text = "+";
 
 					var tr = r;
+
+					tr.Top += 2;
+					tr.Bottom -= 2;
 					tr.Width = Style.Metrics.TreeToggleWidth;
+
 					toggle_.SetBounds(tr);
 					toggle_.Render = true;
 				}
@@ -717,6 +753,7 @@ namespace VUI
 				if (tree_.CheckBoxes && item_.Checkable)
 					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeCheckboxSpacing;
 
+				label_.Tooltip.Text = item_.Tooltip;
 				label_.Text = item_.Text;
 				label_.SetBounds(lr);
 			}

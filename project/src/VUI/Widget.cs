@@ -303,9 +303,23 @@ namespace VUI
 		public bool IsVisibleOnScreen()
 		{
 			if (mainObject_ == null)
-				return render_ && visible_;
+				return visible_ && RenderInHierarchy;
 			else
-				return render_ && mainObject_.activeInHierarchy;
+				return mainObject_.activeInHierarchy && RenderInHierarchy;
+		}
+
+		private bool RenderInHierarchy
+		{
+			get
+			{
+				if (!render_)
+					return false;
+
+				if (Parent != null)
+					return Parent.RenderInHierarchy;
+
+				return true;
+			}
 		}
 
 		public bool Enabled
@@ -791,7 +805,7 @@ namespace VUI
 
 		private void SetRender(bool b)
 		{
-			if (widgetObject_ == null || !visible_)
+			if (widgetObject_ == null)
 				return;
 
 			if (!borders_.Empty)

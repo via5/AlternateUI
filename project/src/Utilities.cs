@@ -295,6 +295,53 @@ namespace AUI
 	}
 
 
+	static class Path
+	{
+		public static string Filename(string f)
+		{
+			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			if (slash == -1)
+				return f;
+
+			return f.Substring(slash + 1);
+		}
+
+		public static string Parent(string f)
+		{
+			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			if (slash == -1)
+				return "";
+
+			return f.Substring(0, slash);
+		}
+
+		public static string Stem(string f)
+		{
+			string n = Filename(f);
+
+			var dot = n.LastIndexOf('.');
+			if (dot == -1)
+				return n;
+
+			return n.Substring(0, dot);
+		}
+
+		public static string Extension(string f)
+		{
+			var dot = f.LastIndexOf('.');
+			if (dot == -1)
+				return "";
+
+			return f.Substring(dot);
+		}
+
+		public static string Join(string a, string b)
+		{
+			return a + "\\" + b;
+		}
+	}
+
+
 	public class Logger
 	{
 		public const int ErrorLevel = 0;

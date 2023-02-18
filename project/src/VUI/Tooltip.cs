@@ -16,7 +16,7 @@ namespace VUI
 
 		public bool HasValue
 		{
-			get { return textFunc_ != null || text_ != ""; }
+			get { return textFunc_ != null || !string.IsNullOrEmpty(text_); }
 		}
 
 		public Func<string> TextFunc

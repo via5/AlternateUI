@@ -28,6 +28,7 @@ namespace VUI
 		private UnityEngine.UI.Image ellipsisBackground_ = null;
 		private int wrap_ = Overflow;
 		private bool autoTooltip_ = false;
+		private bool hasEllipsis_ = false;
 
 		public Label(
 			string t = "",
@@ -200,6 +201,8 @@ namespace VUI
 
 		private void UpdateClip()
 		{
+			hasEllipsis_ = false;
+
 			if (textObject_ == null)
 				return;
 
@@ -236,6 +239,7 @@ namespace VUI
 							ellipsisSize.Height);
 
 						ellipsis_.gameObject.SetActive(true);
+						hasEllipsis_ = true;
 
 						if (BackgroundColor.a == 0)
 							ellipsisBackground_.color = Style.Theme.BackgroundColor;
@@ -335,7 +339,7 @@ namespace VUI
 				textObject_.gameObject.SetActive(b);
 
 			if (ellipsis_ != null)
-				ellipsis_.gameObject.SetActive(b);
+				ellipsis_.gameObject.SetActive(b && hasEllipsis_);
 		}
 
 		protected override void UpdateActiveState()
