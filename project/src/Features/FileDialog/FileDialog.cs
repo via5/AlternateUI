@@ -2,9 +2,55 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace AUI.FileDialog
 {
+	public static class Icons
+	{
+		private static Texture packageIcon_ = null;
+		private static readonly List<Action<Texture>> packageIconCallbacks_ =
+			new List<Action<Texture>>();
+
+		public static void LoadAll()
+		{
+			ImageLoaderThreaded.QueuedImage queuedImage = new ImageLoaderThreaded.QueuedImage();
+			queuedImage.imgPath = AlternateUI.Instance.PluginPath + "/res/package.png";
+			queuedImage.linear = true;
+
+			queuedImage.callback = (tt) =>
+			{
+				packageIcon_ = tt.tex;
+
+				foreach (var f in packageIconCallbacks_)
+					f(packageIcon_);
+
+				packageIconCallbacks_.Clear();
+			};
+
+			ImageLoaderThreaded.singleton.ClearCacheThumbnail(queuedImage.imgPath);
+			ImageLoaderThreaded.singleton.QueueThumbnail(queuedImage);
+		}
+
+		public static void GetPackageIcon(Action<Texture> f)
+		{
+			if (packageIcon_ != null)
+			{
+				f(packageIcon_);
+			}
+			else
+			{
+				packageIconCallbacks_.Add(f);
+			}
+		}
+
+		public static void GetDirectoryIcon(Action<Texture> f)
+		{
+			f(SuperController.singleton.fileBrowserUI.folderIcon.texture);
+		}
+	}
+
+
 	class FileDialog : BasicFeature
 	{
 		class File
@@ -27,7 +73,7 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private const int FontSize = 22;
+		private const int FontSize = 24;
 
 		private VUI.Root root_ = null;
 		private readonly Dictionary<string, File[]> cachedFiles_ = new Dictionary<string, File[]>();
@@ -43,7 +89,7 @@ namespace AUI.FileDialog
 		public FileDialog()
 			: base("fileDialog", "File dialog", false)
 		{
-			cwd_ = "Saves/scene";
+			cwd_ = null;
 		}
 
 		public int Columns
@@ -81,10 +127,22 @@ namespace AUI.FileDialog
 			SetPanels(0);
 		}
 
+		public void SetAllFlattened()
+		{
+			Log.Info($"all flattened");
+
+			cwd_ = null;
+			top_ = 0;
+			GetAllFlattened();
+			SetPanels(0);
+		}
+
 		protected override void DoEnable()
 		{
 			if (root_ == null)
 			{
+				Icons.LoadAll();
+
 				root_ = new VUI.Root(new VUI.TransformUIRootSupport(
 					SuperController.singleton.fileBrowserUI.transform.parent));
 
@@ -93,7 +151,7 @@ namespace AUI.FileDialog
 				Create();
 				GetFiles();
 
-				tree_.Update(CurrentDirectory);
+				tree_.Update("Saves/scene");
 				SetPanels(0);
 			}
 		}
@@ -110,6 +168,7 @@ namespace AUI.FileDialog
 
 			tree_.PathSelected += OnPathSelected;
 			tree_.PackageSelected += OnPackageSelected;
+			tree_.AllFlattened += OnAllFlattened;
 			tree_.PackagesFlattened += OnPackagesFlattened;
 
 			root_.ContentPanel.Add(tree_.Widget, VUI.BorderLayout.Left);
@@ -184,29 +243,41 @@ namespace AUI.FileDialog
 
 		private void GetPackagesFlattened()
 		{
-			var list = new List<File>();
+			CachePackagesFlattened();
 
-			if (cachedPackagesFlattened_ == null)
-			{
-				foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
-				{
-					if (string.IsNullOrEmpty(p.package))
-						continue;
+			var list = new List<File>(cachedPackagesFlattened_);
+			SetFiles(list);
+		}
 
-					if (!string.IsNullOrEmpty(p.packageFilter))
-						continue;
+		private void GetAllFlattened()
+		{
+			CachePackagesFlattened();
 
-					GetFilesRecursive(p.path, list);
-				}
-
-				cachedPackagesFlattened_ = list.ToArray();
-			}
-			else
-			{
-				list.AddRange(cachedPackagesFlattened_);
-			}
+			var list = new List<File>(cachedPackagesFlattened_);
+			GetFilesRecursive("Saves/scene", list);
 
 			SetFiles(list);
+		}
+
+		private void CachePackagesFlattened()
+		{
+			if (cachedPackagesFlattened_ != null)
+				return;
+
+			var list = new List<File>();
+
+			foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
+			{
+				if (string.IsNullOrEmpty(p.package))
+					continue;
+
+				if (!string.IsNullOrEmpty(p.packageFilter))
+					continue;
+
+				GetFilesRecursive(p.path, list);
+			}
+
+			cachedPackagesFlattened_ = list.ToArray();
 		}
 
 		private void GetFilesRecursive(string parent, List<File> list)
@@ -296,6 +367,11 @@ namespace AUI.FileDialog
 		private void OnPackageSelected(string name)
 		{
 			SetCurrentDirectory(name);
+		}
+
+		private void OnAllFlattened()
+		{
+			SetAllFlattened();
 		}
 
 		private void OnPackagesFlattened()

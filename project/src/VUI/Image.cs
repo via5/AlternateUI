@@ -43,13 +43,18 @@ namespace VUI
 		public override void UpdateBounds()
 		{
 			base.UpdateBounds();
-
 		}
 
 		private void UpdateTexture()
 		{
 			if (raw_ != null)
 				raw_.texture = tex_;
+		}
+
+		protected override void DoSetRender(bool b)
+		{
+			if (raw_ != null)
+				raw_.gameObject.SetActive(b);
 		}
 
 		protected override Size DoGetPreferredSize(

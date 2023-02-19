@@ -44,6 +44,7 @@ namespace VUI
 		private readonly Tooltip tooltip_;
 		private Events events_ = new Events();
 		private bool wantsFocus_ = true;
+		private bool didLayoutWhileRendered_ = false;
 
 		private bool dirty_ = true;
 
@@ -801,6 +802,12 @@ namespace VUI
 		private void UpdateRenderState()
 		{
 			SetRender(render_);
+
+			if (render_ && !didLayoutWhileRendered_)
+			{
+				didLayoutWhileRendered_ = true;
+				NeedsLayout("first render true");
+			}
 		}
 
 		private void SetRender(bool b)
@@ -827,12 +834,12 @@ namespace VUI
 			Utilities.SetRectTransform(mainObject_, r);
 
 			var layoutElement = mainObject_.GetComponent<LayoutElement>();
-			layoutElement.minWidth = r.Width;
-			layoutElement.preferredWidth = r.Width;
-			layoutElement.flexibleWidth = r.Width;
-			layoutElement.minHeight = r.Height;
-			layoutElement.preferredHeight = r.Height;
-			layoutElement.flexibleHeight = r.Height;
+			layoutElement.minWidth = (int)r.Width;
+			layoutElement.preferredWidth = (int)r.Width;
+			layoutElement.flexibleWidth = (int)r.Width;
+			layoutElement.minHeight = (int)r.Height;
+			layoutElement.preferredHeight = (int)r.Height;
+			layoutElement.flexibleHeight = (int)r.Height;
 			layoutElement.ignoreLayout = true;
 		}
 

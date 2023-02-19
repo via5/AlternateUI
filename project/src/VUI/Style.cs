@@ -99,12 +99,19 @@ namespace VUI
 		//
 		public float TreeIndentSize
 		{
-			get { return 35; }
+			get { return 25; }
 		}
 
 		// width of the + button
 		//
 		public float TreeToggleWidth
+		{
+			get { return 30; }
+		}
+
+		// width of the +icon
+		//
+		public float TreeIconWidth
 		{
 			get { return 30; }
 		}
@@ -119,6 +126,13 @@ namespace VUI
 		// space between the checkbox and label
 		//
 		public float TreeCheckboxSpacing
+		{
+			get { return 10; }
+		}
+
+		// space between the checkbox and the icon
+		//
+		public float TreeIconSpacing
 		{
 			get { return 10; }
 		}

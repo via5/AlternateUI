@@ -210,6 +210,7 @@ namespace VUI
 			private bool visible_ = true;
 			private bool checkable_ = false;
 			private bool checked_ = false;
+			private Texture icon_ = null;
 			private string tooltip_ = null;
 			private bool gotChildren_ = false;
 
@@ -297,6 +298,23 @@ namespace VUI
 
 						if (checkable_)
 							NodesChanged();
+					}
+				}
+			}
+
+			public Texture Icon
+			{
+				get
+				{
+					return icon_;
+				}
+
+				set
+				{
+					if (icon_ != value)
+					{
+						icon_ = value;
+						NodesChanged();
 					}
 				}
 			}
@@ -547,6 +565,7 @@ namespace VUI
 			private Panel panel_ = null;
 			private ToolButton toggle_ = null;
 			private CheckBox checkbox_ = null;
+			private Image icon_ = null;
 			private Label label_ = null;
 			private bool hovered_ = false;
 			private bool ignore_ = false;
@@ -625,6 +644,14 @@ namespace VUI
 						UpdateCheckbox(r);
 					}
 
+					if (tree_.Icons)
+					{
+						if (icon_ == null)
+							CreateIcon(r);
+
+						UpdateIcon(r);
+					}
+
 					if (label_ == null)
 						CreateLabel(r);
 
@@ -665,6 +692,16 @@ namespace VUI
 					checkbox_ = new CheckBox("", OnChecked);
 					panel_.Add(checkbox_);
 					checkbox_.Create();
+				}
+			}
+
+			private void CreateIcon(Rectangle r)
+			{
+				if (icon_ == null)
+				{
+					icon_ = new Image();
+					panel_.Add(icon_);
+					icon_.Create();
 				}
 			}
 
@@ -740,6 +777,22 @@ namespace VUI
 				}
 			}
 
+			private void UpdateIcon(Rectangle r)
+			{
+				if (item_ == null)
+					return;
+
+				var tr = r;
+
+				tr.Left += Style.Metrics.TreeIconWidth + Style.Metrics.TreeIconSpacing;
+				tr.Right = tr.Left + Style.Metrics.TreeIconWidth;
+				tr.Bottom = tr.Top + Style.Metrics.TreeIconWidth;
+
+				icon_.SetBounds(tr);
+				icon_.Texture = item_.Icon;
+				icon_.Render = true;
+			}
+
 			private void UpdateLabel(Rectangle r)
 			{
 				if (item_ == null)
@@ -752,6 +805,9 @@ namespace VUI
 
 				if (tree_.CheckBoxes && item_.Checkable)
 					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeCheckboxSpacing;
+
+				if (tree_.Icons)
+					lr.Left += Style.Metrics.TreeIconWidth + Style.Metrics.TreeIconSpacing;
 
 				label_.Tooltip.Text = item_.Tooltip;
 				label_.Text = item_.Text;
@@ -805,6 +861,7 @@ namespace VUI
 		private List<Node> nodes_ = new List<Node>();
 		private ScrollBar vsb_ = new ScrollBar();
 		private bool checkboxes_ = false;
+		private bool icons_ = false;
 		private bool rootToggles_ = true;
 		private int topItemIndex_ = 0;
 		private int itemCount_ = 0;
@@ -890,6 +947,12 @@ namespace VUI
 		{
 			get { return checkboxes_; }
 			set { checkboxes_ = value; }
+		}
+
+		public bool Icons
+		{
+			get { return icons_; }
+			set { icons_ = value; }
 		}
 
 		public bool RootToggles
