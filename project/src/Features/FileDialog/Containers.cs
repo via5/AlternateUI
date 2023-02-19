@@ -3,53 +3,6 @@ using System.Collections.Generic;
 
 namespace AUI.FileDialog
 {
-	static class Cache
-	{
-		private static readonly Dictionary<string, List<File>> files_ =
-			new Dictionary<string, List<File>>();
-
-		private static readonly Dictionary<string, List<File>> dirs_ =
-			new Dictionary<string, List<File>>();
-
-		private static List<File> packagesFlat_ = null;
-
-
-		public static List<File> GetDirectories(string parent)
-		{
-			List<File> list = null;
-			dirs_.TryGetValue(parent, out list);
-			return list;
-		}
-
-		public static void AddDirectories(string parent, List<File> list)
-		{
-			dirs_.Add(parent, list);
-		}
-
-		public static List<File> GetFiles(string parent)
-		{
-			List<File> list = null;
-			files_.TryGetValue(parent, out list);
-			return list;
-		}
-
-		public static void AddFiles(string parent, List<File> list)
-		{
-			files_.Add(parent, list);
-		}
-
-		public static List<File> GetPackagesFlat()
-		{
-			return packagesFlat_;
-		}
-
-		public static void SetPackagesFlat(List<File> list)
-		{
-			packagesFlat_ = list;
-		}
-	}
-
-
 	interface IFileContainer
 	{
 		List<File> GetFiles(FileDialog fd);
