@@ -5,12 +5,18 @@ namespace AUI.FileDialog
 {
 	interface IFileContainer
 	{
+		string Path { get; }
 		List<File> GetFiles(FileDialog fd);
 	}
 
 
 	class EmptyContainer : IFileContainer
 	{
+		public string Path
+		{
+			get { return ""; }
+		}
+
 		public List<File> GetFiles(FileDialog fd)
 		{
 			return new List<File>();
@@ -20,6 +26,7 @@ namespace AUI.FileDialog
 
 	abstract class FSContainer : IFileContainer
 	{
+		public abstract string Path { get; }
 		public abstract List<File> GetFiles(FileDialog fd);
 
 		protected void GetFilesRecursive(string parent, List<File> list)
@@ -102,6 +109,11 @@ namespace AUI.FileDialog
 			path_ = path;
 		}
 
+		public override string Path
+		{
+			get { return path_; }
+		}
+
 		public override List<File> GetFiles(FileDialog fd)
 		{
 			return GetFiles(fd.FlattenDirectories);
@@ -148,6 +160,11 @@ namespace AUI.FileDialog
 
 	class PackagesFlatContainer : FSContainer
 	{
+		public override string Path
+		{
+			get { return "Packages flattened"; }
+		}
+
 		public override List<File> GetFiles(FileDialog fd)
 		{
 			return GetPackagesFlat();
@@ -157,6 +174,11 @@ namespace AUI.FileDialog
 
 	class AllFlatContainer : FSContainer
 	{
+		public override string Path
+		{
+			get { return "All flattened"; }
+		}
+
 		public override List<File> GetFiles(FileDialog fd)
 		{
 			var list = new List<File>();

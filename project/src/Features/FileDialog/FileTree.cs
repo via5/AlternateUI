@@ -259,19 +259,16 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void Select(string path)
+		public bool Select(string path)
 		{
 			path = path.Replace('\\', '/');
 			path = path.Trim();
 
 			var cs = new List<string>(path.Split('/'));
 			if (cs.Count == 0)
-			{
-				FireNothingSelected();
-				return;
-			}
+				return false;
 
-			Select(tree_.RootItem, cs);
+			return Select(tree_.RootItem, cs);
 		}
 
 		private bool Select(VUI.TreeView.Item parent, List<string> cs)

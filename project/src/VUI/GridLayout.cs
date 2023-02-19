@@ -271,7 +271,7 @@ namespace VUI
 
 		protected override void LayoutImpl()
 		{
-			var r = new Rectangle(Parent.Bounds);
+			var r = new Rectangle(Parent.AbsoluteClientBounds);
 			var d = GetCellPreferredSizes(r.Width, r.Height);
 
 

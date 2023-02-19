@@ -251,6 +251,11 @@ namespace VUI
 			get { return new Color(0.146f, 0.146f, 0.146f); }
 		}
 
+		public Color ScrollBarBackgroundColor
+		{
+			get { return new Color(0.10f, 0.10f, 0.10f); }
+		}
+
 		public Color OverlayBackgroundColor
 		{
 			get { return new Color(0, 0, 0, 0.8f); }

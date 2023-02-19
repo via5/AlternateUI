@@ -1,199 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace VUI
 {
-	class ScrollBarHandle : Button
-	{
-		public delegate void Handler();
-		public event Handler Moved;
-
-		private Point dragStart_;
-		private Rectangle initialBounds_;
-		private bool dragging_ = false;
-
-		public ScrollBarHandle()
-		{
-			Events.DragStart += OnDragStart;
-			Events.Drag += OnDrag;
-			Events.DragEnd += OnDragEnd;
-		}
-
-		public void OnDragStart(DragEvent e)
-		{
-			dragging_ = true;
-			dragStart_ = e.Pointer;
-			initialBounds_ = AbsoluteClientBounds;
-
-			SetCapture();
-		}
-
-		public void OnDrag(DragEvent e)
-		{
-			if (!dragging_)
-				return;
-
-			var p = e.Pointer;
-			var delta = p - dragStart_;
-
-			var r = Rectangle.FromSize(
-				initialBounds_.Left,
-				initialBounds_.Top + (delta.Y),
-				initialBounds_.Width,
-				initialBounds_.Height);
-
-			var box = Parent.AbsoluteClientBounds;
-
-			if (r.Top < box.Top)
-				r.MoveTo(r.Left, box.Top);
-
-			if (r.Bottom > box.Bottom)
-				r.MoveTo(r.Left, box.Bottom - r.Height);
-
-			SetBounds(r);
-			UpdateBounds();
-
-			Moved?.Invoke();
-		}
-
-		public void OnDragEnd(DragEvent e)
-		{
-			dragging_ = false;
-			ReleaseCapture();
-		}
-	}
-
-
-	class ScrollBar : Panel
-	{
-		public delegate void ValueHandler(float v);
-		public event ValueHandler ValueChanged;
-
-		private ScrollBarHandle handle_ = new ScrollBarHandle();
-		private float range_ = 0;
-		private float value_ = 0;
-
-		public ScrollBar()
-		{
-			Borders = new Insets(1, 0, 0, 0);
-			Layout = new AbsoluteLayout();
-			Clickthrough = false;
-			Add(handle_);
-
-			Events.PointerDown += OnPointerDown;
-			handle_.Moved += OnHandleMoved;
-		}
-
-		public float Range
-		{
-			get { return range_; }
-			set { range_ = value; }
-		}
-
-		public float Value
-		{
-			get { return value_; }
-			set { value_ = value; }
-		}
-
-		public override void UpdateBounds()
-		{
-			var r = AbsoluteClientBounds;
-			var h = Math.Max(r.Height - range_, 50);
-
-			var cb = ClientBounds;
-			var avh = cb.Height - handle_.ClientBounds.Height;
-			var p = range_ == 0 ? 0 : (value_ / range_);
-			r.Top += Borders.Top + p * avh;
-			r.Bottom = r.Top + h;
-
-			handle_.SetBounds(r);
-			DoLayoutImpl();
-
-			base.UpdateBounds();
-		}
-
-		private void OnHandleMoved()
-		{
-			var r = ClientBounds;
-			var hr = handle_.RelativeBounds;
-			var top = hr.Top - Borders.Top;
-			var h = r.Height - hr.Height;
-			var p = (top / h);
-			value_ = p * range_;
-			ValueChanged?.Invoke(value_);
-		}
-
-		private void OnPointerDown(PointerEvent e)
-		{
-			var r = AbsoluteClientBounds;
-			var p = e.Pointer - r.TopLeft;
-			var y = r.Top + p.Y - handle_.ClientBounds.Height / 2;
-
-			if (y < 0)
-				y = 0;
-			else if (y + handle_.ClientBounds.Height > ClientBounds.Height)
-				y = ClientBounds.Height - handle_.ClientBounds.Height;
-
-			var cb = handle_.AbsoluteClientBounds;
-			var h = cb.Height;
-			cb.Top = y;
-			cb.Bottom = y + h;
-
-			handle_.SetBounds(cb);
-			DoLayoutImpl();
-			base.UpdateBounds();
-
-			OnHandleMoved();
-
-			var d = e.EventData as PointerEventData;
-			SuperController.singleton.StartCoroutine(StartDrag(d));
-
-			e.Bubble = false;
-		}
-
-		private IEnumerator StartDrag(PointerEventData d)
-		{
-			yield return new WaitForEndOfFrame();
-
-			var o = handle_.WidgetObject.gameObject;
-
-			d.pointerPress = o;
-			d.pointerDrag = o;
-			d.rawPointerPress = o;
-			d.pointerEnter = o;
-			d.selectedObject = o;
-			d.hovered.Clear();
-
-			List<RaycastResult> rc = new List<RaycastResult>();
-			EventSystem.current.RaycastAll(d, rc);
-
-			foreach (var r in rc)
-			{
-				d.hovered.Add(r.gameObject);
-
-				if (r.gameObject == o)
-				{
-					d.pointerCurrentRaycast = r;
-					d.pointerPressRaycast = r;
-					break;
-				}
-			}
-
-			ExecuteEvents.Execute(
-				handle_.WidgetObject.gameObject, d, ExecuteEvents.pointerEnterHandler);
-
-			ExecuteEvents.Execute(
-				handle_.WidgetObject.gameObject, d, ExecuteEvents.pointerDownHandler);
-		}
-	}
-
-
-
 	class TreeView : Panel
 	{
 		public override string TypeName { get { return "TreeView"; } }
@@ -1218,12 +1029,10 @@ namespace VUI
 		public override void UpdateBounds()
 		{
 			var r = AbsoluteClientBounds;
-			r.Left = r.Right - Style.Metrics.ScrollBarWidth;
+			r.Left = r.Right - vsb_.GetRealMinimumSize().Width;
 			vsb_.SetBounds(r);
-			//hsb_.Set(0, 0, 10);
 
 			UpdateNodes();
-
 			base.UpdateBounds();
 		}
 

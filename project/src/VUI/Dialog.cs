@@ -16,7 +16,7 @@
 			Layout = new BorderLayout();
 			Borders = new Insets(1);
 
-			content_.Margins = new Insets(10, 20, 10, 10);
+			content_.Margins = new Insets(10, 10, 10, 10);
 			title_.BackgroundColor = Style.Theme.DialogTitleBackgroundColor;
 			title_.Padding = new Insets(10, 5, 0, 10);
 

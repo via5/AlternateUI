@@ -32,6 +32,7 @@ namespace AUI.FileDialog
 
 		private VUI.Root root_ = null;
 		private IFileContainer container_ = new EmptyContainer();
+		private VUI.TextBox path_ = null;
 		private List<File> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
@@ -105,6 +106,7 @@ namespace AUI.FileDialog
 			top_ = 0;
 
 			SetFiles(container_.GetFiles(this));
+			SetPath();
 			SetPanels(0);
 		}
 
@@ -125,6 +127,9 @@ namespace AUI.FileDialog
 				tree_.Rebuild();
 				SetContainer(new EmptyContainer());
 				UpdateFlatten();
+
+				//todo
+				tree_.Select("VaM/Saves/scene/_vam/games/overwatch");
 			}
 		}
 
@@ -132,7 +137,20 @@ namespace AUI.FileDialog
 		{
 			var w = new VUI.Window("Load scene");
 
-			w.ContentPanel.Layout = new VUI.BorderLayout();
+			w.ContentPanel.Layout = new VUI.BorderLayout(10);
+
+			var top = new VUI.Panel(new VUI.BorderLayout(10));
+			//top.Margins = new VUI.Insets(0, 0, 0, 10);
+
+			var opts = new VUI.Panel(new VUI.HorizontalFlow(10));
+			opts.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
+			opts.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
+			top.Add(opts, VUI.BorderLayout.Top);
+
+			path_ = top.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
+			path_.Submitted += OnPathSubmitted;
+
+			w.ContentPanel.Add(top, VUI.BorderLayout.Top);
 			w.ContentPanel.Add(CreateTree(), VUI.BorderLayout.Left);
 			w.ContentPanel.Add(CreateFilesPanel(), VUI.BorderLayout.Center);
 
@@ -149,13 +167,8 @@ namespace AUI.FileDialog
 			tree_.PackagesFlatSelected += OnPackagesFlat;
 			tree_.NothingSelected += OnNothingSelected;
 
-			var top = new VUI.Panel(new VUI.HorizontalFlow());
-			top.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
-			top.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
-
 			var p = new VUI.Panel(new VUI.BorderLayout());
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
-			p.Add(top, VUI.BorderLayout.Top);
 
 			return p;
 		}
@@ -164,7 +177,9 @@ namespace AUI.FileDialog
 		{
 			var gl = new VUI.GridLayout(Columns, 10);
 			gl.UniformWidth = true;
+
 			var files = new VUI.Panel(gl);
+			files.Padding = new VUI.Insets(10);
 
 			panels_ = new FilePanel[Columns * Rows];
 
@@ -176,26 +191,59 @@ namespace AUI.FileDialog
 
 			sb_ = new VUI.ScrollBar();
 			sb_.MinimumSize = new VUI.Size(VUI.Style.Metrics.ScrollBarWidth, 0);
-
-			sb_.ValueChanged += (v) =>
-			{
-				int y = Math.Max(0, (int)(v / root_.Bounds.Height));
-
-				if (top_ != y)
-				{
-					top_ = y;
-					Log.Info($"{top_}");
-					SetPanels(top_ * Columns);
-				}
-			};
+			sb_.ValueChanged += OnScrollbar;
+			sb_.DragEnded += OnScrollbarDragEnded;
 
 			var filesPanel = new VUI.Panel(new VUI.BorderLayout());
 			filesPanel.Add(files, VUI.BorderLayout.Center);
 			filesPanel.Add(sb_, VUI.BorderLayout.Right);
 
-			filesPanel.Padding = new VUI.Insets(10);
+			filesPanel.Margins = new VUI.Insets(10, 0, 0, 0);
+			filesPanel.Borders = new VUI.Insets(1);
+
+			filesPanel.Clickthrough = false;
+			filesPanel.Events.Wheel += OnWheel;
 
 			return filesPanel;
+		}
+
+		private float ScrollbarSize()
+		{
+			return root_.ContentPanel.ClientBounds.Height / Rows / 5;
+		}
+
+		private int OffscreenRows()
+		{
+			int totalRows = (int)Math.Round((float)files_.Count / Columns);
+			return totalRows - Rows;
+		}
+
+		private void OnWheel(VUI.WheelEvent e)
+		{
+			int offscreenRows = OffscreenRows();
+			int newTop = U.Clamp(top_ + (int)-e.Delta.Y, 0, offscreenRows);
+
+			Log.Info($"{e.Delta.Y} {top_} {newTop}");
+			float v = newTop * ScrollbarSize();
+
+			if (e.Delta.Y < 0)
+			{
+				// down
+				if (newTop == offscreenRows)
+					v = sb_.Range;
+			}
+			else if (e.Delta.Y > 0)
+			{
+				//// up
+				//if (v
+				//	v = 0;
+			}
+
+			sb_.Value = v;
+
+			Log.Info($"wheel {e.Delta.Y} {sb_.Value}");
+
+			e.Bubble = false;
 		}
 
 		private void SetFiles(List<File> list)
@@ -204,9 +252,44 @@ namespace AUI.FileDialog
 			files_ = list;
 
 			if (root_.Bounds.Height <= 0)
+			{
 				sb_.Range = 0;
+			}
 			else
-				sb_.Range = files_.Count / Columns * root_.Bounds.Height;
+			{
+				int offscreenRows = OffscreenRows();
+
+				if (offscreenRows <= 0)
+				{
+					sb_.Range = 0;
+					sb_.Enabled = false;
+				}
+				else
+				{
+					sb_.Range = (offscreenRows + 1) * ScrollbarSize() - 1;
+					sb_.Enabled = true;
+				}
+			}
+		}
+
+		private void OnScrollbar(float v)
+		{
+			int y = Math.Max(0, (int)(v / ScrollbarSize()));
+
+			if (top_ != y)
+			{
+				top_ = y;
+				Log.Info($"{top_}");
+				SetPanels(top_ * Columns);
+			}
+		}
+
+		private void OnScrollbarDragEnded()
+		{
+			if (top_ >= OffscreenRows())
+				sb_.Value = sb_.Range;
+			else
+				sb_.Value = top_ * ScrollbarSize();
 		}
 
 		private void SetPanels(int from)
@@ -229,6 +312,11 @@ namespace AUI.FileDialog
 				panels_[panelIndex].Clear();
 				++panelIndex;
 			}
+		}
+
+		private void SetPath()
+		{
+			path_.Text = "VaM/" + container_.Path.Replace('\\', '/');
 		}
 
 		protected override void DoUpdate(float s)
@@ -274,6 +362,12 @@ namespace AUI.FileDialog
 			j["flattenPackages"] = new JSONData(flattenPackages_);
 
 			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+		}
+
+		private void OnPathSubmitted(string s)
+		{
+			if (!tree_.Select(s))
+				SetPath();
 		}
 
 		private void OnNothingSelected()
