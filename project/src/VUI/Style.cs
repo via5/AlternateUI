@@ -278,12 +278,12 @@ namespace VUI
 
 		public Color HighlightBackgroundColor
 		{
-			get { return new Color(0.35f, 0.35f, 0.35f); }
+			get { return new Color(0.30f, 0.30f, 0.30f); }
 		}
 
 		public Color SelectionBackgroundColor
 		{
-			get { return new Color(0.4f, 0.4f, 0.4f); }
+			get { return new Color(0.08f, 0.13f, 0.32f); }
 		}
 
 		public Color ActiveOverlayColor

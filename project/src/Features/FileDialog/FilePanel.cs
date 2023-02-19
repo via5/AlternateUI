@@ -2,14 +2,18 @@
 {
 	class FilePanel
 	{
-		private string file_;
-		private VUI.Panel panel_;
-		private VUI.Image thumbnail_;
-		private VUI.Label name_;
+		private readonly FileDialog fd_;
+		private File file_ = null;
+
+		private readonly VUI.Panel panel_;
+		private readonly VUI.Image thumbnail_;
+		private readonly VUI.Label name_;
 		private VUI.Timer thumbnailTimer_ = null;
 
-		public FilePanel(int fontSize)
+		public FilePanel(FileDialog fd, int fontSize)
 		{
+			fd_ = fd;
+
 			panel_ = new VUI.Panel(new VUI.BorderLayout());
 			thumbnail_ = new VUI.Image();
 			name_ = new VUI.Label();
@@ -17,12 +21,28 @@
 			name_.FontSize = fontSize;
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.Alignment = VUI.Label.AlignCenter | VUI.Label.AlignTop;
-			//name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 50);
 
 			thumbnail_.Borders = new VUI.Insets(1);
 
-			panel_.Add(thumbnail_, VUI.BorderLayout.Top);
+			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
+			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
+
+			panel_.Add(thumbnailPanel, VUI.BorderLayout.Top);
 			panel_.Add(name_, VUI.BorderLayout.Center);
+
+			panel_.Padding = new VUI.Insets(8);
+			panel_.Events.PointerClick += OnClick;
+		}
+
+		public File File
+		{
+			get { return file_; }
+		}
+
+		private void OnClick(VUI.PointerEvent e)
+		{
+			fd_.Select(this);
+			e.Bubble = false;
 		}
 
 		public VUI.Panel Panel
@@ -30,13 +50,22 @@
 			get { return panel_; }
 		}
 
-		public void Set(string f)
+		public void SetSelectedInternal(bool b)
+		{
+			if (b)
+				panel_.BackgroundColor = VUI.Style.Theme.SelectionBackgroundColor;
+			else
+				panel_.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+		}
+
+		public void Set(File f)
 		{
 			file_ = f;
-			name_.Text = Path.Filename(f);
+
+			name_.Text = Path.Filename(file_.Path);
 			panel_.Render = true;
 
-			var t = Icons.GetFileIconFromCache(file_);
+			var t = Icons.GetFileIconFromCache(file_.Path);
 
 			if (t == null)
 			{
@@ -50,9 +79,9 @@
 
 				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
 				{
-					string forFile = file_;
+					File forFile = file_;
 
-					Icons.GetFileIcon(file_, tt =>
+					Icons.GetFileIcon(file_.Path, tt =>
 					{
 						if (file_ == forFile)
 							thumbnail_.Texture = tt;

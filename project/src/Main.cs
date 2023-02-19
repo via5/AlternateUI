@@ -57,6 +57,7 @@ namespace AUI
 			{
 				new MorphUI.MorphUI(),
 				new ClothingUI.ClothingUI(),
+				new FileDialog.FileDialog(),
 				new PluginsUI.PluginsUI(),
 				new LightUI.LightUI(),
 				new SelectUI.SelectUI(),
@@ -329,6 +330,27 @@ namespace AUI
 
 			Log.Verbose("reloading");
 			pui.reloadButton?.onClick?.Invoke();
+		}
+
+		public string PluginPath
+		{
+			get
+			{
+				// based on MacGruber, which was based on VAMDeluxe, which was
+				// in turn based on Alazi
+
+				string id = name.Substring(0, name.IndexOf('_'));
+				string filename = manager.GetJSON()["plugins"][id].Value;
+
+				var path = filename.Substring(
+					0, filename.LastIndexOfAny(new char[] { '/', '\\' }));
+
+				path = path.Replace('/', '\\');
+				if (path.EndsWith("\\"))
+					path = path.Substring(0, path.Length - 1);
+
+				return path;
+			}
 		}
 
 		private MVRPluginUI GetPluginUI()

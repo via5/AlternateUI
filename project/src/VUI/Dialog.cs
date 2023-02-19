@@ -7,7 +7,7 @@
 		private readonly Label title_;
 		private readonly Panel content_;
 
-		public Window(string title)
+		public Window(string title = "")
 		{
 			title_ = new Label(title, Label.AlignCenter | Label.AlignVCenter);
 			content_ = new Panel();
@@ -22,6 +22,12 @@
 
 			Add(title_, BorderLayout.Top);
 			Add(content_, BorderLayout.Center);
+		}
+
+		public string Title
+		{
+			get { return title_.Text; }
+			set { title_.Text = value; }
 		}
 
 		public virtual Widget ContentPanel

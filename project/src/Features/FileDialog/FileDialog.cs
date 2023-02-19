@@ -2,6 +2,7 @@
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 namespace AUI.FileDialog
 {
@@ -19,6 +20,11 @@ namespace AUI.FileDialog
 			get { return path_; }
 		}
 
+		public string Filename
+		{
+			get { return AUI.Path.Filename(path_); }
+		}
+
 		public override string ToString()
 		{
 			return AUI.Path.Filename(path_);
@@ -28,19 +34,32 @@ namespace AUI.FileDialog
 
 	class FileDialog : BasicFeature
 	{
+		class ReplacedButton
+		{
+			public Button b;
+			public Button.ButtonClickedEvent oldEvent;
+		}
+
 		private const int FontSize = 24;
 
+		public const int OpenScene = 1;
+		public const int SaveScene = 2;
+
 		private VUI.Root root_ = null;
+		private VUI.Window window_ = null;
 		private IFileContainer container_ = new EmptyContainer();
 		private VUI.TextBox path_ = null;
+		private VUI.TextBox filename_ = null;
 		private List<File> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
+		private FilePanel selected_ = null;
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
 		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
+		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 
 		public FileDialog()
 			: base("fileDialog", "File dialog", false)
@@ -100,17 +119,36 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void SetContainer(IFileContainer c)
+		public void Select(FilePanel p)
 		{
-			container_ = c;
-			top_ = 0;
+			if (selected_ == p)
+				return;
 
-			SetFiles(container_.GetFiles(this));
-			SetPath();
-			SetPanels(0);
+			if (selected_ != null)
+				selected_.SetSelectedInternal(false);
+
+			selected_ = p;
+			filename_.Text = selected_?.File?.Filename ?? "";
+
+			if (selected_ != null)
+				selected_.SetSelectedInternal(true);
 		}
 
-		protected override void DoEnable()
+		public void Open()
+		{
+			if (selected_ == null)
+				return;
+
+			Log.Info($"open {selected_.File.Path}");
+			SuperController.singleton.Load(selected_.File.Path);
+		}
+
+		public void Cancel()
+		{
+			Hide();
+		}
+
+		public void Show(int type)
 		{
 			if (root_ == null)
 			{
@@ -127,20 +165,97 @@ namespace AUI.FileDialog
 				tree_.Rebuild();
 				SetContainer(new EmptyContainer());
 				UpdateFlatten();
-
-				//todo
-				tree_.Select("VaM/Saves/scene/_vam/games/overwatch");
 			}
+
+			switch (type)
+			{
+				case OpenScene:
+				{
+					window_.Title = "Load scene";
+					break;
+				}
+
+				case SaveScene:
+				{
+					window_.Title = "Save scene";
+					break;
+				}
+			}
+
+			root_.Visible = true;
+		}
+
+		public void Hide()
+		{
+			root_.Visible = false;
+		}
+
+		private void SetContainer(IFileContainer c)
+		{
+			container_ = c;
+			top_ = 0;
+
+			SetFiles(container_.GetFiles(this));
+			SetPath();
+			SetPanels(0);
+		}
+
+		protected override void DoEnable()
+		{
+			ReplaceButton("ButtonOpenScene", OpenScene);
+			ReplaceButton("ButtonSaveScene", SaveScene);
+		}
+
+		protected override void DoDisable()
+		{
+			RestoreButtons();
+		}
+
+		private void ReplaceButton(string name, int type)
+		{
+			var rb = new ReplacedButton();
+
+			rb.b = VUI.Utilities.FindChildRecursive(
+				SuperController.singleton.transform, name)
+					?.GetComponent<Button>();
+
+			rb.oldEvent = rb.b.onClick;
+			rb.b.onClick = new Button.ButtonClickedEvent();
+			rb.b.onClick.AddListener(() => Show(type));
+
+			replacedButtons_.Add(rb);
+
+			Log.Info($"replacing button {name} for type {type}");
+		}
+
+		private void RestoreButtons()
+		{
+			foreach (var rb in replacedButtons_)
+			{
+				rb.b.onClick = rb.oldEvent;
+				Log.Info($"restored button {Name}");
+			}
+
+			replacedButtons_.Clear();
 		}
 
 		private void Create()
 		{
-			var w = new VUI.Window("Load scene");
+			window_ = new VUI.Window();
 
-			w.ContentPanel.Layout = new VUI.BorderLayout(10);
+			window_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
+			window_.ContentPanel.Add(CreateTop(), VUI.BorderLayout.Top);
+			window_.ContentPanel.Add(CreateTree(), VUI.BorderLayout.Left);
+			window_.ContentPanel.Add(CreateFilesPanel(), VUI.BorderLayout.Center);
+			window_.ContentPanel.Add(CreateBottom(), VUI.BorderLayout.Bottom);
+
+			root_.ContentPanel.Add(window_, VUI.BorderLayout.Center);
+		}
+
+		private VUI.Panel CreateTop()
+		{
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
-			//top.Margins = new VUI.Insets(0, 0, 0, 10);
 
 			var opts = new VUI.Panel(new VUI.HorizontalFlow(10));
 			opts.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
@@ -150,11 +265,7 @@ namespace AUI.FileDialog
 			path_ = top.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
 
-			w.ContentPanel.Add(top, VUI.BorderLayout.Top);
-			w.ContentPanel.Add(CreateTree(), VUI.BorderLayout.Left);
-			w.ContentPanel.Add(CreateFilesPanel(), VUI.BorderLayout.Center);
-
-			root_.ContentPanel.Add(w, VUI.BorderLayout.Center);
+			return top;
 		}
 
 		private VUI.Panel CreateTree()
@@ -179,13 +290,13 @@ namespace AUI.FileDialog
 			gl.UniformWidth = true;
 
 			var files = new VUI.Panel(gl);
-			files.Padding = new VUI.Insets(10);
+			files.Padding = new VUI.Insets(0);
 
 			panels_ = new FilePanel[Columns * Rows];
 
 			for (int j = 0; j < Columns * Rows; ++j)
 			{
-				panels_[j] = new FilePanel(FontSize);
+				panels_[j] = new FilePanel(this, FontSize);
 				files.Add(panels_[j].Panel);
 			}
 
@@ -202,9 +313,30 @@ namespace AUI.FileDialog
 			filesPanel.Borders = new VUI.Insets(1);
 
 			filesPanel.Clickthrough = false;
+			filesPanel.Events.PointerClick += OnClicked;
 			filesPanel.Events.Wheel += OnWheel;
 
 			return filesPanel;
+		}
+
+		private VUI.Panel CreateBottom()
+		{
+			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+			p.Padding = new VUI.Insets(20);
+
+			var fn = new VUI.Panel(new VUI.BorderLayout(10));
+			fn.Padding = new VUI.Insets(30, 0, 0, 0);
+			fn.Add(new VUI.Label("File name:"), VUI.BorderLayout.Left);
+			filename_ = fn.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
+
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
+			buttons.Add(new VUI.Button("Open", Open));
+			buttons.Add(new VUI.Button("Cancel", Cancel));
+
+			p.Add(fn);
+			p.Add(buttons);
+
+			return p;
 		}
 
 		private float ScrollbarSize()
@@ -218,12 +350,17 @@ namespace AUI.FileDialog
 			return totalRows - Rows;
 		}
 
+		private void OnClicked(VUI.PointerEvent e)
+		{
+			Select(null);
+			e.Bubble = false;
+		}
+
 		private void OnWheel(VUI.WheelEvent e)
 		{
 			int offscreenRows = OffscreenRows();
 			int newTop = U.Clamp(top_ + (int)-e.Delta.Y, 0, offscreenRows);
 
-			Log.Info($"{e.Delta.Y} {top_} {newTop}");
 			float v = newTop * ScrollbarSize();
 
 			if (e.Delta.Y < 0)
@@ -232,18 +369,29 @@ namespace AUI.FileDialog
 				if (newTop == offscreenRows)
 					v = sb_.Range;
 			}
-			else if (e.Delta.Y > 0)
-			{
-				//// up
-				//if (v
-				//	v = 0;
-			}
 
 			sb_.Value = v;
 
-			Log.Info($"wheel {e.Delta.Y} {sb_.Value}");
-
 			e.Bubble = false;
+		}
+
+		private void OnScrollbar(float v)
+		{
+			int y = Math.Max(0, (int)(v / ScrollbarSize()));
+
+			if (top_ != y)
+			{
+				top_ = y;
+				SetPanels(top_ * Columns);
+			}
+		}
+
+		private void OnScrollbarDragEnded()
+		{
+			if (top_ >= OffscreenRows())
+				sb_.Value = sb_.Range;
+			else
+				sb_.Value = top_ * ScrollbarSize();
 		}
 
 		private void SetFiles(List<File> list)
@@ -272,26 +420,6 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private void OnScrollbar(float v)
-		{
-			int y = Math.Max(0, (int)(v / ScrollbarSize()));
-
-			if (top_ != y)
-			{
-				top_ = y;
-				Log.Info($"{top_}");
-				SetPanels(top_ * Columns);
-			}
-		}
-
-		private void OnScrollbarDragEnded()
-		{
-			if (top_ >= OffscreenRows())
-				sb_.Value = sb_.Range;
-			else
-				sb_.Value = top_ * ScrollbarSize();
-		}
-
 		private void SetPanels(int from)
 		{
 			int panelIndex = 0;
@@ -300,7 +428,7 @@ namespace AUI.FileDialog
 				var f = files_[i];
 				var fp = panels_[panelIndex];
 
-				fp.Set(f.Path);
+				fp.Set(f);
 
 				++panelIndex;
 				if (panelIndex >= Columns * Rows)
