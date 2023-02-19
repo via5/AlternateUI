@@ -1,6 +1,6 @@
 ﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -51,45 +51,272 @@ namespace AUI.FileDialog
 	}
 
 
-	class FileDialog : BasicFeature
+	static class Cache
 	{
-		class File
+		private static readonly Dictionary<string, List<File>> files_ =
+			new Dictionary<string, List<File>>();
+
+		private static readonly Dictionary<string, List<File>> dirs_ =
+			new Dictionary<string, List<File>>();
+
+		private static List<File> packagesFlat_ = null;
+
+
+		public static List<File> GetDirectories(string parent)
 		{
-			private readonly string path_;
-
-			public File(string path)
-			{
-				path_ = path;
-			}
-
-			public string Path
-			{
-				get { return path_; }
-			}
-
-			public override string ToString()
-			{
-				return AUI.Path.Filename(path_);
-			}
+			List<File> list = null;
+			dirs_.TryGetValue(parent, out list);
+			return list;
 		}
 
+		public static void AddDirectories(string parent, List<File> list)
+		{
+			dirs_.Add(parent, list);
+		}
+
+		public static List<File> GetFiles(string parent)
+		{
+			List<File> list = null;
+			files_.TryGetValue(parent, out list);
+			return list;
+		}
+
+		public static void AddFiles(string parent, List<File> list)
+		{
+			files_.Add(parent, list);
+		}
+
+		public static List<File> GetPackagesFlat()
+		{
+			return packagesFlat_;
+		}
+
+		public static void SetPackagesFlat(List<File> list)
+		{
+			packagesFlat_ = list;
+		}
+	}
+
+
+	class File
+	{
+		private readonly string path_;
+
+		public File(string path)
+		{
+			path_ = path;
+		}
+
+		public string Path
+		{
+			get { return path_; }
+		}
+
+		public override string ToString()
+		{
+			return AUI.Path.Filename(path_);
+		}
+	}
+
+
+	interface IFileContainer
+	{
+		List<File> GetFiles(FileDialog fd);
+	}
+
+
+	class EmptyContainer : IFileContainer
+	{
+		public List<File> GetFiles(FileDialog fd)
+		{
+			return new List<File>();
+		}
+	}
+
+
+	abstract class FSContainer : IFileContainer
+	{
+		public abstract List<File> GetFiles(FileDialog fd);
+
+		protected void GetFilesRecursive(string parent, List<File> list)
+		{
+			list.AddRange(GetFiles(parent));
+
+			foreach (var d in GetDirectories(parent))
+				GetFilesRecursive(d.Path, list);
+		}
+
+		protected List<File> GetDirectories(string parent)
+		{
+			List<File> fs = Cache.GetDirectories(parent);
+
+			if (fs == null)
+			{
+				fs = new List<File>();
+				foreach (var d in FileManagerSecure.GetDirectories(parent))
+					fs.Add(new File(d));
+
+				Cache.AddDirectories(parent, fs);
+			}
+
+			return fs;
+		}
+
+		protected List<File> GetFiles(string parent)
+		{
+			List<File> fs = Cache.GetFiles(parent);
+
+			if (fs == null)
+			{
+				var exts = new string[] { ".json", ".vac", ".vap", ".vam", ".scene" };
+				fs = new List<File>();
+
+				foreach (var f in FileManagerSecure.GetFiles(parent))
+				{
+					foreach (var e in exts)
+					{
+						if (f.EndsWith(e))
+						{
+							fs.Add(new File(f));
+							break;
+						}
+					}
+				}
+
+				Cache.AddFiles(parent, fs);
+			}
+
+			return fs;
+		}
+
+		protected List<File> GetPackagesFlat()
+		{
+			var list = new List<File>();
+
+			foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
+			{
+				if (string.IsNullOrEmpty(p.package))
+					continue;
+
+				if (!string.IsNullOrEmpty(p.packageFilter))
+					continue;
+
+				GetFilesRecursive(p.path, list);
+			}
+
+			return list;
+		}
+	}
+
+
+	class DirectoryContainer : FSContainer
+	{
+		private readonly string path_;
+
+		public DirectoryContainer(string path)
+		{
+			path_ = path;
+		}
+
+		public override List<File> GetFiles(FileDialog fd)
+		{
+			return GetFiles(fd.FlattenDirectories);
+		}
+
+		protected List<File> GetFiles(bool flatten)
+		{
+			if (string.IsNullOrEmpty(path_))
+				return new List<File>();
+
+			List<File> list;
+
+			if (flatten)
+			{
+				list = new List<File>();
+				GetFilesRecursive(path_, list);
+			}
+			else
+			{
+				list = GetFiles(path_);
+			}
+
+			return list;
+		}
+	}
+
+
+	class PackageContainer : DirectoryContainer
+	{
+		private readonly ShortCut sc_;
+
+		public PackageContainer(ShortCut sc)
+			: base(sc.path)
+		{
+			sc_ = sc;
+		}
+
+		public override List<File> GetFiles(FileDialog fd)
+		{
+			return GetFiles(fd.FlattenPackages);
+		}
+	}
+
+
+	class PackagesFlatContainer : FSContainer
+	{
+		public override List<File> GetFiles(FileDialog fd)
+		{
+			return GetPackagesFlat();
+		}
+	}
+
+
+	class AllFlatContainer : FSContainer
+	{
+		public override List<File> GetFiles(FileDialog fd)
+		{
+			var list = new List<File>();
+
+			{
+				var packages = Cache.GetPackagesFlat();
+
+				if (packages == null)
+				{
+					packages = GetPackagesFlat();
+					Cache.SetPackagesFlat(packages);
+				}
+
+				list.AddRange(packages);
+			}
+
+			GetFilesRecursive("Saves/scene", list);
+
+			return list;
+		}
+
+	}
+
+
+	class FileDialog : BasicFeature
+	{
 		private const int FontSize = 24;
 
 		private VUI.Root root_ = null;
-		private readonly Dictionary<string, File[]> cachedFiles_ = new Dictionary<string, File[]>();
-		private readonly Dictionary<string, File[]> cachedDirs_ = new Dictionary<string, File[]>();
-		private File[] cachedPackagesFlattened_ = null;
-		private File[] files_ = new File[0];
+		private IFileContainer container_ = new EmptyContainer();
+		private List<File> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
 		private int top_ = 0;
+		private bool flattenDirs_ = true;
+		private bool flattenPackages_ = true;
 
 		public FileDialog()
 			: base("fileDialog", "File dialog", false)
 		{
 			cwd_ = null;
+			LoadOptions();
 		}
 
 		public int Columns
@@ -107,33 +334,48 @@ namespace AUI.FileDialog
 			get { return cwd_; }
 		}
 
-		public void SetCurrentDirectory(string s)
+		public bool FlattenDirectories
 		{
-			Log.Info($"cwd={s}");
+			get
+			{
+				return flattenDirs_;
+			}
 
-			cwd_ = s;
-			top_ = 0;
-			GetFiles();
-			SetPanels(0);
+			set
+			{
+				if (flattenDirs_ != value)
+				{
+					flattenDirs_ = value;
+					SaveOptions();
+					UpdateFlatten();
+				}
+			}
 		}
 
-		public void SetPackagesFlattened()
+		public bool FlattenPackages
 		{
-			Log.Info($"packages flattened");
+			get
+			{
+				return flattenPackages_;
+			}
 
-			cwd_ = null;
-			top_ = 0;
-			GetPackagesFlattened();
-			SetPanels(0);
+			set
+			{
+				if (flattenPackages_ != value)
+				{
+					flattenPackages_ = value;
+					SaveOptions();
+					UpdateFlatten();
+				}
+			}
 		}
 
-		public void SetAllFlattened()
+		public void SetContainer(IFileContainer c)
 		{
-			Log.Info($"all flattened");
-
-			cwd_ = null;
+			container_ = c;
 			top_ = 0;
-			GetAllFlattened();
+
+			SetFiles(container_.GetFiles(this));
 			SetPanels(0);
 		}
 
@@ -149,10 +391,11 @@ namespace AUI.FileDialog
 				root_.ContentPanel.Layout = new VUI.BorderLayout();
 
 				Create();
-				GetFiles();
 
-				tree_.Update("Saves/scene");
-				SetPanels(0);
+				tree_.Rebuild();
+				UpdateFlatten();
+
+				SetContainer(new EmptyContainer());
 			}
 		}
 
@@ -168,10 +411,19 @@ namespace AUI.FileDialog
 
 			tree_.PathSelected += OnPathSelected;
 			tree_.PackageSelected += OnPackageSelected;
-			tree_.AllFlattened += OnAllFlattened;
-			tree_.PackagesFlattened += OnPackagesFlattened;
+			tree_.AllFlatSelected += OnAllFlat;
+			tree_.PackagesFlatSelected += OnPackagesFlat;
+			tree_.NothingSelected += OnNothingSelected;
 
-			root_.ContentPanel.Add(tree_.Widget, VUI.BorderLayout.Left);
+			var top = new VUI.Panel(new VUI.HorizontalFlow());
+			top.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
+			top.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
+
+			var p = new VUI.Panel(new VUI.BorderLayout());
+			p.Add(tree_.Widget, VUI.BorderLayout.Center);
+			p.Add(top, VUI.BorderLayout.Top);
+
+			root_.ContentPanel.Add(p, VUI.BorderLayout.Left);
 		}
 
 		private void CreateFilesPanel()
@@ -210,132 +462,21 @@ namespace AUI.FileDialog
 			root_.ContentPanel.Add(filesPanel, VUI.BorderLayout.Center);
 		}
 
-		private void GetFiles()
-		{
-			if (string.IsNullOrEmpty(CurrentDirectory))
-			{
-				SetFiles(null);
-				return;
-			}
-
-			var list = new List<File>();
-			GetFilesRecursive(CurrentDirectory, list);
-			SetFiles(list);
-		}
-
 		private void SetFiles(List<File> list)
 		{
-			if (list == null)
-			{
-				files_ = new File[0];
-			}
-			else
-			{
-				U.NatSort(list);
-				files_ = list.ToArray();
-			}
+			U.NatSort(list);
+			files_ = list;
 
 			if (root_.Bounds.Height <= 0)
 				sb_.Range = 0;
 			else
-				sb_.Range = files_.Length / Columns * root_.Bounds.Height;
-		}
-
-		private void GetPackagesFlattened()
-		{
-			CachePackagesFlattened();
-
-			var list = new List<File>(cachedPackagesFlattened_);
-			SetFiles(list);
-		}
-
-		private void GetAllFlattened()
-		{
-			CachePackagesFlattened();
-
-			var list = new List<File>(cachedPackagesFlattened_);
-			GetFilesRecursive("Saves/scene", list);
-
-			SetFiles(list);
-		}
-
-		private void CachePackagesFlattened()
-		{
-			if (cachedPackagesFlattened_ != null)
-				return;
-
-			var list = new List<File>();
-
-			foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
-			{
-				if (string.IsNullOrEmpty(p.package))
-					continue;
-
-				if (!string.IsNullOrEmpty(p.packageFilter))
-					continue;
-
-				GetFilesRecursive(p.path, list);
-			}
-
-			cachedPackagesFlattened_ = list.ToArray();
-		}
-
-		private void GetFilesRecursive(string parent, List<File> list)
-		{
-			list.AddRange(GetFiles(parent));
-
-			foreach (var d in GetDirectories(parent))
-				GetFilesRecursive(d.Path, list);
-		}
-
-		private File[] GetFiles(string parent)
-		{
-			File[] fs;
-
-			if (!cachedFiles_.TryGetValue(parent, out fs))
-			{
-				var exts = new string[] { ".json", ".vac", ".vap", ".vam", ".scene" };
-				var list = new List<File>();
-
-				foreach (var f in FileManagerSecure.GetFiles(parent))
-				{
-					foreach (var e in exts)
-					{
-						if (f.EndsWith(e))
-						{
-							list.Add(new File(f));
-							break;
-						}
-					}
-				}
-
-				fs = list.ToArray();
-				cachedFiles_.Add(parent, fs);
-			}
-
-			return fs;
-		}
-
-		private File[] GetDirectories(string parent)
-		{
-			File[] fs;
-			if (cachedDirs_.TryGetValue(parent, out fs))
-				return fs;
-
-			var list = new List<File>();
-			foreach (var d in FileManagerSecure.GetDirectories(parent))
-				list.Add(new File(d));
-
-			fs = list.ToArray();
-			cachedDirs_.Add(parent, fs);
-
-			return fs;
+				sb_.Range = files_.Count / Columns * root_.Bounds.Height;
 		}
 
 		private void SetPanels(int from)
 		{
 			int panelIndex = 0;
-			for (int i=from; i<files_.Length; ++i)
+			for (int i=from; i<files_.Count; ++i)
 			{
 				var f = files_[i];
 				var fp = panels_[panelIndex];
@@ -359,24 +500,70 @@ namespace AUI.FileDialog
 			root_?.Update();
 		}
 
+		private void UpdateFlatten()
+		{
+			tree_.FlattenDirectories = flattenDirs_;
+			SetContainer(container_);
+		}
+
+		private string GetOptionsFile()
+		{
+			return AlternateUI.Instance.GetConfigFilePath(
+				$"aui.filedialog.json");
+		}
+
+		private void LoadOptions()
+		{
+			var f = GetOptionsFile();
+
+			if (FileManagerSecure.FileExists(f))
+			{
+				var j = SuperController.singleton.LoadJSON(f)?.AsObject;
+				if (j == null)
+					return;
+
+				if (j.HasKey("flattenDirs"))
+					flattenDirs_ = j["flattenDirs"].AsBool;
+
+				if (j.HasKey("flattenPackages"))
+					flattenPackages_ = j["flattenPackages"].AsBool;
+			}
+		}
+
+		private void SaveOptions()
+		{
+			var j = new JSONClass();
+
+			j["flattenDirs"] = new JSONData(flattenDirs_);
+			j["flattenPackages"] = new JSONData(flattenPackages_);
+
+			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+		}
+
+		private void OnNothingSelected()
+		{
+			if (!(container_ is EmptyContainer))
+				SetContainer(new EmptyContainer());
+		}
+
 		private void OnPathSelected(string p)
 		{
-			SetCurrentDirectory(p);
+			SetContainer(new DirectoryContainer(p));
 		}
 
-		private void OnPackageSelected(string name)
+		private void OnPackageSelected(ShortCut sc)
 		{
-			SetCurrentDirectory(name);
+			SetContainer(new PackageContainer(sc));
 		}
 
-		private void OnAllFlattened()
+		private void OnAllFlat()
 		{
-			SetAllFlattened();
+			SetContainer(new AllFlatContainer());
 		}
 
-		private void OnPackagesFlattened()
+		private void OnPackagesFlat()
 		{
-			SetPackagesFlattened();
+			SetContainer(new PackagesFlatContainer());
 		}
 
 		public override string Description

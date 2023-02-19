@@ -497,7 +497,7 @@ namespace VUI
 				get { return children_ != null && children_.Count > 0; }
 			}
 
-			public void Add(Item child)
+			public T Add<T>(T child) where T : Item
 			{
 				if (children_ == null)
 					children_ = new List<Item>();
@@ -505,6 +505,8 @@ namespace VUI
 				children_.Add(child);
 				child.Parent = this;
 				gotChildren_ = true;
+
+				return child;
 			}
 
 			public void Clear()

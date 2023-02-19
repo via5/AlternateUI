@@ -1,6 +1,5 @@
 ﻿using MVR.FileManagementSecure;
 using System.Collections.Generic;
-using System.IO;
 
 namespace AUI.FileDialog
 {
@@ -109,29 +108,47 @@ namespace AUI.FileDialog
 
 			public override void Activate(FileTree ft)
 			{
-				ft.FirePackageSelected(sc_.path);
+				ft.FirePackageSelected(sc_);
 			}
 		}
 
 
-		class AllFlattenedItem : FileTreeItem
+		class RootItem : FileTreeItem
 		{
-			public AllFlattenedItem()
-				: base("All flattened")
+			public RootItem()
+				: base("VaM")
 			{
-				Icons.GetPackageIcon(t => Icon = t);
+				Icons.GetDirectoryIcon(t => Icon = t);
 			}
 
 			public override void Activate(FileTree ft)
 			{
-				ft.FireAllFlattened();
+				if (ft.FlattenDirectories)
+					ft.FireAllFlat();
+				else
+					ft.FireNothingSelected();
 			}
 		}
 
 
-		class PackagesFlattenedItem : FileTreeItem
+		class AllFlatItem : FileTreeItem
 		{
-			public PackagesFlattenedItem(string text)
+			public AllFlatItem(string text)
+				: base(text)
+			{
+				Icons.GetDirectoryIcon(t => Icon = t);
+			}
+
+			public override void Activate(FileTree ft)
+			{
+				ft.FireAllFlat();
+			}
+		}
+
+
+		class PackagesFlatItem : FileTreeItem
+		{
+			public PackagesFlatItem(string text)
 				: base(text)
 			{
 				Icons.GetPackageIcon(t => Icon = t);
@@ -139,7 +156,7 @@ namespace AUI.FileDialog
 
 			public override void Activate(FileTree ft)
 			{
-				ft.FirePackagesFlattened();
+				ft.FirePackagesFlat();
 			}
 		}
 
@@ -157,7 +174,10 @@ namespace AUI.FileDialog
 
 			public override void Activate(FileTree ft)
 			{
-				ft.FirePackagesFlattened();
+				if (ft.FlattenDirectories)
+					ft.FirePackagesFlat();
+				else
+					ft.FireNothingSelected();
 			}
 
 			public override bool HasChildren
@@ -193,13 +213,17 @@ namespace AUI.FileDialog
 
 		public delegate void Handler();
 		public delegate void PathHandler(string path);
+		public delegate void PackageHandler(ShortCut sc);
 
 		public event PathHandler PathSelected;
-		public event PathHandler PackageSelected;
-		public event Handler AllFlattened, PackagesFlattened;
+		public event PackageHandler PackageSelected;
+		public event Handler AllFlatSelected, PackagesFlatSelected, NothingSelected;
 
 		private readonly VUI.TreeView tree_;
 		private readonly VUI.TreeView.Item root_;
+		private AllFlatItem allFlat_ = null;
+		private PackagesFlatItem packagesFlat_ = null;
+		private bool flatten_ = false;
 
 		public FileTree(int fontSize)
 		{
@@ -208,7 +232,7 @@ namespace AUI.FileDialog
 			tree_.FontSize = fontSize;
 			tree_.Icons = true;
 
-			root_ = new VUI.TreeView.Item("VaM");
+			root_ = new RootItem();
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
@@ -220,19 +244,36 @@ namespace AUI.FileDialog
 			get { return tree_; }
 		}
 
-		public void Update(string dir)
+		public bool FlattenDirectories
+		{
+			get
+			{
+				return flatten_;
+			}
+
+			set
+			{
+				flatten_ = value;
+				allFlat_.Visible = !value;
+				packagesFlat_.Visible = !value;
+			}
+		}
+
+		public void Rebuild()
 		{
 			root_.Clear();
 
-			if (string.IsNullOrEmpty(dir))
-				return;
-
-			root_.Add(new AllFlattenedItem());
-			root_.Add(new PackagesFlattenedItem("Packages flattened"));
+			allFlat_ = root_.Add(new AllFlatItem("All flattened"));
+			packagesFlat_ = root_.Add(new PackagesFlatItem("Packages flattened"));
 			root_.Add(new SavesRootItem());
 			root_.Add(new PackagesRootItem());
 
 			root_.Expanded = true;
+		}
+
+		public void FireNothingSelected()
+		{
+			NothingSelected?.Invoke();
 		}
 
 		public void FirePathSelected(string path)
@@ -240,19 +281,19 @@ namespace AUI.FileDialog
 			PathSelected?.Invoke(path);
 		}
 
-		public void FirePackageSelected(string path)
+		public void FirePackageSelected(ShortCut sc)
 		{
-			PackageSelected?.Invoke(path);
+			PackageSelected?.Invoke(sc);
 		}
 
-		public void FireAllFlattened()
+		public void FireAllFlat()
 		{
-			AllFlattened?.Invoke();
+			AllFlatSelected?.Invoke();
 		}
 
-		public void FirePackagesFlattened()
+		public void FirePackagesFlat()
 		{
-			PackagesFlattened?.Invoke();
+			PackagesFlatSelected?.Invoke();
 		}
 
 		private void OnSelection(VUI.TreeView.Item item)
