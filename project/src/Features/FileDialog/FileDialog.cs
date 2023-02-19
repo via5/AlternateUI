@@ -28,7 +28,7 @@ namespace AUI.FileDialog
 				packageIconCallbacks_.Clear();
 			};
 
-			ImageLoaderThreaded.singleton.ClearCacheThumbnail(queuedImage.imgPath);
+			//ImageLoaderThreaded.singleton.ClearCacheThumbnail(queuedImage.imgPath);
 			ImageLoaderThreaded.singleton.QueueThumbnail(queuedImage);
 		}
 
@@ -47,6 +47,55 @@ namespace AUI.FileDialog
 		public static void GetDirectoryIcon(Action<Texture> f)
 		{
 			f(SuperController.singleton.fileBrowserUI.folderIcon.texture);
+		}
+
+		public static Texture GetFileIconFromCache(string path)
+		{
+			var imgPath = GetThumbnailPath(path);
+
+			if (imgPath == null)
+			{
+				return SuperController.singleton.fileBrowserUI.GetFileIcon(path)?.texture;
+			}
+			else
+			{
+				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(imgPath);
+				return ImageLoaderThreaded.singleton.GetCachedThumbnail(imgPath);
+			}
+		}
+
+		public static void GetFileIcon(string path, Action<Texture> f)
+		{
+			var t = GetFileIconFromCache(path);
+			if (t != null)
+			{
+				f(t);
+				return;
+			}
+
+			var q = new ImageLoaderThreaded.QueuedImage
+			{
+				imgPath = GetThumbnailPath(path),
+				callback = tt => f(tt?.tex)
+			};
+
+			ImageLoaderThreaded.singleton.QueueThumbnail(q);
+		}
+
+		private static string GetThumbnailPath(string file)
+		{
+			var exts = new string[] { ".jpg", ".JPG" };
+
+			foreach (var e in exts)
+			{
+				var relImgPath = Path.Parent(file) + "\\" + Path.Stem(file) + e;
+				var imgPath = FileManagerSecure.GetFullPath(relImgPath);
+
+				if (FileManagerSecure.FileExists(imgPath))
+					return imgPath;
+			}
+
+			return null;
 		}
 	}
 
@@ -101,7 +150,7 @@ namespace AUI.FileDialog
 
 		public int Rows
 		{
-			get { return 5; }
+			get { return 4; }
 		}
 
 		public string CurrentDirectory
@@ -163,24 +212,29 @@ namespace AUI.FileDialog
 				root_ = new VUI.Root(new VUI.TransformUIRootSupport(
 					SuperController.singleton.fileBrowserUI.transform.parent));
 
+				root_.ContentPanel.Margins = new VUI.Insets(6, 0, 0, 0);
 				root_.ContentPanel.Layout = new VUI.BorderLayout();
 
 				Create();
 
 				tree_.Rebuild();
-				UpdateFlatten();
-
 				SetContainer(new EmptyContainer());
+				UpdateFlatten();
 			}
 		}
 
 		private void Create()
 		{
-			CreateTree();
-			CreateFilesPanel();
+			var w = new VUI.Window("Load scene");
+
+			w.ContentPanel.Layout = new VUI.BorderLayout();
+			w.ContentPanel.Add(CreateTree(), VUI.BorderLayout.Left);
+			w.ContentPanel.Add(CreateFilesPanel(), VUI.BorderLayout.Center);
+
+			root_.ContentPanel.Add(w, VUI.BorderLayout.Center);
 		}
 
-		private void CreateTree()
+		private VUI.Panel CreateTree()
 		{
 			tree_ = new FileTree(FontSize);
 
@@ -198,12 +252,12 @@ namespace AUI.FileDialog
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
 			p.Add(top, VUI.BorderLayout.Top);
 
-			root_.ContentPanel.Add(p, VUI.BorderLayout.Left);
+			return p;
 		}
 
-		private void CreateFilesPanel()
+		private VUI.Panel CreateFilesPanel()
 		{
-			var gl = new VUI.GridLayout(Columns);
+			var gl = new VUI.GridLayout(Columns, 10);
 			gl.UniformWidth = true;
 			var files = new VUI.Panel(gl);
 
@@ -234,7 +288,9 @@ namespace AUI.FileDialog
 			filesPanel.Add(files, VUI.BorderLayout.Center);
 			filesPanel.Add(sb_, VUI.BorderLayout.Right);
 
-			root_.ContentPanel.Add(filesPanel, VUI.BorderLayout.Center);
+			filesPanel.Padding = new VUI.Insets(10);
+
+			return filesPanel;
 		}
 
 		private void SetFiles(List<File> list)

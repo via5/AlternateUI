@@ -343,7 +343,11 @@ namespace VUI
 
 			public List<Item> Children
 			{
-				get { return children_; }
+				get
+				{
+					NeedsChildren();
+					return children_;
+				}
 			}
 
 			public bool Expanded
@@ -421,7 +425,13 @@ namespace VUI
 			{
 				expanded_ = b;
 
-				if (expanded_ && !gotChildren_)
+				if (expanded_)
+					NeedsChildren();
+			}
+
+			private void NeedsChildren()
+			{
+				if (!gotChildren_)
 				{
 					gotChildren_ = true;
 					GetChildren();
@@ -1063,6 +1073,21 @@ namespace VUI
 				f = filterFunc_;
 
 			return f;
+		}
+
+		public void Select(Item item, bool expandParents = true)
+		{
+			SetSelectedInternal(item, true);
+
+			if (expandParents)
+			{
+				Item parent = item.Parent;
+				while (parent != null)
+				{
+					parent.Expanded = true;
+					parent = parent.Parent;
+				}
+			}
 		}
 
 		public void SetSelectedInternal(Item item, bool b)

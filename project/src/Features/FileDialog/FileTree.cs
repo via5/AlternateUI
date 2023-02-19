@@ -220,7 +220,7 @@ namespace AUI.FileDialog
 		public event Handler AllFlatSelected, PackagesFlatSelected, NothingSelected;
 
 		private readonly VUI.TreeView tree_;
-		private readonly VUI.TreeView.Item root_;
+		private readonly RootItem root_;
 		private AllFlatItem allFlat_ = null;
 		private PackagesFlatItem packagesFlat_ = null;
 		private bool flatten_ = false;
@@ -257,6 +257,53 @@ namespace AUI.FileDialog
 				allFlat_.Visible = !value;
 				packagesFlat_.Visible = !value;
 			}
+		}
+
+		public void Select(string path)
+		{
+			path = path.Replace('\\', '/');
+			path = path.Trim();
+
+			var cs = new List<string>(path.Split('/'));
+			if (cs.Count == 0)
+			{
+				FireNothingSelected();
+				return;
+			}
+
+			Select(tree_.RootItem, cs);
+		}
+
+		private bool Select(VUI.TreeView.Item parent, List<string> cs)
+		{
+			if (parent.Children == null)
+				return false;
+
+			foreach (var i in parent.Children)
+			{
+				if (i.Text == cs[0])
+				{
+					var fi = i as FileTreeItem;
+					if (fi != null)
+					{
+						if (cs.Count == 1)
+						{
+							tree_.Select(fi);
+							return true;
+						}
+						else
+						{
+							cs.RemoveAt(0);
+							if (Select(fi, cs))
+								return true;
+						}
+					}
+
+					break;
+				}
+			}
+
+			return false;
 		}
 
 		public void Rebuild()

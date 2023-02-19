@@ -8,6 +8,7 @@ namespace VUI
 	{
 		public override string TypeName { get { return "Image"; } }
 
+		private RectTransform rt_ = null;
 		private RawImage raw_ = null;
 		private Texture tex_ = null;
 		private static Material emptyMat_ = null;
@@ -29,6 +30,7 @@ namespace VUI
 		protected override void DoCreate()
 		{
 			raw_ = WidgetObject.AddComponent<RawImage>();
+			rt_ = WidgetObject.GetComponent<RectTransform>();
 
 			if (emptyMat_ == null)
 			{
@@ -48,7 +50,44 @@ namespace VUI
 		private void UpdateTexture()
 		{
 			if (raw_ != null)
+			{
 				raw_.texture = tex_;
+
+				Size scaled;
+
+				if (tex_ == null)
+				{
+					scaled = ClientBounds.Size;
+				}
+				else
+				{
+					scaled = Aspect(
+						tex_.width, tex_.height,
+						ClientBounds.Width, ClientBounds.Height);
+				}
+
+				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
+				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
+			}
+		}
+
+		private Size Aspect(float width, float heigth, float maxWidth, float maxHeight)
+		{
+			float newWidth = width;
+			float newHeight = heigth;
+
+			if (width > heigth)
+			{
+				newWidth = maxWidth;
+				newHeight = (newWidth * heigth) / width;
+			}
+			else
+			{
+				newHeight = maxHeight;
+				newWidth = (newHeight * width) / heigth;
+			}
+
+			return new Size(newWidth, newHeight);
 		}
 
 		protected override void DoSetRender(bool b)

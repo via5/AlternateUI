@@ -1,22 +1,14 @@
 ﻿namespace VUI
 {
-	class Dialog : Panel
+	class Window : Panel
 	{
-		protected const float WidthAdjust = 0.8f;
+		public override string TypeName { get { return "Window"; } }
 
-		public override string TypeName { get { return "Dialog"; } }
-
-		public delegate void CloseHandler(int result);
-		public event CloseHandler Closed;
-
-		private readonly Root root_;
 		private readonly Label title_;
 		private readonly Panel content_;
-		private int result_ = -1;
 
-		public Dialog(Root r, string title)
+		public Window(string title)
 		{
-			root_ = r;
 			title_ = new Label(title, Label.AlignCenter | Label.AlignVCenter);
 			content_ = new Panel();
 
@@ -26,10 +18,7 @@
 
 			content_.Margins = new Insets(10, 20, 10, 10);
 			title_.BackgroundColor = Style.Theme.DialogTitleBackgroundColor;
-			title_.Padding = new Insets(5, 5, 0, 10);
-
-			MinimumSize = new Size(600, 200);
-			MaximumSize = r.Bounds.Size * WidthAdjust;
+			title_.Padding = new Insets(10, 5, 0, 10);
 
 			Add(title_, BorderLayout.Top);
 			Add(content_, BorderLayout.Center);
@@ -38,6 +27,27 @@
 		public virtual Widget ContentPanel
 		{
 			get { return content_; }
+		}
+	}
+
+	class Dialog : Window
+	{
+		protected const float WidthAdjust = 0.8f;
+
+		public override string TypeName { get { return "Dialog"; } }
+
+		public delegate void CloseHandler(int result);
+		public event CloseHandler Closed;
+
+		private readonly Root root_;
+		private int result_ = -1;
+
+		public Dialog(Root r, string title)
+			: base(title)
+		{
+			root_ = r;
+			MinimumSize = new Size(600, 200);
+			MaximumSize = r.Bounds.Size * WidthAdjust;
 		}
 
 		public int Result
