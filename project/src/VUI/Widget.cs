@@ -1061,6 +1061,17 @@ namespace VUI
 				parent_.OnPointerClickInternal(d);
 		}
 
+		public void OnPointerDoubleClickInternal(PointerEventData d)
+		{
+			bool bubble = true;
+
+			if (IsVisibleOnScreen())
+				bubble = events_.FirePointerDoubleClick(this, d);
+
+			if (bubble && parent_ != null)
+				parent_.OnPointerDoubleClickInternal(d);
+		}
+
 		public void OnPointerMoveInternal()
 		{
 			bool bubble = true;

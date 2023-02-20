@@ -41,7 +41,16 @@ namespace AUI
 
 		public string Text
 		{
-			get { return box_?.Text ?? ""; }
+			get
+			{
+				return box_?.Text ?? "";
+			}
+
+			set
+			{
+				if (box_ != null)
+					box_.Text = value;
+			}
 		}
 
 		public VUI.TextBox TextBox

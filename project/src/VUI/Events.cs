@@ -74,7 +74,12 @@ namespace VUI
 			try
 			{
 				if (widget_ != null)
-					widget_.OnPointerClickInternal(d);
+				{
+					if (d.clickCount == 1)
+						widget_.OnPointerClickInternal(d);
+					else if (d.clickCount == 2)
+						widget_.OnPointerDoubleClickInternal(d);
+				}
 			}
 			catch (Exception e)
 			{
@@ -337,7 +342,7 @@ namespace VUI
 
 		public delegate void BubblePointerHandler(PointerEvent e);
 		public event BubblePointerHandler PointerDown, PointerUp, PointerClick;
-		public event BubblePointerHandler PointerMove;
+		public event BubblePointerHandler PointerDoubleClick, PointerMove;
 
 		private bool DoFireBubblePointer(Widget w, PointerEventData d, BubblePointerHandler h)
 		{
@@ -354,6 +359,7 @@ namespace VUI
 		public bool FirePointerDown(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerDown); }
 		public bool FirePointerUp(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerUp); }
 		public bool FirePointerClick(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerClick); }
+		public bool FirePointerDoubleClick(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerDoubleClick); }
 		public bool FirePointerMove(Widget w, PointerEventData d) { return DoFireBubblePointer(w, d, PointerMove); }
 	}
 }

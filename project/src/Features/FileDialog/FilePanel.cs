@@ -33,6 +33,7 @@
 
 			panel_.Padding = new VUI.Insets(8);
 			panel_.Events.PointerClick += OnClick;
+			panel_.Events.PointerDoubleClick += OnDoubleClick;
 		}
 
 		public File File
@@ -43,6 +44,12 @@
 		private void OnClick(VUI.PointerEvent e)
 		{
 			fd_.Select(this);
+			e.Bubble = false;
+		}
+
+		private void OnDoubleClick(VUI.PointerEvent e)
+		{
+			fd_.Activate(this);
 			e.Bubble = false;
 		}
 
@@ -63,7 +70,8 @@
 		{
 			file_ = f;
 
-			name_.Text = Path.Filename(file_.Path);
+			name_.Text = file_.Filename;
+			panel_.Tooltip.Text = file_.Path;
 			panel_.Render = true;
 
 			var t = Icons.GetFileIconFromCache(file_.Path);

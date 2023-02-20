@@ -45,7 +45,7 @@ namespace AUI.FileDialog
 				{
 					if (!checkedHasChildren_)
 					{
-						hasChildren_ = Cache.HasDirectories(file_.Path);
+						hasChildren_ = Cache.HasDirectories(file_.Path, null);
 						checkedHasChildren_ = true;
 					}
 
@@ -60,7 +60,7 @@ namespace AUI.FileDialog
 
 			protected override void GetChildren()
 			{
-				var dirs = Cache.GetDirectories(file_.Path);
+				var dirs = Cache.GetDirectories(file_.Path, null);
 
 				foreach (var d in dirs)
 				{
@@ -79,7 +79,7 @@ namespace AUI.FileDialog
 		private class SavesRootItem : DirectoryItem
 		{
 			public SavesRootItem()
-				: base(new File("Saves"))
+				: base(new File(Cache.SavesRoot))
 			{
 			}
 
@@ -184,7 +184,7 @@ namespace AUI.FileDialog
 				{
 					if (!checkedHasChildren_)
 					{
-						hasChildren_ = Cache.HasPackages("Saves/scene");
+						hasChildren_ = Cache.HasPackages(Cache.ScenesRoot);
 						checkedHasChildren_ = true;
 					}
 
@@ -194,7 +194,7 @@ namespace AUI.FileDialog
 
 			protected override void GetChildren()
 			{
-				foreach (var p in Cache.GetPackages("Saves/scene"))
+				foreach (var p in Cache.GetPackages(Cache.ScenesRoot))
 				{
 					if (string.IsNullOrEmpty(p.package))
 						continue;

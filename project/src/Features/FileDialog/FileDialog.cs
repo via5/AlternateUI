@@ -51,6 +51,7 @@ namespace AUI.FileDialog
 		private VUI.Window window_ = null;
 		private IFileContainer container_ = new EmptyContainer();
 		private VUI.TextBox path_ = null;
+		private SearchBox search_ = null;
 		private VUI.TextBox filename_ = null;
 		private VUI.Panel optionsPanel_ = null;
 		private List<File> files_ = null;
@@ -64,6 +65,7 @@ namespace AUI.FileDialog
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
+		private bool ignoreSearch_ = false;
 
 		public FileDialog()
 			: base("fileDialog", "File dialog", false)
@@ -139,6 +141,12 @@ namespace AUI.FileDialog
 			UpdateActionButton();
 		}
 
+		public void Activate(FilePanel p)
+		{
+			Select(p);
+			ExecuteAction();
+		}
+
 		public void Open()
 		{
 			if (!CanOpen())
@@ -147,7 +155,7 @@ namespace AUI.FileDialog
 			Log.Info($"open {selected_.File.Path}");
 
 			Hide();
-			SuperController.singleton.Load(selected_.File.Path);
+			//SuperController.singleton.Load(selected_.File.Path);
 		}
 
 		public void Save()
@@ -159,7 +167,7 @@ namespace AUI.FileDialog
 			Log.Info($"saving {path}");
 
 			Hide();
-			SuperController.singleton.Save(path);
+			//SuperController.singleton.Save(path);
 		}
 
 		public bool CanOpen()
@@ -269,7 +277,25 @@ namespace AUI.FileDialog
 		private void SetContainer(IFileContainer c)
 		{
 			container_ = c;
+
+			try
+			{
+				ignoreSearch_ = true;
+				search_.Text = "";
+			}
+			finally
+			{
+				ignoreSearch_ = false;
+			}
+
+			Refresh();
+		}
+
+		private void Refresh()
+		{
 			top_ = 0;
+			container_.Search = search_.Text;
+			container_.Extensions = Cache.SceneExtensions;
 
 			SetFiles(container_.GetFiles(this));
 			SetPath();
@@ -304,7 +330,7 @@ namespace AUI.FileDialog
 
 			replacedButtons_.Add(rb);
 
-			Log.Info($"replacing button {name} for type {type}");
+			Log.Verbose($"replacing button {name} for type {type}");
 		}
 
 		private void RestoreButtons()
@@ -312,7 +338,7 @@ namespace AUI.FileDialog
 			foreach (var rb in replacedButtons_)
 			{
 				rb.b.onClick = rb.oldEvent;
-				Log.Info($"restored button {Name}");
+				Log.Verbose($"restored button {Name}");
 			}
 
 			replacedButtons_.Clear();
@@ -337,12 +363,17 @@ namespace AUI.FileDialog
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 
 			optionsPanel_ = new VUI.Panel(new VUI.HorizontalFlow(10));
-			optionsPanel_.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
-			optionsPanel_.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
+			optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
+			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
 			path_ = top.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
+
+			search_ = new SearchBox("Search");
+			search_.Widget.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
+			search_.Changed += OnSearchChanged;
+			top.Add(search_.Widget, VUI.BorderLayout.Right);
 
 			return top;
 		}
@@ -442,8 +473,6 @@ namespace AUI.FileDialog
 			int newTop = U.Clamp(top_ + (int)-e.Delta.Y, 0, offscreenRows);
 			float v = newTop * ScrollbarSize();
 
-			Log.Info($"wheel {ScrollbarSize()} {offscreenRows} {top_} {newTop} {v} {e.Delta.Y} {sb_.Value}");
-
 			if (e.Delta.Y < 0)
 			{
 				// down
@@ -459,7 +488,6 @@ namespace AUI.FileDialog
 		private void OnScrollbar(float v)
 		{
 			int y = Math.Max(0, (int)Math.Round(v / ScrollbarSize()));
-			Log.Info($"sb v={v} y={y} top={top_}");
 
 			if (top_ != y)
 			{
@@ -582,6 +610,13 @@ namespace AUI.FileDialog
 		private void OnFilenameChanged(string s)
 		{
 			UpdateActionButton();
+		}
+
+		private void OnSearchChanged(string s)
+		{
+			if (ignoreSearch_) return;
+
+			Refresh();
 		}
 
 		private void OnNothingSelected()
