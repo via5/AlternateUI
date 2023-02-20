@@ -230,6 +230,7 @@ namespace AUI.FileDialog
 			tree_.MinimumSize = new VUI.Size(500, 0);
 			tree_.FontSize = fontSize;
 			tree_.Icons = true;
+			tree_.DoubleClickToggle = true;
 
 			root_ = new RootItem();
 			tree_.RootItem.Add(root_);

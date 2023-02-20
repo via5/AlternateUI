@@ -696,6 +696,7 @@ namespace VUI
 		private string filterString_ = "";
 		private string filterStringLc_ = "";
 		private Func<Item, bool> filterFunc_ = null;
+		private bool doubleClickToggle_ = false;
 
 		public TreeView()
 		{
@@ -711,6 +712,7 @@ namespace VUI
 			Events.PointerMove += OnHover;
 			Events.PointerExit += OnExit;
 			Events.PointerClick += OnClick;
+			Events.PointerDoubleClick += OnDoubleClick;
 			Events.PointerDown += OnPointerDown;
 
 			vsb_.ValueChanged += OnVerticalScroll;
@@ -782,6 +784,12 @@ namespace VUI
 		{
 			get { return rootToggles_; }
 			set { rootToggles_ = value; }
+		}
+
+		public bool DoubleClickToggle
+		{
+			get { return doubleClickToggle_; }
+			set { doubleClickToggle_ = value; }
 		}
 
 		public string Filter
@@ -1102,6 +1110,22 @@ namespace VUI
 			}
 
 			e.Bubble = false;
+		}
+
+		private void OnDoubleClick(PointerEvent e)
+		{
+			if (doubleClickToggle_)
+			{
+				var n = NodeAt(e.Pointer);
+
+				if (n?.Item != null)
+				{
+					n.Item.Selected = true;
+					n.Item.Toggle();
+				}
+
+				e.Bubble = false;
+			}
 		}
 
 		private void OnPointerDown(PointerEvent e)
