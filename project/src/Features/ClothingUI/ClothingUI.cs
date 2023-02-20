@@ -468,6 +468,8 @@ namespace AUI.ClothingUI
 			{
 				if (items_.Length <= PerPage)
 					return 1;
+				else if ((items_.Length % PerPage) == 0)
+					return items_.Length / PerPage;
 				else
 					return items_.Length / PerPage + 1;
 			}

@@ -133,6 +133,8 @@ namespace AUI.MorphUI
 			{
 				if (filtered_.Count <= PerPage)
 					return 1;
+				else if ((filtered_.Count % PerPage) == 0)
+					return filtered_.Count / PerPage;
 				else
 					return filtered_.Count / PerPage + 1;
 			}
