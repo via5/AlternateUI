@@ -141,6 +141,11 @@ namespace VUI
 		{
 			get { return 40; }
 		}
+
+		public float SplitterHandleSize
+		{
+			get { return 10; }
+		}
 	}
 
 
@@ -324,6 +329,11 @@ namespace VUI
 		public Color TabTextColor
 		{
 			get { return TextColor; }
+		}
+
+		public Color SplitterHandleBackgroundColor
+		{
+			get { return new Color(0.15f, 0.15f, 0.15f); }
 		}
 	}
 

@@ -533,7 +533,7 @@ namespace VUI
 				if (label_ == null)
 				{
 					label_ = new Label();
-					label_.WrapMode = VUI.Label.ClipEllipsis;
+					label_.WrapMode = tree_.LabelWrap;
 					label_.FontSize = tree_.FontSize;
 
 					panel_.Add(label_);
@@ -697,6 +697,7 @@ namespace VUI
 		private string filterStringLc_ = "";
 		private Func<Item, bool> filterFunc_ = null;
 		private bool doubleClickToggle_ = false;
+		private int labelWrap_ = VUI.Label.ClipEllipsis;
 
 		public TreeView()
 		{
@@ -790,6 +791,12 @@ namespace VUI
 		{
 			get { return doubleClickToggle_; }
 			set { doubleClickToggle_ = value; }
+		}
+
+		public int LabelWrap
+		{
+			get { return labelWrap_; }
+			set { labelWrap_ = value; }
 		}
 
 		public string Filter
@@ -965,12 +972,12 @@ namespace VUI
 
 				if (missingHeight <= 0)
 				{
-					vsb_.Visible = false;
+					SetScrollbarVisibility(false);
 					vsb_.Range = 0;
 				}
 				else
 				{
-					vsb_.Visible = true;
+					SetScrollbarVisibility(true);
 					vsb_.Range = missingHeight + Style.Metrics.TreeItemHeight;
 				}
 			}
@@ -978,6 +985,15 @@ namespace VUI
 			{
 				Glue.LogError("TreeView: exception thrown while updating nodes");
 				Glue.LogError(e.ToString());
+			}
+		}
+
+		private void SetScrollbarVisibility(bool b)
+		{
+			if (vsb_.Visible != b)
+			{
+				vsb_.Visible = b;
+				UpdateBounds();
 			}
 		}
 
@@ -1001,8 +1017,11 @@ namespace VUI
 
 						var r = Rectangle.FromPoints(
 							x, y,
-							cx.av.Right - InternalPadding - Style.Metrics.ScrollBarWidth,
+							cx.av.Right - InternalPadding,
 							y + Style.Metrics.TreeItemHeight);
+
+						if (vsb_.Visible)
+							r.Right -= Style.Metrics.ScrollBarWidth;
 
 						node.Set(child, r, cx.indent);
 

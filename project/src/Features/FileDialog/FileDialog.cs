@@ -12,7 +12,7 @@ namespace AUI.FileDialog
 
 		public File(string path)
 		{
-			path_ = path;
+			path_ = path.Replace('\\', '/');
 		}
 
 		public string Path
@@ -383,9 +383,12 @@ namespace AUI.FileDialog
 
 			window_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
+			var sp = new VUI.Splitter();
+			sp.First = CreateTree();
+			sp.Second = CreateFilesPanel();
+
 			window_.ContentPanel.Add(CreateTop(), VUI.BorderLayout.Top);
-			window_.ContentPanel.Add(CreateTree(), VUI.BorderLayout.Left);
-			window_.ContentPanel.Add(CreateFilesPanel(), VUI.BorderLayout.Center);
+			window_.ContentPanel.Add(sp, VUI.BorderLayout.Center);
 			window_.ContentPanel.Add(CreateBottom(), VUI.BorderLayout.Bottom);
 
 			root_.ContentPanel.Add(window_, VUI.BorderLayout.Center);
@@ -452,8 +455,9 @@ namespace AUI.FileDialog
 			filesPanel.Add(files, VUI.BorderLayout.Center);
 			filesPanel.Add(sb_, VUI.BorderLayout.Right);
 
-			filesPanel.Margins = new VUI.Insets(10, 0, 0, 0);
-			filesPanel.Borders = new VUI.Insets(1);
+			filesPanel.Margins = new VUI.Insets(0);
+			filesPanel.Padding = new VUI.Insets(5, 0, 0, 0);
+			filesPanel.Borders = new VUI.Insets(0);
 
 			filesPanel.Clickthrough = false;
 			filesPanel.Events.PointerClick += OnClicked;

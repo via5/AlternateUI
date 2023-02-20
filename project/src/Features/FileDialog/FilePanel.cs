@@ -1,4 +1,6 @@
-﻿namespace AUI.FileDialog
+﻿using UnityEngine;
+
+namespace AUI.FileDialog
 {
 	class FilePanel
 	{
@@ -84,7 +86,7 @@
 					thumbnailTimer_ = null;
 				}
 
-				thumbnail_.Texture = null;
+				SetTexture(null);
 
 				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
 				{
@@ -93,14 +95,28 @@
 					Icons.GetFileIcon(file_.Path, tt =>
 					{
 						if (file_ == forFile)
-							thumbnail_.Texture = tt;
+						{
+							SetTexture(tt);
+						}
 					});
 				});
 			}
 			else
 			{
-				thumbnail_.Texture = t;
+				SetTexture(t);
 			}
+		}
+
+		private void SetTexture(Texture t)
+		{
+			if (t != null)
+			{
+				// some thumbnails are set to repeat, which adds spurious lines
+				// on top when resizing
+				t.wrapMode = TextureWrapMode.Clamp;
+			}
+
+			thumbnail_.Texture = t;
 		}
 
 		public void Clear()

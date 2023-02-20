@@ -1,6 +1,5 @@
 ﻿using MVR.FileManagementSecure;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -301,43 +300,83 @@ namespace AUI.FileDialog
 		}
 	}
 
-
 	public static class Icons
 	{
-		private static Texture packageIcon_ = null;
-		private static readonly List<Action<Texture>> packageIconCallbacks_ =
-			new List<Action<Texture>>();
+		class Icon
+		{
+			public Texture texture = null;
+			public readonly List<Action<Texture>> callbacks_ = new List<Action<Texture>>();
+
+			private static Texture2D ScaleTexture(Texture src, int width, int height)
+			{
+				RenderTexture rt = RenderTexture.GetTemporary(width, height);
+				Graphics.Blit(src, rt);
+
+				RenderTexture currentActiveRT = RenderTexture.active;
+				RenderTexture.active = rt;
+				Texture2D tex = new Texture2D(rt.width, rt.height);
+
+				tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
+				tex.Apply();
+
+				RenderTexture.ReleaseTemporary(rt);
+				RenderTexture.active = currentActiveRT;
+
+				return tex;
+			}
+
+			public Icon(string path, int w, int h)
+			{
+				ImageLoaderThreaded.QueuedImage q = new ImageLoaderThreaded.QueuedImage();
+				q.imgPath = path;
+
+				q.callback = (tt) =>
+				{
+					var tex = tt.tex;
+
+					if (w != 0 && h != 0)
+						tex = ScaleTexture(tex, w, h);
+
+					tex.wrapMode = TextureWrapMode.Clamp;
+
+					texture = tex;
+
+					foreach (var f in callbacks_)
+						f(texture);
+
+					callbacks_.Clear();
+				};
+
+				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(q.imgPath);
+				ImageLoaderThreaded.singleton.QueueThumbnail(q);
+			}
+
+			public void Get(Action<Texture> f)
+			{
+				if (texture != null)
+					f(texture);
+				else
+					callbacks_.Add(f);
+			}
+		}
+
+		private static Icon package_ = null;
+		private static Icon resizeWE_ = null;
 
 		public static void LoadAll()
 		{
-			ImageLoaderThreaded.QueuedImage queuedImage = new ImageLoaderThreaded.QueuedImage();
-			queuedImage.imgPath = AlternateUI.Instance.PluginPath + "/res/package.png";
-			queuedImage.linear = true;
-
-			queuedImage.callback = (tt) =>
-			{
-				packageIcon_ = tt.tex;
-
-				foreach (var f in packageIconCallbacks_)
-					f(packageIcon_);
-
-				packageIconCallbacks_.Clear();
-			};
-
-			//ImageLoaderThreaded.singleton.ClearCacheThumbnail(queuedImage.imgPath);
-			ImageLoaderThreaded.singleton.QueueThumbnail(queuedImage);
+			package_ = new Icon(AlternateUI.Instance.PluginPath + "/res/icons/package.png", 0, 0);
+			resizeWE_ = new Icon(AlternateUI.Instance.PluginPath + "/res/cursors/resize_w_e.png", 40, 40);
 		}
 
 		public static void GetPackageIcon(Action<Texture> f)
 		{
-			if (packageIcon_ != null)
-			{
-				f(packageIcon_);
-			}
-			else
-			{
-				packageIconCallbacks_.Add(f);
-			}
+			package_.Get(f);
+		}
+
+		public static void GetResizeWE(Action<Texture> f)
+		{
+			resizeWE_.Get(f);
 		}
 
 		public static void GetDirectoryIcon(Action<Texture> f)
@@ -350,14 +389,9 @@ namespace AUI.FileDialog
 			var imgPath = GetThumbnailPath(path);
 
 			if (imgPath == null)
-			{
 				return SuperController.singleton.fileBrowserUI.GetFileIcon(path)?.texture;
-			}
 			else
-			{
-				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(imgPath);
 				return ImageLoaderThreaded.singleton.GetCachedThumbnail(imgPath);
-			}
 		}
 
 		public static void GetFileIcon(string path, Action<Texture> f)

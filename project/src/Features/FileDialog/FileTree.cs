@@ -227,10 +227,13 @@ namespace AUI.FileDialog
 		public FileTree(int fontSize)
 		{
 			tree_ = new VUI.TreeView();
+
 			tree_.MinimumSize = new VUI.Size(500, 0);
 			tree_.FontSize = fontSize;
 			tree_.Icons = true;
 			tree_.DoubleClickToggle = true;
+			tree_.LabelWrap = VUI.Label.Clip;
+			tree_.Borders = new VUI.Insets(0);
 
 			root_ = new RootItem();
 			tree_.RootItem.Add(root_);

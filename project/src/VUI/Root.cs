@@ -309,6 +309,11 @@ namespace VUI
 			}
 		}
 
+		public Widget Captured
+		{
+			get { return captured_; }
+		}
+
 		public void AttachTo(IRootSupport support)
 		{
 			Glue.LogVerbose($"root: attaching to {support}");
@@ -348,7 +353,7 @@ namespace VUI
 			rootObject_.transform.SetParent(support_.RootParent, false);
 
 			var rt = rootObject_.AddComponent<RectTransform>();
-			Utilities.SetRectTransform(rootObject_, support_.Bounds);
+			Utilities.SetRectTransform(rootObject_.GetComponent<RectTransform>(), support_.Bounds);
 			rootObject_.AddComponent<LayoutElement>().ignoreLayout = true;
 
 			SupportBoundsChanged();

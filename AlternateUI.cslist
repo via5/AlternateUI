@@ -44,6 +44,7 @@ project\src\VUI\Panel.cs
 project\src\VUI\Root.cs
 project\src\VUI\ScrollBar.cs
 project\src\VUI\Slider.cs
+project\src\VUI\Splitter.cs
 project\src\VUI\Style.cs
 project\src\VUI\Support.cs
 project\src\VUI\Tabs.cs

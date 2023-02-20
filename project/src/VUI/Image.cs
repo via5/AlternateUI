@@ -50,28 +50,38 @@ namespace VUI
 			UpdateTexture();
 		}
 
+		public override void UpdateBounds()
+		{
+			base.UpdateBounds();
+			UpdateAspect();
+		}
+
 		private void UpdateTexture()
 		{
 			if (raw_ != null)
 			{
 				raw_.texture = tex_;
-
-				Size scaled;
-
-				if (tex_ == null)
-				{
-					scaled = ClientBounds.Size;
-				}
-				else
-				{
-					scaled = Aspect(
-						tex_.width, tex_.height,
-						ClientBounds.Width, ClientBounds.Height);
-				}
-
-				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
-				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
+				UpdateAspect();
 			}
+		}
+
+		private void UpdateAspect()
+		{
+			Size scaled;
+
+			if (tex_ == null)
+			{
+				scaled = ClientBounds.Size;
+			}
+			else
+			{
+				scaled = Aspect(
+					tex_.width, tex_.height,
+					ClientBounds.Width, ClientBounds.Height);
+			}
+
+			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
+			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
 		}
 
 		private Size Aspect(float width, float height, float maxWidth, float maxHeight)
@@ -80,8 +90,8 @@ namespace VUI
 			double ratioY = (double)maxHeight / (double)height;
 			double ratio = ratioX < ratioY ? ratioX : ratioY;
 
-			int newHeight = Convert.ToInt32(height * ratio);
-			int newWidth = Convert.ToInt32(width * ratio);
+			int newHeight = Convert.ToInt32(Math.Round(height * ratio));
+			int newWidth = Convert.ToInt32(Math.Round(width * ratio));
 
 			return new Size(newWidth, newHeight);
 		}

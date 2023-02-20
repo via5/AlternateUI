@@ -24,6 +24,7 @@ namespace VUI
 		private int align_;
 		private Text textObject_ = null;
 		private Transform ellipsis_ = null;
+		private RectTransform ellipsisRT_ = null;
 		private Text ellipsisText_ = null;
 		private UnityEngine.UI.Image ellipsisBackground_ = null;
 		private int wrap_ = Overflow;
@@ -171,6 +172,7 @@ namespace VUI
 			textObject_.text = text_;
 			textObject_.horizontalOverflow = GetHorizontalOverflow();
 			textObject_.maskable = true;
+			textObject_.resizeTextForBestFit = false;
 
 			// needed for tooltips
 			textObject_.raycastTarget = true;
@@ -180,10 +182,10 @@ namespace VUI
 
 		private HorizontalWrapMode GetHorizontalOverflow()
 		{
-			if (wrap_ == Overflow)
-				return HorizontalWrapMode.Overflow;
-			else
+			if (wrap_ == Wrap || wrap_ == ClipEllipsis)
 				return HorizontalWrapMode.Wrap;
+			else
+				return HorizontalWrapMode.Overflow;
 		}
 
 		protected override void DoPolish()
@@ -199,6 +201,22 @@ namespace VUI
 			UpdateClip();
 		}
 
+		private Rectangle MakeClipRect()
+		{
+			var root = GetRoot();
+			if (root == null)
+				return Rectangle.Zero;
+
+			var rb = root.RootSupport.Bounds;
+			var ar = AbsoluteClientBounds;
+
+			return Rectangle.FromSize(
+				ar.Left - rb.Width / 2 - 2,
+				rb.Bottom - ar.Top - ar.Height + root.RootSupport.TopOffset,
+				ar.Width,
+				ar.Height);
+		}
+
 		private void UpdateClip()
 		{
 			hasEllipsis_ = false;
@@ -207,18 +225,23 @@ namespace VUI
 				return;
 
 			if (!IsVisibleOnScreen())
+			{
+				ClearClip();
 				return;
+			}
 
 			switch (wrap_)
 			{
 				case Wrap:
 				case Overflow:
 				{
+					ClearClip();
 					break;
 				}
 
 				case Clip:
 				{
+					SetClip(MakeClipRect());
 					break;
 				}
 
@@ -246,7 +269,7 @@ namespace VUI
 						else
 							ellipsisBackground_.color = BackgroundColor;
 
-						Utilities.SetRectTransform(ellipsis_, r);
+						Utilities.SetRectTransform(ellipsisRT_, r);
 
 						if (autoTooltip_)
 							Tooltip.Text = text_;
@@ -265,10 +288,20 @@ namespace VUI
 			}
 		}
 
+		private void ClearClip()
+		{
+			textObject_.SetClipRect(Rect.zero, false);
+		}
+
+		private void SetClip(Rectangle r)
+		{
+			textObject_.SetClipRect(r.ToRect(), true);
+		}
+
 		private void CreateEllipsis()
 		{
 			var go = new GameObject("ellipsisParent");
-			go.AddComponent<RectTransform>();
+			ellipsisRT_ = go.AddComponent<RectTransform>();
 			go.AddComponent<LayoutElement>();
 
 			{

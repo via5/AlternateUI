@@ -140,6 +140,7 @@
     <Compile Include="src\VUI\Root.cs" />
     <Compile Include="src\VUI\ScrollBar.cs" />
     <Compile Include="src\VUI\Slider.cs" />
+    <Compile Include="src\VUI\Splitter.cs" />
     <Compile Include="src\VUI\Style.cs" />
     <Compile Include="src\VUI\Support.cs" />
     <Compile Include="src\VUI\Tabs.cs" />

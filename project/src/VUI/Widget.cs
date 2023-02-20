@@ -30,6 +30,11 @@ namespace VUI
 		private GameObject graphicsObject_ = null;
 		private WidgetBorderGraphics borderGraphics_ = null;
 
+		private RectTransform widgetObjectRT_ = null;
+		private RectTransform mainObjectRT_ = null;
+		private RectTransform borderGraphicsRT_ = null;
+		private LayoutElement mainObjectLE_ = null;
+
 		private bool render_ = true;
 		private bool visible_ = true;
 		private bool enabled_ = true;
@@ -176,6 +181,11 @@ namespace VUI
 			get { return widgetObject_; }
 		}
 
+		public RectTransform WidgetObjectRT
+		{
+			get { return widgetObjectRT_; }
+		}
+
 		public Events Events
 		{
 			get { return events_; }
@@ -285,7 +295,7 @@ namespace VUI
 
 		private Widget AnyDirtyChild()
 		{
-			if (!visible_)
+			if (!visible_ || !render_)
 				return null;
 
 			if (dirty_)
@@ -763,8 +773,8 @@ namespace VUI
 				created = true;
 
 				mainObject_ = new GameObject(ToString());
-				mainObject_.AddComponent<RectTransform>();
-				mainObject_.AddComponent<LayoutElement>();
+				mainObjectRT_ = mainObject_.AddComponent<RectTransform>();
+				mainObjectLE_ = mainObject_.AddComponent<LayoutElement>();
 				mainObject_.AddComponent<MouseCallbacks>().Widget = this;
 
 				if (parent_?.MainObject == null)
@@ -779,13 +789,15 @@ namespace VUI
 				DoCreate();
 				DoSetEnabled(enabled_);
 
-				if (widgetObject_.GetComponent<RectTransform>() == null)
-					widgetObject_.AddComponent<RectTransform>();
+				widgetObjectRT_ = widgetObject_.GetComponent<RectTransform>();
+				if (widgetObjectRT_ == null)
+					widgetObjectRT_ = widgetObject_.AddComponent<RectTransform>();
 
 				graphicsObject_ = new GameObject("WidgetBorders");
 				graphicsObject_.transform.SetParent(mainObject_.transform, false);
 
 				borderGraphics_ = graphicsObject_.AddComponent<WidgetBorderGraphics>();
+				borderGraphicsRT_ = borderGraphics_.GetComponent<RectTransform>();
 				borderGraphics_.Borders = borders_;
 				borderGraphics_.Color = borderColor_;
 
@@ -834,16 +846,9 @@ namespace VUI
 		private void SetMainObjectBounds()
 		{
 			var r = RelativeBounds;
-			Utilities.SetRectTransform(mainObject_, r);
 
-			var layoutElement = mainObject_.GetComponent<LayoutElement>();
-			layoutElement.minWidth = (int)r.Width;
-			layoutElement.preferredWidth = (int)r.Width;
-			layoutElement.flexibleWidth = (int)r.Width;
-			layoutElement.minHeight = (int)r.Height;
-			layoutElement.preferredHeight = (int)r.Height;
-			layoutElement.flexibleHeight = (int)r.Height;
-			layoutElement.ignoreLayout = true;
+			Utilities.SetRectTransform(mainObjectRT_, r);
+			Utilities.SetLayoutElement(mainObjectLE_, r.Size);
 		}
 
 		private void SetBackground()
@@ -855,12 +860,12 @@ namespace VUI
 			var r = new Rectangle(0, 0, Bounds.Size);
 			r.Deflate(Margins);
 
-			Utilities.SetRectTransform(borderGraphics_, r);
+			Utilities.SetRectTransform(borderGraphicsRT_, r);
 		}
 
 		protected virtual void SetWidgetObjectBounds()
 		{
-			Utilities.SetRectTransform(widgetObject_, ClientBounds);
+			Utilities.SetRectTransform(widgetObjectRT_, ClientBounds);
 		}
 
 		public virtual void UpdateBounds()
@@ -1009,8 +1014,13 @@ namespace VUI
 		{
 			if (IsVisibleOnScreen())
 			{
-				GetRoot()?.WidgetExited(this);
-				events_.FirePointerExit(this, d);
+				var r = GetRoot();
+
+				if (r?.Captured != this)
+				{
+					r?.WidgetExited(this);
+					events_.FirePointerExit(this, d);
+				}
 			}
 		}
 
