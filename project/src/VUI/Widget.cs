@@ -779,6 +779,9 @@ namespace VUI
 				DoCreate();
 				DoSetEnabled(enabled_);
 
+				if (widgetObject_.GetComponent<RectTransform>() == null)
+					widgetObject_.AddComponent<RectTransform>();
+
 				graphicsObject_ = new GameObject("WidgetBorders");
 				graphicsObject_.transform.SetParent(mainObject_.transform, false);
 

@@ -29,8 +29,16 @@ namespace VUI
 
 		protected override void DoCreate()
 		{
-			raw_ = WidgetObject.AddComponent<RawImage>();
-			rt_ = WidgetObject.GetComponent<RectTransform>();
+			var rawObject = new GameObject();
+			rawObject.transform.SetParent(WidgetObject.transform, false);
+
+			raw_ = rawObject.AddComponent<RawImage>();
+			rt_ = rawObject.GetComponent<RectTransform>();
+
+			rt_.anchorMin = new Vector2(0, 0);
+			rt_.anchorMax = new Vector2(1, 1);
+			rt_.offsetMin = new Vector2(0, 0);
+			rt_.offsetMax = new Vector2(0, 0);
 
 			if (emptyMat_ == null)
 			{
@@ -40,11 +48,6 @@ namespace VUI
 
 			raw_.material = emptyMat_;
 			UpdateTexture();
-		}
-
-		public override void UpdateBounds()
-		{
-			base.UpdateBounds();
 		}
 
 		private void UpdateTexture()
@@ -71,21 +74,14 @@ namespace VUI
 			}
 		}
 
-		private Size Aspect(float width, float heigth, float maxWidth, float maxHeight)
+		private Size Aspect(float width, float height, float maxWidth, float maxHeight)
 		{
-			float newWidth = width;
-			float newHeight = heigth;
+			double ratioX = (double)maxWidth / (double)width;
+			double ratioY = (double)maxHeight / (double)height;
+			double ratio = ratioX < ratioY ? ratioX : ratioY;
 
-			if (width > heigth)
-			{
-				newWidth = maxWidth;
-				newHeight = (newWidth * heigth) / width;
-			}
-			else
-			{
-				newHeight = maxHeight;
-				newWidth = (newHeight * width) / heigth;
-			}
+			int newHeight = Convert.ToInt32(height * ratio);
+			int newWidth = Convert.ToInt32(width * ratio);
 
 			return new Size(newWidth, newHeight);
 		}

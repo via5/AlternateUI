@@ -21,14 +21,15 @@
 			name_.FontSize = fontSize;
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.Alignment = VUI.Label.AlignCenter | VUI.Label.AlignTop;
+			name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 60);
 
 			thumbnail_.Borders = new VUI.Insets(1);
 
 			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
 			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
 
-			panel_.Add(thumbnailPanel, VUI.BorderLayout.Top);
-			panel_.Add(name_, VUI.BorderLayout.Center);
+			panel_.Add(thumbnailPanel, VUI.BorderLayout.Center);
+			panel_.Add(name_, VUI.BorderLayout.Bottom);
 
 			panel_.Padding = new VUI.Insets(8);
 			panel_.Events.PointerClick += OnClick;
