@@ -5,6 +5,7 @@ namespace AUI.FileDialog
 {
 	interface IFileContainer
 	{
+		bool Virtual { get; }
 		string Path { get; }
 		List<File> GetFiles(FileDialog fd);
 	}
@@ -12,6 +13,11 @@ namespace AUI.FileDialog
 
 	class EmptyContainer : IFileContainer
 	{
+		public bool Virtual
+		{
+			get { return true; }
+		}
+
 		public string Path
 		{
 			get { return ""; }
@@ -26,6 +32,7 @@ namespace AUI.FileDialog
 
 	abstract class FSContainer : IFileContainer
 	{
+		public abstract bool Virtual { get; }
 		public abstract string Path { get; }
 		public abstract List<File> GetFiles(FileDialog fd);
 
@@ -33,69 +40,13 @@ namespace AUI.FileDialog
 		{
 			list.AddRange(GetFiles(parent));
 
-			foreach (var d in GetDirectories(parent))
+			foreach (var d in Cache.GetDirectories(parent))
 				GetFilesRecursive(d.Path, list);
-		}
-
-		protected List<File> GetDirectories(string parent)
-		{
-			List<File> fs = Cache.GetDirectories(parent);
-
-			if (fs == null)
-			{
-				fs = new List<File>();
-				foreach (var d in FileManagerSecure.GetDirectories(parent))
-					fs.Add(new File(d));
-
-				Cache.AddDirectories(parent, fs);
-			}
-
-			return fs;
 		}
 
 		protected List<File> GetFiles(string parent)
 		{
-			List<File> fs = Cache.GetFiles(parent);
-
-			if (fs == null)
-			{
-				var exts = new string[] { ".json", ".vac", ".vap", ".vam", ".scene" };
-				fs = new List<File>();
-
-				foreach (var f in FileManagerSecure.GetFiles(parent))
-				{
-					foreach (var e in exts)
-					{
-						if (f.EndsWith(e))
-						{
-							fs.Add(new File(f));
-							break;
-						}
-					}
-				}
-
-				Cache.AddFiles(parent, fs);
-			}
-
-			return fs;
-		}
-
-		protected List<File> GetPackagesFlat()
-		{
-			var list = new List<File>();
-
-			foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
-			{
-				if (string.IsNullOrEmpty(p.package))
-					continue;
-
-				if (!string.IsNullOrEmpty(p.packageFilter))
-					continue;
-
-				GetFilesRecursive(p.path, list);
-			}
-
-			return list;
+			return Cache.GetFiles(parent, Cache.SceneExtensions);
 		}
 	}
 
@@ -107,6 +58,11 @@ namespace AUI.FileDialog
 		public DirectoryContainer(string path)
 		{
 			path_ = path;
+		}
+
+		public override bool Virtual
+		{
+			get { return false; }
 		}
 
 		public override string Path
@@ -151,6 +107,11 @@ namespace AUI.FileDialog
 			sc_ = sc;
 		}
 
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
 		public override List<File> GetFiles(FileDialog fd)
 		{
 			return GetFiles(fd.FlattenPackages);
@@ -160,6 +121,11 @@ namespace AUI.FileDialog
 
 	class PackagesFlatContainer : FSContainer
 	{
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
 		public override string Path
 		{
 			get { return "Packages flattened"; }
@@ -167,13 +133,18 @@ namespace AUI.FileDialog
 
 		public override List<File> GetFiles(FileDialog fd)
 		{
-			return GetPackagesFlat();
+			return Cache.GetPackagesFlat(Cache.SceneExtensions);
 		}
 	}
 
 
 	class AllFlatContainer : FSContainer
 	{
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
 		public override string Path
 		{
 			get { return "All flattened"; }
@@ -183,18 +154,7 @@ namespace AUI.FileDialog
 		{
 			var list = new List<File>();
 
-			{
-				var packages = Cache.GetPackagesFlat();
-
-				if (packages == null)
-				{
-					packages = GetPackagesFlat();
-					Cache.SetPackagesFlat(packages);
-				}
-
-				list.AddRange(packages);
-			}
-
+			list.AddRange(Cache.GetPackagesFlat(Cache.SceneExtensions));
 			GetFilesRecursive("Saves/scene", list);
 
 			return list;

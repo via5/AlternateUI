@@ -51,43 +51,19 @@ namespace AUI
 			return null;
 		}
 
-		private BasicFeature[] CreateUIs()
-		{
-			return new BasicFeature[]
-			{
-				new MorphUI.MorphUI(),
-				new ClothingUI.ClothingUI(),
-				new FileDialog.FileDialog(),
-				new PluginsUI.PluginsUI(),
-				new LightUI.LightUI(),
-				new SelectUI.SelectUI(),
-				new SkinUI.RightClickSkinReload(),
-				new SkinUI.SkinMaterialsReset(),
-				new LogUI.LogUI(),
-				new CuaUI.CuaUI(),
-				new Tweaks.EscapeDialogs(),
-				new Tweaks.DisableCuaCollision(),
-				new Tweaks.SpaceBarFreeze(),
-				new Tweaks.RightClickPackagesReload(),
-				new Tweaks.QuickSaveScreenshot(),
-				new Tweaks.QuickSave(),
-				new Tweaks.HideTargetsInVR(),
-				new Tweaks.EditMode(),
-				new Tweaks.FocusHead(),
-				new Tweaks.DisableLoadPosition(),
-				new Tweaks.MoveNewLight(),
-			};
-		}
 
 		public void Update()
 		{
 			try
 			{
-				//if (Input.GetKeyUp(KeyCode.F5))
-				//{
-				//	ReloadPlugin();
-				//	return;
-				//}
+				if (U.DevMode)
+				{
+					if (Input.GetKeyUp(KeyCode.F5))
+					{
+						ReloadPlugin();
+						return;
+					}
+				}
 
 				DoUpdate();
 			}
@@ -136,7 +112,7 @@ namespace AUI
 				(s) => Log.Error(s));
 
 			tm_ = new VUI.TimerManager();
-			features_ = CreateUIs();
+			features_ = BasicFeature.CreateAllFeatures();
 
 			LoadConfig();
 
@@ -223,7 +199,7 @@ namespace AUI
 					{
 						try
 						{
-							features_[i].Load(o);
+							features_[i].LoadOptions(o);
 						}
 						catch (Exception e)
 						{
@@ -243,7 +219,7 @@ namespace AUI
 			{
 				try
 				{
-					var o = features_[i].Save();
+					var o = features_[i].SaveOptions();
 					if (o != null)
 						j.Add(features_[i].Name, o);
 				}

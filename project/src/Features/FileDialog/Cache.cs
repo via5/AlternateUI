@@ -1,53 +1,203 @@
 ﻿using MVR.FileManagementSecure;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AUI.FileDialog
 {
 	static class Cache
 	{
-		private static readonly Dictionary<string, List<File>> files_ =
-			new Dictionary<string, List<File>>();
+		class CacheInfo
+		{
+			public string parent;
+			public string normalizedParent;
+			public string[] exts;
 
-		private static readonly Dictionary<string, List<File>> dirs_ =
-			new Dictionary<string, List<File>>();
+			public CacheInfo(string parent, string[] exts)
+			{
+				this.parent = parent;
+				this.normalizedParent = parent.Replace('\\', '/');
+				this.exts = exts;
+			}
+
+			public override int GetHashCode()
+			{
+				return HashHelper.Combine(
+					normalizedParent.GetHashCode(),
+					HashHelper.HashArray(exts));
+			}
+
+			public override bool Equals(object o)
+			{
+				return Equals(o as CacheInfo);
+			}
+
+			public bool Equals(CacheInfo o)
+			{
+				return
+					normalizedParent == o.normalizedParent &&
+					ArraysEqual(exts, o.exts);
+			}
+
+			private bool ArraysEqual<T>(T[] a, T[] b)
+			{
+				if (a == b)
+					return true;
+
+				if (a == null || b == null)
+					return false;
+
+				return Enumerable.SequenceEqual(a, b);
+			}
+		}
+
+		public static string[] SceneExtensions =
+			new string[] { ".json", ".vac", ".vap", ".vam", ".scene" };
+
+		private static readonly Dictionary<CacheInfo, List<File>> files_ =
+			new Dictionary<CacheInfo, List<File>>();
+
+		private static readonly Dictionary<CacheInfo, List<File>> dirs_ =
+			new Dictionary<CacheInfo, List<File>>();
+
+		private static readonly Dictionary<CacheInfo, List<ShortCut>> packages_ =
+			new Dictionary<CacheInfo, List<ShortCut>>();
 
 		private static List<File> packagesFlat_ = null;
 
 
 		public static List<File> GetDirectories(string parent)
 		{
-			List<File> list = null;
-			dirs_.TryGetValue(parent, out list);
+			List<File> list;
+			var ci = new CacheInfo(parent, null);
+
+			if (!dirs_.TryGetValue(ci, out list))
+			{
+				list = new List<File>();
+				foreach (var d in FileManagerSecure.GetDirectories(parent))
+					list.Add(new File(d));
+
+				U.NatSort(list);
+				dirs_.Add(ci, list);
+			}
+
 			return list;
 		}
 
-		public static void AddDirectories(string parent, List<File> list)
+		public static bool HasDirectories(string parent)
 		{
-			dirs_.Add(parent, list);
+			var list = GetDirectories(parent);
+			return (list.Count > 0);
 		}
 
-		public static List<File> GetFiles(string parent)
+		public static List<File> GetFiles(string parent, string[] exts)
 		{
 			List<File> list = null;
-			files_.TryGetValue(parent, out list);
+			var ci = new CacheInfo(parent, exts);
+
+			double findTime = 0;
+			double getTime = 0;
+			double sortTime = 0;
+
+			bool got = false;
+
+			findTime = U.DebugTimeThis(() =>
+			{
+				got = files_.TryGetValue(ci, out list);
+			});
+
+			if (!got)
+			{
+				list = new List<File>();
+
+				getTime = U.DebugTimeThis(() =>
+				{
+					foreach (var f in FileManagerSecure.GetFiles(parent))
+					{
+						if (exts == null)
+						{
+							list.Add(new File(f));
+						}
+						else
+						{
+							foreach (var e in exts)
+							{
+								if (f.EndsWith(e))
+								{
+									list.Add(new File(f));
+									break;
+								}
+							}
+						}
+					}
+				});
+
+				sortTime = U.DebugTimeThis(() =>
+				{
+					U.NatSort(list);
+				});
+
+				files_.Add(ci, list);
+
+				AlternateUI.Instance.Log.Info(
+					$"cached {parent}: " +
+					$"find={findTime:0.000}ms " +
+					$"get={getTime:0.000}ms " +
+					$"sort={sortTime:0.000}ms");
+			}
+
 			return list;
 		}
 
-		public static void AddFiles(string parent, List<File> list)
+		private static void GetFilesRecursive(string parent, string[] exts, List<File> list)
 		{
-			files_.Add(parent, list);
+			list.AddRange(GetFiles(parent, exts));
+
+			foreach (var d in Cache.GetDirectories(parent))
+				GetFilesRecursive(d.Path, exts, list);
 		}
 
-		public static List<File> GetPackagesFlat()
+		public static bool HasPackages(string parent)
 		{
+			var scs = FileManagerSecure.GetShortCutsForDirectory("Saves/scene");
+			return (scs != null && scs.Count > 0);
+		}
+
+		public static List<File> GetPackagesFlat(string[] exts)
+		{
+			if (packagesFlat_ == null)
+			{
+				packagesFlat_ = new List<File>();
+
+				foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
+				{
+					if (string.IsNullOrEmpty(p.package))
+						continue;
+
+					if (!string.IsNullOrEmpty(p.packageFilter))
+						continue;
+
+					GetFilesRecursive(p.path, exts, packagesFlat_);
+				}
+			}
+
 			return packagesFlat_;
 		}
 
-		public static void SetPackagesFlat(List<File> list)
+		public static List<ShortCut> GetPackages(string parent)
 		{
-			packagesFlat_ = list;
+			var ci = new CacheInfo(parent, null);
+			List<ShortCut> list;
+
+			if (!packages_.TryGetValue(ci, out list))
+			{
+				list = FileManagerSecure.GetShortCutsForDirectory("Saves/scene");
+				packages_.Add(ci, list);
+			}
+
+			return list;
 		}
 	}
 

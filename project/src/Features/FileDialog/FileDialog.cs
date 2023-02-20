@@ -42,18 +42,22 @@ namespace AUI.FileDialog
 
 		private const int FontSize = 24;
 
+		public const int NoType = 0;
 		public const int OpenScene = 1;
 		public const int SaveScene = 2;
 
+		private int type_ = NoType;
 		private VUI.Root root_ = null;
 		private VUI.Window window_ = null;
 		private IFileContainer container_ = new EmptyContainer();
 		private VUI.TextBox path_ = null;
 		private VUI.TextBox filename_ = null;
+		private VUI.Panel optionsPanel_ = null;
 		private List<File> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
 		private FilePanel selected_ = null;
+		private VUI.Button action_ = null;
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
 		private int top_ = 0;
@@ -65,7 +69,6 @@ namespace AUI.FileDialog
 			: base("fileDialog", "File dialog", false)
 		{
 			cwd_ = null;
-			LoadOptions();
 		}
 
 		public int Columns
@@ -95,7 +98,7 @@ namespace AUI.FileDialog
 				if (flattenDirs_ != value)
 				{
 					flattenDirs_ = value;
-					SaveOptions();
+					AlternateUI.Instance.Save();
 					UpdateFlatten();
 				}
 			}
@@ -113,7 +116,7 @@ namespace AUI.FileDialog
 				if (flattenPackages_ != value)
 				{
 					flattenPackages_ = value;
-					SaveOptions();
+					AlternateUI.Instance.Save();
 					UpdateFlatten();
 				}
 			}
@@ -132,15 +135,78 @@ namespace AUI.FileDialog
 
 			if (selected_ != null)
 				selected_.SetSelectedInternal(true);
+
+			UpdateActionButton();
 		}
 
 		public void Open()
 		{
-			if (selected_ == null)
+			if (!CanOpen())
 				return;
 
 			Log.Info($"open {selected_.File.Path}");
+
+			Hide();
 			SuperController.singleton.Load(selected_.File.Path);
+		}
+
+		public void Save()
+		{
+			var path = GetSavePath();
+			if (path == "")
+				return;
+
+			Log.Info($"saving {path}");
+
+			Hide();
+			SuperController.singleton.Save(path);
+		}
+
+		public bool CanOpen()
+		{
+			return (selected_ != null);
+		}
+
+		private bool CanSave()
+		{
+			return (GetSavePath() != "");
+		}
+
+		private string GetSavePath()
+		{
+			if (container_ == null || container_.Virtual)
+				return "";
+
+			var dir = container_?.Path?.Trim() ?? "";
+			if (dir == "")
+				return "";
+
+			var file = filename_.Text.Trim();
+			if (file == "")
+				return "";
+
+			if (file.IndexOf('.') == -1)
+				file += ".json";
+
+			return Path.Join(dir, file);
+		}
+
+		private void ExecuteAction()
+		{
+			switch (type_)
+			{
+				case OpenScene:
+				{
+					Open();
+					break;
+				}
+
+				case SaveScene:
+				{
+					Save();
+					break;
+				}
+			}
 		}
 
 		public void Cancel()
@@ -162,27 +228,37 @@ namespace AUI.FileDialog
 
 				Create();
 
-				tree_.Rebuild();
 				SetContainer(new EmptyContainer());
 				UpdateFlatten();
 			}
 
-			switch (type)
+			type_ = type;
+
+			switch (type_)
 			{
 				case OpenScene:
 				{
 					window_.Title = "Load scene";
+					action_.Text = "Open";
+					optionsPanel_.Visible = true;
+					tree_.Set(false);
+					tree_.FlattenDirectories = FlattenDirectories;
 					break;
 				}
 
 				case SaveScene:
 				{
 					window_.Title = "Save scene";
+					action_.Text = "Save";
+					optionsPanel_.Visible = false;
+					tree_.FlattenDirectories = false;
+					tree_.Set(true);
 					break;
 				}
 			}
 
 			root_.Visible = true;
+			UpdateActionButton();
 		}
 
 		public void Hide()
@@ -198,12 +274,15 @@ namespace AUI.FileDialog
 			SetFiles(container_.GetFiles(this));
 			SetPath();
 			SetPanels(0);
+			UpdateActionButton();
 		}
 
 		protected override void DoEnable()
 		{
 			ReplaceButton("ButtonOpenScene", OpenScene);
 			ReplaceButton("ButtonSaveScene", SaveScene);
+
+			Show(OpenScene);
 		}
 
 		protected override void DoDisable()
@@ -257,10 +336,10 @@ namespace AUI.FileDialog
 		{
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 
-			var opts = new VUI.Panel(new VUI.HorizontalFlow(10));
-			opts.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
-			opts.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
-			top.Add(opts, VUI.BorderLayout.Top);
+			optionsPanel_ = new VUI.Panel(new VUI.HorizontalFlow(10));
+			optionsPanel_.Add(new VUI.CheckBox("Flatten subfolders", b => FlattenDirectories = b, flattenDirs_));
+			optionsPanel_.Add(new VUI.CheckBox("Flatten packages", b => FlattenPackages = b, flattenPackages_));
+			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
 			path_ = top.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
@@ -328,9 +407,10 @@ namespace AUI.FileDialog
 			fn.Padding = new VUI.Insets(30, 0, 0, 0);
 			fn.Add(new VUI.Label("File name:"), VUI.BorderLayout.Left);
 			filename_ = fn.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
+			filename_.Changed += OnFilenameChanged;
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
-			buttons.Add(new VUI.Button("Open", Open));
+			action_ = buttons.Add(new VUI.Button("", ExecuteAction));
 			buttons.Add(new VUI.Button("Cancel", Cancel));
 
 			p.Add(fn);
@@ -360,8 +440,9 @@ namespace AUI.FileDialog
 		{
 			int offscreenRows = OffscreenRows();
 			int newTop = U.Clamp(top_ + (int)-e.Delta.Y, 0, offscreenRows);
-
 			float v = newTop * ScrollbarSize();
+
+			Log.Info($"wheel {ScrollbarSize()} {offscreenRows} {top_} {newTop} {v} {e.Delta.Y} {sb_.Value}");
 
 			if (e.Delta.Y < 0)
 			{
@@ -377,7 +458,8 @@ namespace AUI.FileDialog
 
 		private void OnScrollbar(float v)
 		{
-			int y = Math.Max(0, (int)(v / ScrollbarSize()));
+			int y = Math.Max(0, (int)Math.Round(v / ScrollbarSize()));
+			Log.Info($"sb v={v} y={y} top={top_}");
 
 			if (top_ != y)
 			{
@@ -442,6 +524,24 @@ namespace AUI.FileDialog
 			}
 		}
 
+		private void UpdateActionButton()
+		{
+			switch (type_)
+			{
+				case OpenScene:
+				{
+					action_.Enabled = CanOpen();
+					break;
+				}
+
+				case SaveScene:
+				{
+					action_.Enabled = CanSave();
+					break;
+				}
+			}
+		}
+
 		private void SetPath()
 		{
 			path_.Text = "VaM/" + container_.Path.Replace('\\', '/');
@@ -458,44 +558,30 @@ namespace AUI.FileDialog
 			SetContainer(container_);
 		}
 
-		private string GetOptionsFile()
+		protected override void DoLoadOptions(JSONClass o)
 		{
-			return AlternateUI.Instance.GetConfigFilePath(
-				$"aui.filedialog.json");
+			if (o.HasKey("flattenDirs"))
+				flattenDirs_ = o["flattenDirs"].AsBool;
+
+			if (o.HasKey("flattenPackages"))
+				flattenPackages_ = o["flattenPackages"].AsBool;
 		}
 
-		private void LoadOptions()
+		protected override void DoSaveOptions(JSONClass o)
 		{
-			var f = GetOptionsFile();
-
-			if (FileManagerSecure.FileExists(f))
-			{
-				var j = SuperController.singleton.LoadJSON(f)?.AsObject;
-				if (j == null)
-					return;
-
-				if (j.HasKey("flattenDirs"))
-					flattenDirs_ = j["flattenDirs"].AsBool;
-
-				if (j.HasKey("flattenPackages"))
-					flattenPackages_ = j["flattenPackages"].AsBool;
-			}
-		}
-
-		private void SaveOptions()
-		{
-			var j = new JSONClass();
-
-			j["flattenDirs"] = new JSONData(flattenDirs_);
-			j["flattenPackages"] = new JSONData(flattenPackages_);
-
-			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+			o["flattenDirs"] = new JSONData(flattenDirs_);
+			o["flattenPackages"] = new JSONData(flattenPackages_);
 		}
 
 		private void OnPathSubmitted(string s)
 		{
 			if (!tree_.Select(s))
 				SetPath();
+		}
+
+		private void OnFilenameChanged(string s)
+		{
+			UpdateActionButton();
 		}
 
 		private void OnNothingSelected()

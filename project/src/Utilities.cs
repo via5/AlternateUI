@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using MVR.FileManagementSecure;
 
 namespace AUI
 {
@@ -39,22 +40,26 @@ namespace AUI
 
 	static class HashHelper
 	{
+		public static int HashArray<T>(T[] array)
+		{
+			if (array == null)
+				return 0;
+
+			int hash = 17;
+			for (int i = 0; i < array.Length; ++i)
+				hash = hash * 31 + array[i].GetHashCode();
+
+			return hash;
+		}
+
 		public static int GetHashCode<T1, T2>(T1 arg1, T2 arg2)
 		{
-			unchecked
-			{
-				return 31 * arg1.GetHashCode() + arg2.GetHashCode();
-			}
+			return Combine(arg1.GetHashCode(), arg2.GetHashCode());
 		}
 
 		public static int GetHashCode<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3)
 		{
-			unchecked
-			{
-				int hash = arg1.GetHashCode();
-				hash = 31 * hash + arg2.GetHashCode();
-				return 31 * hash + arg3.GetHashCode();
-			}
+			return Combine(arg1.GetHashCode(), arg2.GetHashCode(), arg3.GetHashCode());
 		}
 
 		public static int GetHashCode<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3,
@@ -83,11 +88,37 @@ namespace AUI
 				return 31 * hash + arg7.GetHashCode();
 			}
 		}
+
+		public static int Combine(int arg1, int arg2)
+		{
+			unchecked
+			{
+				return 31 * arg1 + arg2;
+			}
+		}
+
+		public static int Combine(int arg1, int arg2, int arg3)
+		{
+			unchecked
+			{
+				int hash = arg1;
+				hash = 31 * hash + arg2;
+				return 31 * hash + arg3;
+			}
+		}
 	}
 
 
 	static class U
 	{
+		private static bool devMode_ = FileManagerSecure.FileExists(
+			"Custom/PluginData/AlternateUI/devmode");
+
+		public static bool DevMode
+		{
+			get { return devMode_; }
+		}
+
 		public static float Clamp(float val, float min, float max)
 		{
 			if (val < min)
@@ -117,6 +148,17 @@ namespace AUI
 			sw.Stop();
 			var ms = ((((double)sw.ElapsedTicks) / Stopwatch.Frequency) * 1000);
 			AlternateUI.Instance.Log.Info($"{s} {ms:0.000}ms");
+		}
+
+		public static double DebugTimeThis(Action f)
+		{
+			var sw = new Stopwatch();
+			sw.Reset();
+			sw.Start();
+			f();
+			sw.Stop();
+			var ms = ((((double)sw.ElapsedTicks) / Stopwatch.Frequency) * 1000);
+			return ms;
 		}
 
 		public static void NatSort(List<string> list)

@@ -9,8 +9,8 @@ namespace AUI
 		string DisplayName { get; }
 		string Description { get; }
 
-		void Load(JSONClass o);
-		JSONClass Save();
+		void LoadOptions(JSONClass o);
+		JSONClass SaveOptions();
 		void Init();
 		void CreateUI();
 		void Update(float s);
@@ -49,6 +49,34 @@ namespace AUI
 			});
 		}
 
+		public static BasicFeature[] CreateAllFeatures()
+		{
+			return new BasicFeature[]
+			{
+				new MorphUI.MorphUI(),
+				new ClothingUI.ClothingUI(),
+				new FileDialog.FileDialog(),
+				new PluginsUI.PluginsUI(),
+				new LightUI.LightUI(),
+				new SelectUI.SelectUI(),
+				new SkinUI.RightClickSkinReload(),
+				new SkinUI.SkinMaterialsReset(),
+				new LogUI.LogUI(),
+				new CuaUI.CuaUI(),
+				new Tweaks.EscapeDialogs(),
+				new Tweaks.DisableCuaCollision(),
+				new Tweaks.SpaceBarFreeze(),
+				new Tweaks.RightClickPackagesReload(),
+				new Tweaks.QuickSaveScreenshot(),
+				new Tweaks.QuickSave(),
+				new Tweaks.HideTargetsInVR(),
+				new Tweaks.EditMode(),
+				new Tweaks.FocusHead(),
+				new Tweaks.DisableLoadPosition(),
+				new Tweaks.MoveNewLight(),
+			};
+		}
+
 		public string Name
 		{
 			get { return name_; }
@@ -66,7 +94,7 @@ namespace AUI
 
 		public abstract string Description { get; }
 
-		public void Load(JSONClass o)
+		public void LoadOptions(JSONClass o)
 		{
 			if (o.HasKey("enabled"))
 			{
@@ -74,15 +102,15 @@ namespace AUI
 				enabledParam_.valNoCallback = enabled_;
 			}
 
-			DoLoad(o);
+			DoLoadOptions(o);
 		}
 
-		public JSONClass Save()
+		public JSONClass SaveOptions()
 		{
 			var o = new JSONClass();
 
 			o.Add("enabled", new JSONData(enabled_));
-			DoSave(o);
+			DoSaveOptions(o);
 
 			return o;
 		}
@@ -145,15 +173,14 @@ namespace AUI
 				DoUpdate(s);
 		}
 
-		protected virtual void DoLoad(JSONClass o)
+		protected virtual void DoLoadOptions(JSONClass o)
 		{
 			// no-op
 		}
 
-		protected virtual JSONClass DoSave(JSONClass o)
+		protected virtual void DoSaveOptions(JSONClass o)
 		{
 			// no-op
-			return null;
 		}
 
 		protected virtual void DoInit()

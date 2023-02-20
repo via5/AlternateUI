@@ -18,25 +18,25 @@ namespace AUI.FileDialog
 
 		private class DirectoryItem : FileTreeItem
 		{
-			private readonly string path_;
+			private readonly File file_;
 			private bool checkedHasChildren_ = false;
 			private bool hasChildren_ = false;
 
-			public DirectoryItem(string path)
-				: this(path, AUI.Path.Filename(path))
+			public DirectoryItem(File f)
+				: this(f, f.Filename)
 			{
 			}
 
-			protected DirectoryItem(string path, string display)
+			protected DirectoryItem(File f, string display)
 				: base(display)
 			{
-				path_ = path;
+				file_ = f;
 				Icons.GetDirectoryIcon(t => Icon = t);
 			}
 
-			public string Path
+			public File File
 			{
-				get { return path_; }
+				get { return file_; }
 			}
 
 			public override bool HasChildren
@@ -45,8 +45,7 @@ namespace AUI.FileDialog
 				{
 					if (!checkedHasChildren_)
 					{
-						var dirs = FileManagerSecure.GetDirectories(path_);
-						hasChildren_ = (dirs != null && dirs.Length > 0);
+						hasChildren_ = Cache.HasDirectories(file_.Path);
 						checkedHasChildren_ = true;
 					}
 
@@ -56,13 +55,12 @@ namespace AUI.FileDialog
 
 			public override void Activate(FileTree ft)
 			{
-				ft.FirePathSelected(path_);
+				ft.FirePathSelected(file_.Path);
 			}
 
 			protected override void GetChildren()
 			{
-				var dirs = new List<string>(FileManagerSecure.GetDirectories(path_));
-				U.NatSort(dirs);
+				var dirs = Cache.GetDirectories(file_.Path);
 
 				foreach (var d in dirs)
 				{
@@ -71,7 +69,7 @@ namespace AUI.FileDialog
 				}
 			}
 
-			protected virtual bool IncludeDir(string path)
+			protected virtual bool IncludeDir(File f)
 			{
 				return true;
 			}
@@ -81,13 +79,13 @@ namespace AUI.FileDialog
 		private class SavesRootItem : DirectoryItem
 		{
 			public SavesRootItem()
-				: base("Saves")
+				: base(new File("Saves"))
 			{
 			}
 
-			protected override bool IncludeDir(string path)
+			protected override bool IncludeDir(File f)
 			{
-				var lc = AUI.Path.Filename(path).ToLower();
+				var lc = f.Filename.ToLower();
 				return (lc == "downloads" || lc == "scene");
 			}
 		}
@@ -98,7 +96,7 @@ namespace AUI.FileDialog
 			private readonly ShortCut sc_;
 
 			public PackageItem(ShortCut sc)
-				: base(sc.path, sc.package)
+				: base(new File(sc.path), sc.package)
 			{
 				sc_ = sc;
 
@@ -186,8 +184,7 @@ namespace AUI.FileDialog
 				{
 					if (!checkedHasChildren_)
 					{
-						var scs = FileManagerSecure.GetShortCutsForDirectory("Saves/scene");
-						hasChildren_ = (scs != null && scs.Count > 0);
+						hasChildren_ = Cache.HasPackages("Saves/scene");
 						checkedHasChildren_ = true;
 					}
 
@@ -197,7 +194,7 @@ namespace AUI.FileDialog
 
 			protected override void GetChildren()
 			{
-				foreach (var p in FileManagerSecure.GetShortCutsForDirectory("Saves/scene"))
+				foreach (var p in Cache.GetPackages("Saves/scene"))
 				{
 					if (string.IsNullOrEmpty(p.package))
 						continue;
@@ -221,8 +218,10 @@ namespace AUI.FileDialog
 
 		private readonly VUI.TreeView tree_;
 		private readonly RootItem root_;
-		private AllFlatItem allFlat_ = null;
-		private PackagesFlatItem packagesFlat_ = null;
+		private readonly AllFlatItem allFlat_ = null;
+		private readonly PackagesFlatItem packagesFlat_ = null;
+		private readonly SavesRootItem savesRoot_ = null;
+		private readonly PackagesRootItem packagesRoot_ = null;
 		private bool flatten_ = false;
 
 		public FileTree(int fontSize)
@@ -237,6 +236,13 @@ namespace AUI.FileDialog
 
 			tree_.SelectionChanged += OnSelection;
 
+
+			allFlat_ = root_.Add(new AllFlatItem("All flattened"));
+			packagesFlat_ = root_.Add(new PackagesFlatItem("Packages flattened"));
+			savesRoot_ = root_.Add(new SavesRootItem());
+			packagesRoot_ = root_.Add(new PackagesRootItem());
+
+			root_.Expanded = true;
 		}
 
 		public VUI.Widget Widget
@@ -303,16 +309,12 @@ namespace AUI.FileDialog
 			return false;
 		}
 
-		public void Rebuild()
+		public void Set(bool write)
 		{
-			root_.Clear();
-
-			allFlat_ = root_.Add(new AllFlatItem("All flattened"));
-			packagesFlat_ = root_.Add(new PackagesFlatItem("Packages flattened"));
-			root_.Add(new SavesRootItem());
-			root_.Add(new PackagesRootItem());
-
-			root_.Expanded = true;
+			allFlat_.Visible = !write;
+			packagesFlat_.Visible = !write;
+			savesRoot_.Visible = true;
+			packagesRoot_.Visible = !write;
 		}
 
 		public void FireNothingSelected()
