@@ -40,6 +40,28 @@ namespace AUI.FileDialog
 			public Button.ButtonClickedEvent oldEvent;
 		}
 
+		class ExtensionItem
+		{
+			private readonly string text_;
+			private readonly string[] exts_;
+
+			public ExtensionItem(string text, string[] exts)
+			{
+				text_ = text;
+				exts_ = exts;
+			}
+
+			public string[] Extensions
+			{
+				get { return exts_; }
+			}
+
+			public override string ToString()
+			{
+				return text_;
+			}
+		}
+
 		private const int FontSize = 24;
 
 		public const int NoType = 0;
@@ -53,6 +75,7 @@ namespace AUI.FileDialog
 		private VUI.TextBox path_ = null;
 		private SearchBox search_ = null;
 		private VUI.TextBox filename_ = null;
+		private VUI.ComboBox<ExtensionItem> extensions_;
 		private VUI.Panel optionsPanel_ = null;
 		private List<File> files_ = null;
 		private FileTree tree_ = null;
@@ -71,6 +94,11 @@ namespace AUI.FileDialog
 			: base("fileDialog", "File dialog", false)
 		{
 			cwd_ = null;
+		}
+
+		public override string Description
+		{
+			get { return "Replaces the file dialogs."; }
 		}
 
 		public int Columns
@@ -194,7 +222,10 @@ namespace AUI.FileDialog
 				return "";
 
 			if (file.IndexOf('.') == -1)
-				file += ".json";
+			{
+				var e = extensions_.Selected?.Extensions[0] ?? Cache.DefaultSceneExtension;
+				file += e;
+			}
 
 			return Path.Join(dir, file);
 		}
@@ -249,6 +280,7 @@ namespace AUI.FileDialog
 					window_.Title = "Load scene";
 					action_.Text = "Open";
 					optionsPanel_.Visible = true;
+					extensions_.SetItems(GetOpenSceneExtensions());
 					tree_.Set(false);
 					tree_.FlattenDirectories = FlattenDirectories;
 					break;
@@ -259,6 +291,7 @@ namespace AUI.FileDialog
 					window_.Title = "Save scene";
 					action_.Text = "Save";
 					optionsPanel_.Visible = false;
+					extensions_.SetItems(GetSaveSceneExtensions());
 					tree_.FlattenDirectories = false;
 					tree_.Set(true);
 					break;
@@ -295,7 +328,7 @@ namespace AUI.FileDialog
 		{
 			top_ = 0;
 			container_.Search = search_.Text;
-			container_.Extensions = Cache.SceneExtensions;
+			container_.Extensions = extensions_.Selected?.Extensions;
 
 			SetFiles(container_.GetFiles(this));
 			SetPath();
@@ -437,8 +470,16 @@ namespace AUI.FileDialog
 			var fn = new VUI.Panel(new VUI.BorderLayout(10));
 			fn.Padding = new VUI.Insets(30, 0, 0, 0);
 			fn.Add(new VUI.Label("File name:"), VUI.BorderLayout.Left);
+
 			filename_ = fn.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			filename_.Changed += OnFilenameChanged;
+			filename_.Submitted += (s) => ExecuteAction();
+
+			extensions_ = fn.Add(new VUI.ComboBox<ExtensionItem>(), VUI.BorderLayout.Right);
+			extensions_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
+			extensions_.MaximumSize = new VUI.Size(400, VUI.Widget.DontCare);
+			extensions_.PopupWidth = 500;
+			extensions_.SelectionChanged += OnExtensionChanged;
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
 			action_ = buttons.Add(new VUI.Button("", ExecuteAction));
@@ -615,7 +656,11 @@ namespace AUI.FileDialog
 		private void OnSearchChanged(string s)
 		{
 			if (ignoreSearch_) return;
+			Refresh();
+		}
 
+		private void OnExtensionChanged(ExtensionItem e)
+		{
 			Refresh();
 		}
 
@@ -645,9 +690,40 @@ namespace AUI.FileDialog
 			SetContainer(new PackagesFlatContainer());
 		}
 
-		public override string Description
+		private List<ExtensionItem> GetOpenSceneExtensions()
 		{
-			get { return "Replaces the file dialogs."; }
+			var list = new List<ExtensionItem>();
+
+			string all = "";
+			var allExts = new List<string>();
+
+			foreach (var e in Cache.SceneExtensions)
+			{
+				if (all != "")
+					all += "; ";
+
+				all += "*" + e.ext;
+				allExts.Add(e.ext);
+			}
+
+			all = "All scene files (" + all + ")";
+			list.Add(new ExtensionItem(all, allExts.ToArray()));
+
+			foreach (var e in Cache.SceneExtensions)
+				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
+
+			return list;
+		}
+
+		private List<ExtensionItem> GetSaveSceneExtensions()
+		{
+			var list = new List<ExtensionItem>();
+
+			foreach (var e in Cache.SceneExtensions)
+				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
+
+			//list.Add(new ExtensionItem(Cache.DefaultSceneExtension, new string[] { Cache.DefaultSceneExtension }));
+			return list;
 		}
 	}
 }

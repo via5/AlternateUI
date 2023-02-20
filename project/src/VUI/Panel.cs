@@ -43,6 +43,7 @@ namespace VUI
 				if (value != clickthrough_)
 				{
 					clickthrough_ = value;
+					WantsFocus = !value;
 					SetBackground();
 				}
 			}

@@ -123,11 +123,30 @@ namespace AUI.FileDialog
 		}
 
 
+		public struct Extension
+		{
+			public string name;
+			public string ext;
+
+			public Extension(string name, string ext)
+			{
+				this.name = name;
+				this.ext = ext;
+			}
+		}
+
+
 		public static string SavesRoot = "Saves";
 		public static string ScenesRoot = "Saves/scene";
 
-		public static string[] SceneExtensions =
-			new string[] { ".json", ".vac", ".vap", ".vam", ".scene" };
+		public static string DefaultSceneExtension = ".json";
+
+		public static Extension[] SceneExtensions = new Extension[]
+		{
+			new Extension("Scenes", ".json"),
+			new Extension("VAC files", ".vac"),
+			new Extension("Zip files", ".zip"),
+		};
 
 
 		private static readonly Dictionary<CacheInfo, List<File>> files_ =
