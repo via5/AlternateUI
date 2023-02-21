@@ -1,5 +1,4 @@
-﻿using MVR.FileManagementSecure;
-using SimpleJSON;
+﻿using SimpleJSON;
 using System;
 using System.Collections.Generic;
 using UnityEngine.UI;
@@ -71,7 +70,8 @@ namespace AUI.FileDialog
 		private int type_ = NoType;
 		private VUI.Root root_ = null;
 		private VUI.Window window_ = null;
-		private IFileContainer container_ = new EmptyContainer();
+		private IFileContainer container_ = new EmptyContainer("");
+		private VUI.CheckBox pin_ = null;
 		private VUI.TextBox path_ = null;
 		private SearchBox search_ = null;
 		private VUI.TextBox filename_ = null;
@@ -89,6 +89,7 @@ namespace AUI.FileDialog
 		private bool flattenPackages_ = true;
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
+		private bool ignorePin_ = false;
 
 		public FileDialog()
 			: base("fileDialog", "File dialog", false)
@@ -150,6 +151,11 @@ namespace AUI.FileDialog
 					UpdateFlatten();
 				}
 			}
+		}
+
+		public FilePanel SelectedPanel
+		{
+			get { return selected_; }
 		}
 
 		public void Select(FilePanel p)
@@ -267,7 +273,7 @@ namespace AUI.FileDialog
 
 				Create();
 
-				SetContainer(new EmptyContainer());
+				SetContainer(new EmptyContainer(""));
 				UpdateFlatten();
 			}
 
@@ -307,7 +313,7 @@ namespace AUI.FileDialog
 			root_.Visible = false;
 		}
 
-		private void SetContainer(IFileContainer c)
+		public void SetContainer(IFileContainer c)
 		{
 			container_ = c;
 
@@ -401,27 +407,27 @@ namespace AUI.FileDialog
 			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
+			var left = new VUI.Panel(new VUI.BorderLayout(10));
+
 			path_ = new VUI.TextBox();
 			path_.Submitted += OnPathSubmitted;
+
+			pin_= left.Add(new VUI.CheckBox("Pin", OnPin), VUI.BorderLayout.Left);
+			left.Add(path_, VUI.BorderLayout.Center);
 
 			search_ = new SearchBox("Search");
 			search_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
 			search_.Changed += OnSearchChanged;
 
-			top.Add(new VUI.Splitter(path_, search_, VUI.Splitter.MinimumSecond), VUI.BorderLayout.Center);
+			top.Add(new VUI.Splitter(left, search_, VUI.Splitter.MinimumSecond), VUI.BorderLayout.Center);
 
 			return top;
 		}
 
 		private VUI.Panel CreateTree()
 		{
-			tree_ = new FileTree(FontSize);
-
-			tree_.PathSelected += OnPathSelected;
-			tree_.PackageSelected += OnPackageSelected;
-			tree_.AllFlatSelected += OnAllFlat;
-			tree_.PackagesFlatSelected += OnPackagesFlat;
-			tree_.NothingSelected += OnNothingSelected;
+			tree_ = new FileTree(this, FontSize);
+			tree_.SelectionChanged += OnTreeSelection;
 
 			var p = new VUI.Panel(new VUI.BorderLayout());
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
@@ -470,6 +476,7 @@ namespace AUI.FileDialog
 		{
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));
 			p.Padding = new VUI.Insets(20);
+			p.Borders = new VUI.Insets(0, 1, 0, 0);
 
 			var fn = new VUI.Panel(new VUI.BorderLayout(10));
 			fn.Padding = new VUI.Insets(30, 0, 0, 0);
@@ -638,12 +645,24 @@ namespace AUI.FileDialog
 
 			if (o.HasKey("flattenPackages"))
 				flattenPackages_ = o["flattenPackages"].AsBool;
+
+			//tree_.LoadOptions(o);
 		}
 
 		protected override void DoSaveOptions(JSONClass o)
 		{
 			o["flattenDirs"] = new JSONData(flattenDirs_);
 			o["flattenPackages"] = new JSONData(flattenPackages_);
+
+			//tree_.SaveOptions(o);
+		}
+
+		private void OnPin(bool b)
+		{
+			if (ignorePin_) return;
+
+			tree_.PinSelected(b);
+			AlternateUI.Instance.Save();
 		}
 
 		private void OnPathSubmitted(string s)
@@ -668,30 +687,27 @@ namespace AUI.FileDialog
 			Refresh();
 		}
 
-		private void OnNothingSelected()
+		private void OnTreeSelection(FileTree.IFileTreeItem item)
 		{
-			if (!(container_ is EmptyContainer))
-				SetContainer(new EmptyContainer());
-		}
+			try
+			{
+				ignorePin_ = true;
 
-		private void OnPathSelected(string p)
-		{
-			SetContainer(new DirectoryContainer(p));
-		}
-
-		private void OnPackageSelected(ShortCut sc)
-		{
-			SetContainer(new PackageContainer(sc));
-		}
-
-		private void OnAllFlat()
-		{
-			SetContainer(new AllFlatContainer());
-		}
-
-		private void OnPackagesFlat()
-		{
-			SetContainer(new PackagesFlatContainer());
+				if (item != null && item.CanPin)
+				{
+					pin_.Enabled = true;
+					pin_.Checked = tree_.IsPinned(item);
+				}
+				else
+				{
+					pin_.Enabled = false;
+					pin_.Checked = false;
+				}
+			}
+			finally
+			{
+				ignorePin_ = false;
+			}
 		}
 
 		private List<ExtensionItem> GetOpenSceneExtensions()

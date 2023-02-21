@@ -312,7 +312,7 @@ namespace VUI
 				if (old != null)
 				{
 					var h = WidgetAt(MousePosition);
-					if (!old.HasParent(h))
+					if (!h.HasParent(old))
 						old.OnPointerExitInternalSynth();
 				}
 			}

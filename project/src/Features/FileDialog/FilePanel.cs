@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using VUI;
 
 namespace AUI.FileDialog
 {
@@ -36,6 +37,8 @@ namespace AUI.FileDialog
 			panel_.Padding = new VUI.Insets(8);
 			panel_.Events.PointerClick += OnClick;
 			panel_.Events.PointerDoubleClick += OnDoubleClick;
+			panel_.Events.PointerEnter += OnPointerEnter;
+			panel_.Events.PointerExit += OnPointerExit;
 		}
 
 		public File File
@@ -53,6 +56,18 @@ namespace AUI.FileDialog
 		{
 			fd_.Activate(this);
 			e.Bubble = false;
+		}
+
+		private void OnPointerEnter(VUI.PointerEvent e)
+		{
+			if (fd_.SelectedPanel != this)
+				panel_.BackgroundColor = Style.Theme.HighlightBackgroundColor;
+		}
+
+		private void OnPointerExit(VUI.PointerEvent e)
+		{
+			if (fd_.SelectedPanel != this)
+				panel_.BackgroundColor = new Color(0, 0, 0, 0);
 		}
 
 		public VUI.Panel Panel

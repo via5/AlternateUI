@@ -298,6 +298,17 @@ namespace AUI.FileDialog
 
 			return list;
 		}
+
+		public static ShortCut GetPackage(string path)
+		{
+			foreach (var p in GetPackages(ScenesRoot))
+			{
+				if (p.path == path)
+					return p;
+			}
+
+			return null;
+		}
 	}
 
 	public static class Icons
@@ -307,22 +318,9 @@ namespace AUI.FileDialog
 			public Texture texture = null;
 			public readonly List<Action<Texture>> callbacks_ = new List<Action<Texture>>();
 
-			private static Texture2D ScaleTexture(Texture src, int width, int height)
+			public Icon(string path)
+				: this(path, 0, 0)
 			{
-				RenderTexture rt = RenderTexture.GetTemporary(width, height);
-				Graphics.Blit(src, rt);
-
-				RenderTexture currentActiveRT = RenderTexture.active;
-				RenderTexture.active = rt;
-				Texture2D tex = new Texture2D(rt.width, rt.height);
-
-				tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
-				tex.Apply();
-
-				RenderTexture.ReleaseTemporary(rt);
-				RenderTexture.active = currentActiveRT;
-
-				return tex;
 			}
 
 			public Icon(string path, int w, int h)
@@ -358,20 +356,45 @@ namespace AUI.FileDialog
 				else
 					callbacks_.Add(f);
 			}
+
+			private static Texture2D ScaleTexture(Texture src, int width, int height)
+			{
+				RenderTexture rt = RenderTexture.GetTemporary(width, height);
+				Graphics.Blit(src, rt);
+
+				RenderTexture currentActiveRT = RenderTexture.active;
+				RenderTexture.active = rt;
+				Texture2D tex = new Texture2D(rt.width, rt.height);
+
+				tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
+				tex.Apply();
+
+				RenderTexture.ReleaseTemporary(rt);
+				RenderTexture.active = currentActiveRT;
+
+				return tex;
+			}
 		}
 
 		private static Icon package_ = null;
+		private static Icon pinned_ = null;
 		private static Icon resizeWE_ = null;
 
 		public static void LoadAll()
 		{
-			package_ = new Icon(AlternateUI.Instance.PluginPath + "/res/icons/package.png", 0, 0);
+			package_ = new Icon(AlternateUI.Instance.PluginPath + "/res/icons/package.png");
+			pinned_ = new Icon(AlternateUI.Instance.PluginPath + "/res/icons/pinned.png");
 			resizeWE_ = new Icon(AlternateUI.Instance.PluginPath + "/res/cursors/resize_w_e.png", 40, 40);
 		}
 
 		public static void GetPackageIcon(Action<Texture> f)
 		{
 			package_.Get(f);
+		}
+
+		public static void GetPinnedIcon(Action<Texture> f)
+		{
+			pinned_.Get(f);
 		}
 
 		public static void GetResizeWE(Action<Texture> f)

@@ -1,34 +1,79 @@
 ﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System.Collections.Generic;
 
 namespace AUI.FileDialog
 {
 	class FileTree
 	{
-		private abstract class FileTreeItem : VUI.TreeView.Item
+		public interface IFileTreeItem
 		{
-			protected FileTreeItem(string text)
+			string Type { get; }
+			string Path { get; }
+			bool CanPin { get; }
+
+			void SetFlattenDirectories(bool b);
+			IFileContainer CreateContainer();
+		}
+
+		private abstract class FileTreeItem : VUI.TreeView.Item, IFileTreeItem
+		{
+			private readonly FileTree tree_;
+
+			protected FileTreeItem(FileTree tree, string text)
 				: base(text)
 			{
+				tree_ = tree;
 			}
 
-			public abstract void Activate(FileTree ft);
+			public FileTree FileTree
+			{
+				get { return tree_; }
+			}
+
+			public string FullPath
+			{
+				get
+				{
+					string s = Path;
+
+					var parent = Parent as FileTreeItem;
+					while (parent != null)
+					{
+						s = parent.Path + "/" + s;
+						parent = parent.Parent as FileTreeItem;
+					}
+
+					return s;
+				}
+			}
+
+			public abstract string Type { get; }
+			public abstract string Path { get; }
+			public abstract bool CanPin { get; }
+
+			public virtual void SetFlattenDirectories(bool b)
+			{
+				// no-op
+			}
+
+			public abstract IFileContainer CreateContainer();
 		}
 
 
-		private class DirectoryItem : FileTreeItem
+		private abstract class BasicDirectoryItem : FileTreeItem
 		{
 			private readonly File file_;
 			private bool checkedHasChildren_ = false;
 			private bool hasChildren_ = false;
 
-			public DirectoryItem(File f)
-				: this(f, f.Filename)
+			protected BasicDirectoryItem(FileTree tree, File f)
+				: this(tree, f, f.Filename)
 			{
 			}
 
-			protected DirectoryItem(File f, string display)
-				: base(display)
+			protected BasicDirectoryItem(FileTree tree, File f, string display)
+				: base(tree, display)
 			{
 				file_ = f;
 				Icons.GetDirectoryIcon(t => Icon = t);
@@ -37,6 +82,16 @@ namespace AUI.FileDialog
 			public File File
 			{
 				get { return file_; }
+			}
+
+			public override bool CanPin
+			{
+				get { return true; }
+			}
+
+			public override string Path
+			{
+				get { return File.Path; }
 			}
 
 			public override bool HasChildren
@@ -53,9 +108,9 @@ namespace AUI.FileDialog
 				}
 			}
 
-			public override void Activate(FileTree ft)
+			public override IFileContainer CreateContainer()
 			{
-				ft.FirePathSelected(file_.Path);
+				return new DirectoryContainer(file_.Path);
 			}
 
 			protected override void GetChildren()
@@ -65,7 +120,7 @@ namespace AUI.FileDialog
 				foreach (var d in dirs)
 				{
 					if (IncludeDir(d))
-						Add(new DirectoryItem(d));
+						Add(new DirectoryItem(FileTree, d));
 				}
 			}
 
@@ -76,11 +131,73 @@ namespace AUI.FileDialog
 		}
 
 
-		private class SavesRootItem : DirectoryItem
+		class RootItem : FileTreeItem
 		{
-			public SavesRootItem()
-				: base(new File(Cache.SavesRoot))
+			public RootItem(FileTree tree)
+				: base(tree, "VaM")
 			{
+				Icons.GetDirectoryIcon(t => Icon = t);
+			}
+
+			public override string Type
+			{
+				get { return "Root"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return false; }
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				return new AllFlatContainer("", false);
+			}
+		}
+
+
+		private class DirectoryItem : BasicDirectoryItem
+		{
+			public DirectoryItem(FileTree tree, File f)
+				: base(tree, f)
+			{
+			}
+
+			public static DirectoryItem FromPath(FileTree tree, string path)
+			{
+				if (!FileManagerSecure.DirectoryExists(path))
+				{
+					AlternateUI.Instance.Log.Error(
+						$"directory item: path not found '{path}'");
+
+					return null;
+				}
+
+				return new DirectoryItem(tree, new File(path));
+			}
+
+			public override string Type
+			{
+				get { return "Directory"; }
+			}
+		}
+
+
+		private class SavesRootItem : BasicDirectoryItem
+		{
+			public SavesRootItem(FileTree tree)
+				: base(tree, new File(Cache.SavesRoot))
+			{
+			}
+
+			public override string Type
+			{
+				get { return "SavesRoot"; }
 			}
 
 			protected override bool IncludeDir(File f)
@@ -91,12 +208,12 @@ namespace AUI.FileDialog
 		}
 
 
-		private class PackageItem : DirectoryItem
+		private class PackageItem : BasicDirectoryItem
 		{
 			private readonly ShortCut sc_;
 
-			public PackageItem(ShortCut sc)
-				: base(new File(sc.path), sc.package)
+			public PackageItem(FileTree tree, ShortCut sc)
+				: base(tree, new File(sc.path), sc.package)
 			{
 				sc_ = sc;
 
@@ -104,57 +221,98 @@ namespace AUI.FileDialog
 				Icons.GetPackageIcon(t => Icon = t);
 			}
 
-			public override void Activate(FileTree ft)
+			public static PackageItem FromPath(FileTree tree, string path)
 			{
-				ft.FirePackageSelected(sc_);
+				var sc = Cache.GetPackage(path);
+				if (sc == null)
+				{
+					AlternateUI.Instance.Log.Error(
+						$"package item: path not found '{path}'");
+
+					return null;
+				}
+
+				return new PackageItem(tree, sc);
 			}
-		}
 
-
-		class RootItem : FileTreeItem
-		{
-			public RootItem()
-				: base("VaM")
+			public override string Type
 			{
-				Icons.GetDirectoryIcon(t => Icon = t);
+				get { return "Package"; }
 			}
 
-			public override void Activate(FileTree ft)
+			public override IFileContainer CreateContainer()
 			{
-				if (ft.FlattenDirectories)
-					ft.FireAllFlat();
-				else
-					ft.FireNothingSelected();
+				return new PackageContainer(sc_);
 			}
 		}
 
 
 		class AllFlatItem : FileTreeItem
 		{
-			public AllFlatItem(string text)
-				: base(text)
+			public AllFlatItem(FileTree tree)
+				: base(tree, "All flattened")
 			{
 				Icons.GetDirectoryIcon(t => Icon = t);
 			}
 
-			public override void Activate(FileTree ft)
+			public override string Type
 			{
-				ft.FireAllFlat();
+				get { return "AllFlat"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return true; }
+			}
+
+			public override void SetFlattenDirectories(bool b)
+			{
+				Visible = !b;
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				return new AllFlatContainer("All flattened", true);
 			}
 		}
 
 
 		class PackagesFlatItem : FileTreeItem
 		{
-			public PackagesFlatItem(string text)
-				: base(text)
+			public PackagesFlatItem(FileTree tree)
+				: base(tree, "Packages flattened")
 			{
 				Icons.GetPackageIcon(t => Icon = t);
 			}
 
-			public override void Activate(FileTree ft)
+			public override string Type
 			{
-				ft.FirePackagesFlat();
+				get { return "PackagesFlat"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return true; }
+			}
+
+			public override void SetFlattenDirectories(bool b)
+			{
+				Visible = !b;
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				return new PackagesFlatContainer(true);
 			}
 		}
 
@@ -164,18 +322,30 @@ namespace AUI.FileDialog
 			private bool checkedHasChildren_ = false;
 			private bool hasChildren_ = false;
 
-			public PackagesRootItem()
-				: base("Packages")
+			public PackagesRootItem(FileTree tree)
+				: base(tree, "Packages")
 			{
 				Icons.GetPackageIcon(t => Icon = t);
 			}
 
-			public override void Activate(FileTree ft)
+			public override string Type
 			{
-				if (ft.FlattenDirectories)
-					ft.FirePackagesFlat();
-				else
-					ft.FireNothingSelected();
+				get { return "Packages"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return true; }
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				return new PackagesFlatContainer(false);
 			}
 
 			public override bool HasChildren
@@ -202,30 +372,179 @@ namespace AUI.FileDialog
 					if (!string.IsNullOrEmpty(p.packageFilter))
 						continue;
 
-					Add(new PackageItem(p));
+					Add(new PackageItem(FileTree, p));
 				}
 			}
 		}
 
 
-		public delegate void Handler();
-		public delegate void PathHandler(string path);
-		public delegate void PackageHandler(ShortCut sc);
+		class PinnedRootItem : FileTreeItem
+		{
+			private readonly PinnedFlatItem flat_;
 
-		public event PathHandler PathSelected;
-		public event PackageHandler PackageSelected;
-		public event Handler AllFlatSelected, PackagesFlatSelected, NothingSelected;
+			public PinnedRootItem(FileTree tree)
+				: base(tree, "Pinned")
+			{
+				Icons.GetPinnedIcon(t => Icon = t);
+				flat_ = new PinnedFlatItem(tree, this);
+				Add(flat_);
+			}
 
+			public override string Type
+			{
+				get { return "PinnedRoot"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return false; }
+			}
+
+			public void AddPinned(FileTreeItem item)
+			{
+				var newItem = CreateItem(item.Type, item.Path);
+				if (newItem == null)
+					return;
+
+				Add(newItem);
+			}
+
+			public void RemovePinned(string path)
+			{
+			}
+
+			public bool HasPinned(IFileTreeItem item)
+			{
+				var cs = Children;
+				if (cs == null || cs.Count == 0)
+					return false;
+
+				if (cs.Contains(item as VUI.TreeView.Item))
+					return true;
+
+				foreach (IFileTreeItem c in cs)
+				{
+					if (c == null)
+						continue;
+
+					if (c.Type == item.Type && c.Path == item.Path)
+						return true;
+				}
+
+				return false;
+			}
+
+			public MergedContainer CreateMergedContainer(string text)
+			{
+				var mc = new MergedContainer(text);
+
+				var cs = Children;
+				if (cs != null && cs.Count > 0)
+				{
+					foreach (IFileTreeItem c in cs)
+					{
+						if (c == null || c is PinnedFlatItem)
+							continue;
+
+						var cc = c.CreateContainer() as BasicFileContainer;
+						if (cc != null)
+							mc.Add(cc);
+					}
+				}
+
+				return mc;
+			}
+
+			public override void SetFlattenDirectories(bool b)
+			{
+				flat_.Visible = !b;
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				if (FileTree.FlattenDirectories)
+					return CreateMergedContainer("Pinned");
+				else
+					return new EmptyContainer("Pinned");
+			}
+
+			private FileTreeItem CreateItem(string type, string path)
+			{
+				if (type == "Root")
+					return new RootItem(FileTree);
+				else if (type == "Directory")
+					return DirectoryItem.FromPath(FileTree, path);
+				else if (type == "SavesRoot")
+					return new SavesRootItem(FileTree);
+				else if (type == "Package")
+					return PackageItem.FromPath(FileTree, path);
+				else if (type == "AllFlat")
+					return new AllFlatItem(FileTree);
+				else if (type == "PackagesFlat")
+					return new PackagesFlatItem(FileTree);
+				else if (type == "Packages")
+					return new PackagesRootItem(FileTree);
+
+				AlternateUI.Instance.Log.Error($"bad file tree item type '{type}'");
+				return null;
+			}
+		}
+
+
+		class PinnedFlatItem : FileTreeItem
+		{
+			private readonly PinnedRootItem pinned_;
+
+			public PinnedFlatItem(FileTree tree, PinnedRootItem pinned)
+				: base(tree, "Pinned flattened")
+			{
+				pinned_ = pinned;
+			}
+
+			public override string Type
+			{
+				get { return "PinnedFlat"; }
+			}
+
+			public override string Path
+			{
+				get { return ""; }
+			}
+
+			public override bool CanPin
+			{
+				get { return false; }
+			}
+
+			public override IFileContainer CreateContainer()
+			{
+				return pinned_.CreateMergedContainer("Pinned flattened");
+			}
+		}
+
+
+		public delegate void ItemHandler(IFileTreeItem item);
+		public event ItemHandler SelectionChanged;
+
+
+		private readonly FileDialog fd_;
 		private readonly VUI.TreeView tree_;
 		private readonly RootItem root_;
 		private readonly AllFlatItem allFlat_ = null;
 		private readonly PackagesFlatItem packagesFlat_ = null;
+		private readonly PinnedRootItem pinned_ = null;
 		private readonly SavesRootItem savesRoot_ = null;
 		private readonly PackagesRootItem packagesRoot_ = null;
 		private bool flatten_ = false;
 
-		public FileTree(int fontSize)
+		public FileTree(FileDialog fd, int fontSize)
 		{
+			fd_ = fd;
 			tree_ = new VUI.TreeView();
 
 			tree_.FontSize = fontSize;
@@ -234,18 +553,25 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			root_ = new RootItem();
+			root_ = new RootItem(this);
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
 
 
-			allFlat_ = root_.Add(new AllFlatItem("All flattened"));
-			packagesFlat_ = root_.Add(new PackagesFlatItem("Packages flattened"));
-			savesRoot_ = root_.Add(new SavesRootItem());
-			packagesRoot_ = root_.Add(new PackagesRootItem());
+			allFlat_ = root_.Add(new AllFlatItem(this));
+			packagesFlat_ = root_.Add(new PackagesFlatItem(this));
+			pinned_ = root_.Add(new PinnedRootItem(this));
+			savesRoot_ = root_.Add(new SavesRootItem(this));
+			packagesRoot_ = root_.Add(new PackagesRootItem(this));
 
 			root_.Expanded = true;
+			pinned_.Expanded = true;
+		}
+
+		public FileDialog FileDialog
+		{
+			get { return fd_; }
 		}
 
 		public VUI.Widget Widget
@@ -263,9 +589,69 @@ namespace AUI.FileDialog
 			set
 			{
 				flatten_ = value;
-				allFlat_.Visible = !value;
-				packagesFlat_.Visible = !value;
+
+				foreach (FileTreeItem item in root_.Children)
+				{
+					if (item != null)
+						item.SetFlattenDirectories(flatten_);
+				}
 			}
+		}
+
+		public void LoadOptions(JSONClass o)
+		{
+			pinned_.Clear();
+
+			//if (o.HasKey("pinned"))
+			//{
+			//	var a = o["pinned"].AsArray;
+			//	if (a != null)
+			//	{
+			//		foreach (JSONNode n in a)
+			//			pinned_.Add(n.Value);
+			//	}
+			//}
+		}
+
+		public void SaveOptions(JSONClass o)
+		{
+			//var a = new JSONArray();
+			//foreach (var p in pinned_)
+			//	a.Add(new JSONData(p));
+			//
+			//o["pinned"] = a;
+		}
+
+		public void Set(bool write)
+		{
+			allFlat_.Visible = !write;
+			packagesFlat_.Visible = !write;
+			savesRoot_.Visible = true;
+			packagesRoot_.Visible = !write;
+
+			//pinned_.Clear();
+			//foreach (var p in pinned)
+			//	pinned_.Add(new VUI.TreeView.Item(p));
+		}
+
+		public void PinSelected(bool b)
+		{
+			var s = tree_.Selected as FileTreeItem;
+			if (s == null)
+				return;
+
+			if (b)
+				pinned_.AddPinned(s);
+			else
+				pinned_.RemovePinned(s.FullPath);
+		}
+
+		public bool IsPinned(IFileTreeItem item)
+		{
+			if (item == null)
+				return false;
+
+			return pinned_.HasPinned(item);
 		}
 
 		public bool Select(string path)
@@ -312,44 +698,16 @@ namespace AUI.FileDialog
 			return false;
 		}
 
-		public void Set(bool write)
-		{
-			allFlat_.Visible = !write;
-			packagesFlat_.Visible = !write;
-			savesRoot_.Visible = true;
-			packagesRoot_.Visible = !write;
-		}
-
-		public void FireNothingSelected()
-		{
-			NothingSelected?.Invoke();
-		}
-
-		public void FirePathSelected(string path)
-		{
-			PathSelected?.Invoke(path);
-		}
-
-		public void FirePackageSelected(ShortCut sc)
-		{
-			PackageSelected?.Invoke(sc);
-		}
-
-		public void FireAllFlat()
-		{
-			AllFlatSelected?.Invoke();
-		}
-
-		public void FirePackagesFlat()
-		{
-			PackagesFlatSelected?.Invoke();
-		}
-
 		private void OnSelection(VUI.TreeView.Item item)
 		{
 			var fi = item as FileTreeItem;
-			if (fi != null)
-				fi.Activate(this);
+			var c = fi?.CreateContainer();
+
+			if (c == null)
+				c = new EmptyContainer("");
+
+			fd_.SetContainer(c);
+			SelectionChanged?.Invoke(fi);
 		}
 	}
 }

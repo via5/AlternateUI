@@ -188,6 +188,20 @@ namespace VUI
 				}
 			}
 
+			public bool IsContainedBy(Item item)
+			{
+				var i = this;
+				while (i != null)
+				{
+					if (item == i)
+						return true;
+
+					i = i.Parent;
+				}
+
+				return false;
+			}
+
 			public void Toggle()
 			{
 				Expanded = !Expanded;
@@ -315,7 +329,19 @@ namespace VUI
 
 			public virtual bool HasChildren
 			{
-				get { return children_ != null && children_.Count > 0; }
+				get
+				{
+					if (children_ == null)
+						return false;
+
+					for (int i = 0; i < children_.Count; ++i)
+					{
+						if (children_[i].Visible)
+							return true;
+					}
+
+					return false;
+				}
 			}
 
 			public T Add<T>(T child) where T : Item
@@ -327,17 +353,20 @@ namespace VUI
 				child.Parent = this;
 				gotChildren_ = true;
 
+				NodesChanged();
+
 				return child;
 			}
 
 			public void Clear()
 			{
-				if (children_ != null)
+				if (children_ != null && children_.Count > 0)
 				{
 					for (int i=0; i<children_.Count; ++i)
 						children_[i].Parent = null;
 
 					children_.Clear();
+					NodesChanged();
 				}
 
 				gotChildren_ = false;
@@ -846,6 +875,27 @@ namespace VUI
 		{
 			if (staleTimer_ == null && WidgetObject != null)
 				staleTimer_ = Timer.Create(Timer.Immediate, OnStale);
+
+			if (!i.Visible && Selected != null && Selected.IsContainedBy(i))
+			{
+				var ns = Selected?.Parent;
+				bool found = false;
+
+				while (ns != null)
+				{
+					if (ns.Visible)
+					{
+						Select(ns);
+						found = true;
+						break;
+					}
+
+					ns = ns.Parent;
+				}
+
+				if (!found)
+					Select(RootItem);
+			}
 		}
 
 		private void OnStale()
@@ -907,7 +957,7 @@ namespace VUI
 
 			if (expandParents)
 			{
-				Item parent = item.Parent;
+				Item parent = item?.Parent;
 				while (parent != null)
 				{
 					parent.Expanded = true;
@@ -926,9 +976,7 @@ namespace VUI
 				selected_ = null;
 
 			for (int i = 0; i < nodes_.Count; ++i)
-			{
 				nodes_[i].UpdateState();
-			}
 
 			if (selected_ != old)
 				SelectionChanged?.Invoke(selected_);

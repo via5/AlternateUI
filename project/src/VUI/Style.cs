@@ -290,7 +290,7 @@ namespace VUI
 
 		public Color HighlightBackgroundColor
 		{
-			get { return new Color(0.30f, 0.30f, 0.30f); }
+			get { return new Color(0.20f, 0.20f, 0.20f); }
 		}
 
 		public Color SelectionBackgroundColor

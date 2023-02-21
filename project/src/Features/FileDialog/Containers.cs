@@ -49,14 +49,22 @@ namespace AUI.FileDialog
 			return new Cache.Filter(search_, exts_);
 		}
 
-		public abstract List<File> GetFiles(FileDialog fd);
+		public List<File> GetFiles(FileDialog fd)
+		{
+			var list = new List<File>();
+			DoGetFiles(fd, list, GetFilter());
+			return list;
+		}
+
+		public abstract void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter);
 	}
 
 
 	class EmptyContainer : BasicFileContainer
 	{
-		public EmptyContainer()
-			: base("")
+		public EmptyContainer(string path)
+			: base(path)
 		{
 		}
 
@@ -65,9 +73,10 @@ namespace AUI.FileDialog
 			get { return true; }
 		}
 
-		public override List<File> GetFiles(FileDialog fd)
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			return new List<File>();
+			// no-op
 		}
 	}
 
@@ -84,24 +93,22 @@ namespace AUI.FileDialog
 			get { return false; }
 		}
 
-		public override List<File> GetFiles(FileDialog fd)
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			return GetFiles(fd.FlattenDirectories);
+			GetFiles(fd.FlattenDirectories, list, filter);
 		}
 
-		protected List<File> GetFiles(bool flatten)
+		protected void GetFiles(
+			bool flatten, List<File> list, Cache.Filter filter)
 		{
 			if (string.IsNullOrEmpty(Path))
-				return new List<File>();
-
-			List<File> list;
+				return;
 
 			if (flatten)
-				list = Cache.GetFilesRecursive(Path, GetFilter());
+				list.AddRange(Cache.GetFilesRecursive(Path, filter));
 			else
-				list = Cache.GetFiles(Path, GetFilter());
-
-			return list;
+				list.AddRange(Cache.GetFiles(Path, filter));
 		}
 	}
 
@@ -121,18 +128,22 @@ namespace AUI.FileDialog
 			get { return true; }
 		}
 
-		public override List<File> GetFiles(FileDialog fd)
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			return GetFiles(fd.FlattenPackages);
+			GetFiles(fd.FlattenPackages, list, filter);
 		}
 	}
 
 
 	class PackagesFlatContainer : BasicFileContainer
 	{
-		public PackagesFlatContainer()
+		private readonly bool always_;
+
+		public PackagesFlatContainer(bool always)
 			: base("Packages flattened")
 		{
+			always_ = always;
 		}
 
 		public override bool Virtual
@@ -140,18 +151,23 @@ namespace AUI.FileDialog
 			get { return true; }
 		}
 
-		public override List<File> GetFiles(FileDialog fd)
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			return Cache.GetPackagesFlat(Cache.ScenesRoot, GetFilter());
+			if (always_ || fd.FlattenDirectories)
+				list.AddRange(Cache.GetPackagesFlat(Cache.ScenesRoot, filter));
 		}
 	}
 
 
 	class AllFlatContainer : BasicFileContainer
 	{
-		public AllFlatContainer()
-			: base("All flattened")
+		private readonly bool always_;
+
+		public AllFlatContainer(string text, bool always)
+			: base(text)
 		{
+			always_ = always;
 		}
 
 		public override bool Virtual
@@ -159,15 +175,43 @@ namespace AUI.FileDialog
 			get { return true; }
 		}
 
-		public override List<File> GetFiles(FileDialog fd)
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			var list = new List<File>();
+			if (always_ || fd.FlattenDirectories)
+			{
+				list.AddRange(Cache.GetPackagesFlat(Cache.ScenesRoot, filter));
+				list.AddRange(Cache.GetFilesRecursive(Cache.ScenesRoot, filter));
+			}
+		}
+	}
 
-			list.AddRange(Cache.GetPackagesFlat(Cache.ScenesRoot, GetFilter()));
-			list.AddRange(Cache.GetFilesRecursive(Cache.ScenesRoot, GetFilter()));
 
-			return list;
+	class MergedContainer : BasicFileContainer
+	{
+		private readonly List<BasicFileContainer> containers_ =
+			new List<BasicFileContainer>();
+
+		public MergedContainer(string text)
+			: base(text)
+		{
 		}
 
+		public void Add(BasicFileContainer c)
+		{
+			containers_.Add(c);
+		}
+
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override void DoGetFiles(
+			FileDialog fd, List<File> list, Cache.Filter filter)
+		{
+			foreach (var c in containers_)
+				c.DoGetFiles(fd, list, filter);
+		}
 	}
 }
