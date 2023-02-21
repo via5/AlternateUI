@@ -383,9 +383,7 @@ namespace AUI.FileDialog
 
 			window_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
-			var sp = new VUI.Splitter();
-			sp.First = CreateTree();
-			sp.Second = CreateFilesPanel();
+			var sp = new VUI.Splitter(CreateTree(), CreateFilesPanel(), VUI.Splitter.AbsolutePosition, 500);
 
 			window_.ContentPanel.Add(CreateTop(), VUI.BorderLayout.Top);
 			window_.ContentPanel.Add(sp, VUI.BorderLayout.Center);
@@ -403,13 +401,14 @@ namespace AUI.FileDialog
 			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
-			path_ = top.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
+			path_ = new VUI.TextBox();
 			path_.Submitted += OnPathSubmitted;
 
 			search_ = new SearchBox("Search");
-			search_.Widget.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
+			search_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
 			search_.Changed += OnSearchChanged;
-			top.Add(search_.Widget, VUI.BorderLayout.Right);
+
+			top.Add(new VUI.Splitter(path_, search_, VUI.Splitter.MinimumSecond), VUI.BorderLayout.Center);
 
 			return top;
 		}

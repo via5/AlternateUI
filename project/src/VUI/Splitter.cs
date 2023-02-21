@@ -84,16 +84,35 @@ namespace VUI
 		public delegate void Handler();
 		public event Handler Moved;
 
+		public const int AbsolutePosition = 0;
+		public const int MinimumFirst = 1;
+		public const int Centered = 2;
+		public const int MinimumSecond = 3;
+
 		private Widget first_ = null;
 		private Widget second_  = null;
 		private readonly SplitterHandle handle_;
-		private float handlePos_ = 500;
+		private int initHandle_ = Centered;
+		private float handlePos_ = -1;
+		private bool handleInited_ = false;
 
 		public Splitter()
+			: this(null, null, 0)
+		{
+		}
+
+		public Splitter(Widget first, Widget second, int initialHandleMode, float handlePos = -1)
 		{
 			Layout = new AbsoluteLayout();
 			handle_ = new SplitterHandle(this);
 			handle_.Moved += OnHandleMoved;
+
+			first_ = first;
+			second_ = second;
+			initHandle_ = initialHandleMode;
+			handlePos_ = handlePos;
+
+			Rebuild();
 		}
 
 		public Widget First
@@ -111,6 +130,13 @@ namespace VUI
 		public float HandlePosition
 		{
 			get { return handlePos_; }
+			set { SetHandlePosition(value); }
+		}
+
+		public int InitialHandleMode
+		{
+			get { return initHandle_; }
+			set { initHandle_ = value; }
 		}
 
 		private void Rebuild()
@@ -126,6 +152,46 @@ namespace VUI
 			Add(handle_);
 		}
 
+		protected override Size DoGetPreferredSize(float maxWidth, float maxHeight)
+		{
+			return GetSize(maxWidth, maxHeight, true);
+		}
+
+		protected override Size DoGetMinimumSize()
+		{
+			return GetSize(-1, -1, false);
+		}
+
+		private Size GetSize(float maxWidth, float maxHeight, bool preferred)
+		{
+			if (first_ == null || second_ == null)
+				return Size.Zero;
+
+			Size firstPs, secondPs;
+
+			if (preferred)
+			{
+				firstPs = first_.GetRealPreferredSize(maxWidth, maxHeight);
+				secondPs = second_.GetRealPreferredSize(maxWidth, maxHeight);
+			}
+			else
+			{
+				firstPs = first_.GetRealMinimumSize();
+				secondPs = second_.GetRealMinimumSize();
+			}
+
+			var ps = Size.Zero;
+
+			ps.Width =
+				Mathf.Max(firstPs.Width, handlePos_) +
+				Style.Metrics.SplitterHandleSize +
+				secondPs.Width;
+
+			ps.Height = Mathf.Max(firstPs.Height, secondPs.Height);
+
+			return ps;
+		}
+
 		public override void UpdateBounds()
 		{
 			base.UpdateBounds();
@@ -133,7 +199,46 @@ namespace VUI
 			if (first_ == null || second_ == null)
 				return;
 
-			var r = new Rectangle(AbsoluteClientBounds);
+			float minFirst = -1;
+			float minSecond = -1;
+			var r = AbsoluteClientBounds;
+
+			if (!handleInited_)
+			{
+				handleInited_ = true;
+
+				switch (initHandle_)
+				{
+					case AbsolutePosition:
+					{
+						// no-op
+						break;
+					}
+
+					case MinimumFirst:
+					{
+						minFirst = first_.GetRealMinimumSize().Width;
+						handlePos_ = minFirst;
+						break;
+					}
+
+					case MinimumSecond:
+					{
+						minSecond = second_.GetRealMinimumSize().Width;
+						handlePos_ = r.Width - minSecond;
+						break;
+					}
+
+					case Centered:  // fall-through
+					default:
+					{
+						handlePos_ = r.Width / 2;
+						break;
+					}
+				}
+			}
+
+			handlePos_ = AdjustedPos(handlePos_, minFirst, minSecond);
 
 			var leftRect = r;
 			leftRect.Right = leftRect.Left + handlePos_;
@@ -156,24 +261,38 @@ namespace VUI
 
 		private void OnHandleMoved(float x)
 		{
-			float minFirst = 0;
-			if (first_ != null)
+			SetHandlePosition(x);
+			Moved?.Invoke();
+		}
+
+		private void SetHandlePosition(float x)
+		{
+			var a = AdjustedPos(x);
+
+			if (Mathf.Abs(handlePos_ - a) > 0.1f)
+			{
+				handlePos_ = a;
+				UpdateBounds();
+			}
+		}
+
+		private float AdjustedPos(float x, float minFirst = -1, float minSecond = -1)
+		{
+			if (first_ != null && minFirst < 0)
 				minFirst = first_.GetRealMinimumSize().Width;
 
-			float minSecond = 0;
-			if (second_ != null)
+			if (second_ != null && minSecond < 0)
 				minSecond = second_.GetRealMinimumSize().Width;
 
-			handlePos_ = x;
+			var r = ClientBounds;
 
-			if (handlePos_ - ClientBounds.Left < minFirst)
-				handlePos_ = ClientBounds.Left + minFirst;
+			if (x - r.Left < minFirst)
+				x = r.Left + minFirst;
 
-			if (ClientBounds.Right - handlePos_ < minSecond)
-				handlePos_ = ClientBounds.Right - minSecond;
+			if (r.Right - x < minSecond)
+				x = r.Right - minSecond;
 
-			UpdateBounds();
-			Moved?.Invoke();
+			return x;
 		}
 	}
 }

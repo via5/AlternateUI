@@ -49,7 +49,7 @@ namespace AUI.ClothingUI
 				and_ = top.Add(new VUI.ComboBox<string>(new string[] { "And", "Or" }, OnAndChanged));
 
 			var bottom = new VUI.Panel(new VUI.VerticalFlow(10));
-			bottom.Add(search_.Widget);
+			bottom.Add(search_);
 
 			panel_.RightClick += ClearTags;
 			panel_.Panel.Add(top, VUI.BorderLayout.Top);
@@ -796,7 +796,7 @@ namespace AUI.ClothingUI
 
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 			top.Add(pages, VUI.BorderLayout.Left);
-			top.Add(search_.Widget, VUI.BorderLayout.Center);
+			top.Add(search_, VUI.BorderLayout.Center);
 
 
 			var left = new VUI.Panel(new VUI.HorizontalFlow(

@@ -43,7 +43,7 @@
 			search_.Changed += OnSearch;
 
 			catsPanel_.Panel.Add(tree_, VUI.BorderLayout.Center);
-			catsPanel_.Panel.Add(search_.Widget, VUI.BorderLayout.Bottom);
+			catsPanel_.Panel.Add(search_, VUI.BorderLayout.Bottom);
 			catsPanel_.RightClick += ResetCategory;
 
 			tree_.ItemClicked += OnSelection;
@@ -156,7 +156,7 @@
 			pagePanel.Add(count_);
 
 			var searchPanel = new VUI.Panel(new VUI.BorderLayout());
-			searchPanel.Add(search_.Widget, VUI.BorderLayout.Center);
+			searchPanel.Add(search_, VUI.BorderLayout.Center);
 
 			var catsPanel = new VUI.Panel(new VUI.HorizontalFlow(
 				5, VUI.FlowLayout.AlignDefault, true));
