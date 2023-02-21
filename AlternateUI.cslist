@@ -33,6 +33,7 @@ project\src\VUI\ColorPicker.cs
 project\src\VUI\ComboBox.cs
 project\src\VUI\Dialog.cs
 project\src\VUI\Events.cs
+project\src\VUI\FlowLayout.cs
 project\src\VUI\Glue.cs
 project\src\VUI\GridLayout.cs
 project\src\VUI\Image.cs

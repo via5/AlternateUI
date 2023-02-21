@@ -585,9 +585,9 @@ namespace VUI
 					var tr = r;
 
 					if (item_.Parent != tree_.RootItem || tree_.RootToggles)
-						tr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeToggleSpacing;
+						tr.Left += Style.Metrics.TreeCheckBoxWidth + Style.Metrics.TreeToggleSpacing;
 
-					tr.Width = Style.Metrics.TreeToggleWidth;
+					tr.Width = Style.Metrics.TreeCheckBoxWidth;
 
 					checkbox_.SetBounds(tr);
 					checkbox_.Checked = item_.Checked;
@@ -627,7 +627,7 @@ namespace VUI
 					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeToggleSpacing;
 
 				if (tree_.CheckBoxes && item_.Checkable)
-					lr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeCheckboxSpacing;
+					lr.Left += Style.Metrics.TreeCheckBoxWidth + Style.Metrics.TreeCheckboxSpacing;
 
 				if (tree_.Icons)
 					lr.Left += Style.Metrics.TreeIconWidth + Style.Metrics.TreeIconSpacing;
@@ -1067,6 +1067,19 @@ namespace VUI
 			float maxWidth, float maxHeight)
 		{
 			return new Size(300, 200);
+		}
+
+		protected override Size DoGetMinimumSize()
+		{
+			var m = Style.Metrics;
+
+			float w =
+				m.TreeToggleWidth + m.TreeToggleSpacing +
+				m.TreeCheckBoxWidth + m.TreeCheckboxSpacing +
+				m.TreeIconWidth + m.TreeIconSpacing +
+				50;
+
+			return new Size(w, 200);
 		}
 
 		private void OnWheel(WheelEvent e)

@@ -587,7 +587,15 @@ namespace VUI
 
 		public Size GetRealMinimumSize()
 		{
-			return Size.Max(DoGetMinimumSize(), minSize_);
+			var s = Size.Zero;
+
+			if (layout_ != null)
+				s = layout_.GetMinimumSize();
+
+			s = Size.Max(s, DoGetMinimumSize());
+			s = Size.Max(s, minSize_);
+
+			return s;
 		}
 
 		public Size MinimumSize
@@ -1022,6 +1030,12 @@ namespace VUI
 					events_.FirePointerExit(this, d);
 				}
 			}
+		}
+
+		public void OnPointerExitInternalSynth()
+		{
+			var d = new PointerEventData(EventSystem.current);
+			OnPointerExitInternal(d);
 		}
 
 		public virtual void OnPointerDownInternal(PointerEventData d, bool setFocus=true)

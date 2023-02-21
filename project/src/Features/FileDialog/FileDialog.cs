@@ -455,6 +455,7 @@ namespace AUI.FileDialog
 			filesPanel.Add(files, VUI.BorderLayout.Center);
 			filesPanel.Add(sb_, VUI.BorderLayout.Right);
 
+			filesPanel.MinimumSize = new VUI.Size(300, VUI.Widget.DontCare);
 			filesPanel.Margins = new VUI.Insets(0);
 			filesPanel.Padding = new VUI.Insets(5, 0, 0, 0);
 			filesPanel.Borders = new VUI.Insets(0);

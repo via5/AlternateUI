@@ -228,7 +228,6 @@ namespace AUI.FileDialog
 		{
 			tree_ = new VUI.TreeView();
 
-			tree_.MinimumSize = new VUI.Size(500, 0);
 			tree_.FontSize = fontSize;
 			tree_.Icons = true;
 			tree_.DoubleClickToggle = true;

@@ -304,8 +304,17 @@ namespace VUI
 		{
 			if (captured_ == w)
 			{
+				Widget old = captured_;
+
 				captured_ = null;
 				UpdateTracking(true);
+
+				if (old != null)
+				{
+					var h = WidgetAt(MousePosition);
+					if (!old.HasParent(h))
+						old.OnPointerExitInternalSynth();
+				}
 			}
 		}
 

@@ -111,7 +111,23 @@ namespace VUI
 			}
 		}
 
+		struct SizesData
+		{
+			public Size ps;
+			public List<float> widths;
+			public CellData<Size> sizes;
+			public float tallest;
 
+			public SizesData(int cols, int rows)
+			{
+				ps = new Size();
+				widths = new List<float>();
+				for (int i = 0; i < cols; ++i)
+					widths.Add(0);
+				sizes = new CellData<Size>(cols, rows);
+				tallest = 0;
+			}
+		}
 
 
 		private readonly CellData<List<Widget>> widgets_ =
@@ -272,7 +288,7 @@ namespace VUI
 		protected override void LayoutImpl()
 		{
 			var r = new Rectangle(Parent.AbsoluteClientBounds);
-			var d = GetCellPreferredSizes(r.Width, r.Height);
+			var d = GetCellSizes(r.Width, r.Height, true);
 
 
 			var extraWidth = new List<float>();
@@ -428,30 +444,20 @@ namespace VUI
 			}
 		}
 
-
-		struct PreferredSizesData
+		protected override Size DoGetPreferredSize(float maxWidth, float maxHeight)
 		{
-			public Size ps;
-			public List<float> widths;
-			public CellData<Size> sizes;
-			public float tallest;
-
-			public PreferredSizesData(int cols, int rows)
-			{
-				ps = new Size();
-				widths = new List<float>();
-				for (int i = 0; i < cols; ++i)
-					widths.Add(0);
-				sizes = new CellData<Size>(cols, rows);
-				tallest = 0;
-			}
+			return GetCellSizes(maxWidth, maxHeight, true).ps;
 		}
 
-
-		private PreferredSizesData GetCellPreferredSizes(
-			float maxWidth, float maxHeight)
+		protected override Size DoGetMinimumSize()
 		{
-			var d = new PreferredSizesData(widgets_.ColumnCount, widgets_.RowCount);
+			return GetCellSizes(-1, -1, false).ps;
+		}
+
+		private SizesData GetCellSizes(
+			float maxWidth, float maxHeight, bool preferred)
+		{
+			var d = new SizesData(widgets_.ColumnCount, widgets_.RowCount);
 
 			float maxCellHeight = maxHeight;
 			if (uniformHeight_ && maxHeight != DontCare)
@@ -474,7 +480,13 @@ namespace VUI
 						if (!w.Visible)
 							continue;
 
-						var ps = w.GetRealPreferredSize(maxWidth, maxHeight);
+						Size ps;
+
+						if (preferred)
+							ps = w.GetRealPreferredSize(maxWidth, maxHeight);
+						else
+							ps = w.GetRealMinimumSize();
+
 						cellPs.Width = Math.Max(cellPs.Width, ps.Width);
 						cellPs.Height = Math.Max(cellPs.Height, ps.Height);
 
@@ -523,11 +535,6 @@ namespace VUI
 			}
 
 			return d;
-		}
-
-		protected override Size DoGetPreferredSize(float maxWidth, float maxHeight)
-		{
-			return GetCellPreferredSizes(maxWidth, maxHeight).ps;
 		}
 	}
 }

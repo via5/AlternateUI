@@ -109,7 +109,14 @@ namespace VUI
 			get { return 30; }
 		}
 
-		// width of the +icon
+		// width of the checkbox
+		//
+		public float TreeCheckBoxWidth
+		{
+			get { return 30; }
+		}
+
+		// width of the icon
 		//
 		public float TreeIconWidth
 		{
