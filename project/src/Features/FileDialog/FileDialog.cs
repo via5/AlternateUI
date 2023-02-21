@@ -31,6 +31,12 @@ namespace AUI.FileDialog
 	}
 
 
+	class PinInfo
+	{
+		public string type, path, text;
+	}
+
+
 	class FileDialog : BasicFeature
 	{
 		class ReplacedButton
@@ -61,6 +67,7 @@ namespace AUI.FileDialog
 			}
 		}
 
+
 		private const int FontSize = 24;
 
 		public const int NoType = 0;
@@ -87,6 +94,7 @@ namespace AUI.FileDialog
 		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
+		private readonly List<PinInfo> pins_ = new List<PinInfo>();
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
@@ -426,7 +434,7 @@ namespace AUI.FileDialog
 
 		private VUI.Panel CreateTree()
 		{
-			tree_ = new FileTree(this, FontSize);
+			tree_ = new FileTree(this, FontSize, pins_);
 			tree_.SelectionChanged += OnTreeSelection;
 
 			var p = new VUI.Panel(new VUI.BorderLayout());
@@ -646,7 +654,28 @@ namespace AUI.FileDialog
 			if (o.HasKey("flattenPackages"))
 				flattenPackages_ = o["flattenPackages"].AsBool;
 
-			//tree_.LoadOptions(o);
+			if (o.HasKey("pins"))
+			{
+				var a = o["pins"].AsArray;
+				if (a != null)
+				{
+					foreach (JSONClass po in a)
+					{
+						if (po == null)
+							continue;
+
+						var p = new PinInfo();
+						p.type = po["type"]?.Value;
+						p.path = po["path"]?.Value;
+						p.text = po["text"]?.Value;
+
+						if (p.type == null || p.path == null)
+							continue;
+
+						pins_.Add(p);
+					}
+				}
+			}
 		}
 
 		protected override void DoSaveOptions(JSONClass o)
@@ -654,7 +683,25 @@ namespace AUI.FileDialog
 			o["flattenDirs"] = new JSONData(flattenDirs_);
 			o["flattenPackages"] = new JSONData(flattenPackages_);
 
-			//tree_.SaveOptions(o);
+			if (tree_ != null)
+			{
+				var pins = tree_.GetPins();
+
+				if (pins.Count > 0)
+				{
+					var a = new JSONArray();
+
+					foreach (var p in pins)
+					{
+						var po = new JSONClass();
+						po["type"] = p.Type;
+						po["path"] = p.Path;
+						a.Add(po);
+					}
+
+					o["pins"] = a;
+				}
+			}
 		}
 
 		private void OnPin(bool b)

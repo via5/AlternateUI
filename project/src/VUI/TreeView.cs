@@ -358,6 +358,18 @@ namespace VUI
 				return child;
 			}
 
+			public void Remove(Item child)
+			{
+				if (children_ == null)
+					return;
+
+				if (child.Parent != this)
+					return;
+
+				children_.Remove(child);
+				TreeView?.NodeRemovedInternal(child);
+			}
+
 			public void Clear()
 			{
 				if (children_ != null && children_.Count > 0)
@@ -871,31 +883,44 @@ namespace VUI
 				staleTimer_ = Timer.Create(Timer.Immediate, OnStale);
 		}
 
+		public void NodeRemovedInternal(Item i)
+		{
+			NodesChangedInternal(i);
+
+			if (Selected != null && Selected.IsContainedBy(i))
+				SelectedGone();
+
+			i.Parent = null;
+		}
+
 		public void VisibilityChangedInternal(Item i)
 		{
 			if (staleTimer_ == null && WidgetObject != null)
 				staleTimer_ = Timer.Create(Timer.Immediate, OnStale);
 
 			if (!i.Visible && Selected != null && Selected.IsContainedBy(i))
+				SelectedGone();
+		}
+
+		private void SelectedGone()
+		{
+			var ns = Selected?.Parent;
+			bool found = false;
+
+			while (ns != null)
 			{
-				var ns = Selected?.Parent;
-				bool found = false;
-
-				while (ns != null)
+				if (ns.Visible)
 				{
-					if (ns.Visible)
-					{
-						Select(ns);
-						found = true;
-						break;
-					}
-
-					ns = ns.Parent;
+					Select(ns);
+					found = true;
+					break;
 				}
 
-				if (!found)
-					Select(RootItem);
+				ns = ns.Parent;
 			}
+
+			if (!found)
+				Select(RootItem);
 		}
 
 		private void OnStale()

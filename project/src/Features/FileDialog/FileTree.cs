@@ -382,12 +382,19 @@ namespace AUI.FileDialog
 		{
 			private readonly PinnedFlatItem flat_;
 
-			public PinnedRootItem(FileTree tree)
+			public PinnedRootItem(FileTree tree, List<PinInfo> pins)
 				: base(tree, "Pinned")
 			{
 				Icons.GetPinnedIcon(t => Icon = t);
 				flat_ = new PinnedFlatItem(tree, this);
 				Add(flat_);
+
+				foreach (var p in pins)
+				{
+					var pi = CreateItem(p.type, p.path);
+					if (pi != null)
+						Add(pi);
+				}
 			}
 
 			public override string Type
@@ -414,8 +421,31 @@ namespace AUI.FileDialog
 				Add(newItem);
 			}
 
-			public void RemovePinned(string path)
+			public bool RemovePinned(FileTreeItem item)
 			{
+				var cs = Children;
+				if (cs == null || cs.Count == 0)
+					return false;
+
+				if (cs.Contains(item))
+				{
+					Remove(item);
+					return true;
+				}
+
+				foreach (IFileTreeItem c in cs)
+				{
+					if (c == null)
+						continue;
+
+					if (c.Type == item.Type && c.Path == item.Path)
+					{
+						Remove(c as VUI.TreeView.Item);
+						return true;
+					}
+				}
+
+				return false;
 			}
 
 			public bool HasPinned(IFileTreeItem item)
@@ -439,9 +469,9 @@ namespace AUI.FileDialog
 				return false;
 			}
 
-			public MergedContainer CreateMergedContainer(string text)
+			public List<IFileTreeItem> GetPins()
 			{
-				var mc = new MergedContainer(text);
+				var list = new List<IFileTreeItem>();
 
 				var cs = Children;
 				if (cs != null && cs.Count > 0)
@@ -451,10 +481,22 @@ namespace AUI.FileDialog
 						if (c == null || c is PinnedFlatItem)
 							continue;
 
-						var cc = c.CreateContainer() as BasicFileContainer;
-						if (cc != null)
-							mc.Add(cc);
+						list.Add(c);
 					}
+				}
+
+				return list;
+			}
+
+			public MergedContainer CreateMergedContainer(string text)
+			{
+				var mc = new MergedContainer(text);
+
+				foreach (var p in GetPins())
+				{
+					var c = p.CreateContainer() as BasicFileContainer;
+					if (c != null)
+						mc.Add(c);
 				}
 
 				return mc;
@@ -542,7 +584,7 @@ namespace AUI.FileDialog
 		private readonly PackagesRootItem packagesRoot_ = null;
 		private bool flatten_ = false;
 
-		public FileTree(FileDialog fd, int fontSize)
+		public FileTree(FileDialog fd, int fontSize, List<PinInfo> pins)
 		{
 			fd_ = fd;
 			tree_ = new VUI.TreeView();
@@ -561,7 +603,7 @@ namespace AUI.FileDialog
 
 			allFlat_ = root_.Add(new AllFlatItem(this));
 			packagesFlat_ = root_.Add(new PackagesFlatItem(this));
-			pinned_ = root_.Add(new PinnedRootItem(this));
+			pinned_ = root_.Add(new PinnedRootItem(this, pins));
 			savesRoot_ = root_.Add(new SavesRootItem(this));
 			packagesRoot_ = root_.Add(new PackagesRootItem(this));
 
@@ -598,28 +640,9 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void LoadOptions(JSONClass o)
+		public List<IFileTreeItem> GetPins()
 		{
-			pinned_.Clear();
-
-			//if (o.HasKey("pinned"))
-			//{
-			//	var a = o["pinned"].AsArray;
-			//	if (a != null)
-			//	{
-			//		foreach (JSONNode n in a)
-			//			pinned_.Add(n.Value);
-			//	}
-			//}
-		}
-
-		public void SaveOptions(JSONClass o)
-		{
-			//var a = new JSONArray();
-			//foreach (var p in pinned_)
-			//	a.Add(new JSONData(p));
-			//
-			//o["pinned"] = a;
+			return pinned_.GetPins();
 		}
 
 		public void Set(bool write)
@@ -628,10 +651,6 @@ namespace AUI.FileDialog
 			packagesFlat_.Visible = !write;
 			savesRoot_.Visible = true;
 			packagesRoot_.Visible = !write;
-
-			//pinned_.Clear();
-			//foreach (var p in pinned)
-			//	pinned_.Add(new VUI.TreeView.Item(p));
 		}
 
 		public void PinSelected(bool b)
@@ -643,7 +662,7 @@ namespace AUI.FileDialog
 			if (b)
 				pinned_.AddPinned(s);
 			else
-				pinned_.RemovePinned(s.FullPath);
+				pinned_.RemovePinned(s);
 		}
 
 		public bool IsPinned(IFileTreeItem item)
