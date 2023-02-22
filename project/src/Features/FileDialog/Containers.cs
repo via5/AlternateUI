@@ -9,8 +9,10 @@ namespace AUI.FileDialog
 		string Path { get; }
 		string Search { get; set; }
 		string[] Extensions { get; set; }
+		int Sort { get; set; }
+		int SortDirection { get; set; }
 
-		List<File> GetFiles(FileDialog fd);
+		List<IFile> GetFiles(FileDialog fd);
 	}
 
 
@@ -19,6 +21,8 @@ namespace AUI.FileDialog
 		private readonly string path_;
 		private string search_ = "";
 		private string[] exts_ = null;
+		private int sort_ = Cache.Filter.SortFilename;
+		private int sortDir_ = Cache.Filter.SortAscending;
 
 		protected BasicFileContainer(string path)
 		{
@@ -44,20 +48,32 @@ namespace AUI.FileDialog
 			set { exts_ = value; }
 		}
 
-		protected Cache.Filter GetFilter()
+		public int Sort
 		{
-			return new Cache.Filter(search_, exts_);
+			get { return sort_; }
+			set { sort_ = value; }
 		}
 
-		public List<File> GetFiles(FileDialog fd)
+		public int SortDirection
 		{
-			var list = new List<File>();
+			get { return sortDir_; }
+			set { sortDir_ = value; }
+		}
+
+		protected Cache.Filter GetFilter()
+		{
+			return new Cache.Filter(search_, exts_, sort_, sortDir_);
+		}
+
+		public List<IFile> GetFiles(FileDialog fd)
+		{
+			var list = new List<IFile>();
 			DoGetFiles(fd, list, GetFilter());
 			return list;
 		}
 
 		public abstract void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter);
+			FileDialog fd, List<IFile> list, Cache.Filter filter);
 	}
 
 
@@ -74,7 +90,7 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			// no-op
 		}
@@ -94,13 +110,13 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			GetFiles(fd.FlattenDirectories, list, filter);
 		}
 
 		protected void GetFiles(
-			bool flatten, List<File> list, Cache.Filter filter)
+			bool flatten, List<IFile> list, Cache.Filter filter)
 		{
 			if (string.IsNullOrEmpty(Path))
 				return;
@@ -115,12 +131,12 @@ namespace AUI.FileDialog
 
 	class PackageContainer : DirectoryContainer
 	{
-		private readonly ShortCut sc_;
+		private readonly IFile p_;
 
-		public PackageContainer(ShortCut sc)
-			: base(sc.path)
+		public PackageContainer(IFile p)
+			: base(p.Path)
 		{
-			sc_ = sc;
+			p_ = p;
 		}
 
 		public override bool Virtual
@@ -129,7 +145,7 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			GetFiles(fd.FlattenPackages, list, filter);
 		}
@@ -152,7 +168,7 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			if (always_ || fd.FlattenDirectories)
 				list.AddRange(Cache.GetPackagesFlat(Cache.ScenesRoot, filter));
@@ -176,7 +192,7 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			if (always_ || fd.FlattenDirectories)
 			{
@@ -208,7 +224,7 @@ namespace AUI.FileDialog
 		}
 
 		public override void DoGetFiles(
-			FileDialog fd, List<File> list, Cache.Filter filter)
+			FileDialog fd, List<IFile> list, Cache.Filter filter)
 		{
 			if (fd.FlattenDirectories)
 			{

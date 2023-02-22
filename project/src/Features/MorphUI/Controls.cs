@@ -5,7 +5,7 @@
 		private readonly GenderMorphUI ui_;
 		private readonly VUI.TreeView tree_;
 		private readonly SearchBox search_;
-		private readonly ToggledPanel catsPanel_;
+		private readonly VUI.ToggledPanel catsPanel_;
 		private Categories cats_ = null;
 		private bool ignore_ = false;
 
@@ -36,7 +36,7 @@
 		{
 			ui_ = ui;
 
-			catsPanel_ = new ToggledPanel("Categories");
+			catsPanel_ = new VUI.ToggledPanel("Categories");
 			tree_ = new VUI.TreeView();
 
 			search_ = new SearchBox("Search categories");

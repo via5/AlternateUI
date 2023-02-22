@@ -71,23 +71,23 @@ namespace AUI.FileDialog
 
 	abstract class BasicDirectoryItem : FileTreeItem
 	{
-		private readonly File file_;
+		private readonly IFile file_;
 		private bool checkedHasChildren_ = false;
 		private bool hasChildren_ = false;
 
-		protected BasicDirectoryItem(FileTree tree, File f)
-			: this(tree, f, f.Filename)
+		protected BasicDirectoryItem(FileTree tree, IFile f)
+			: this(tree, f, f.Name)
 		{
 		}
 
-		protected BasicDirectoryItem(FileTree tree, File f, string display)
+		protected BasicDirectoryItem(FileTree tree, IFile f, string display)
 			: base(tree, display)
 		{
 			file_ = f;
 			Icons.GetDirectoryIcon(t => Icon = t);
 		}
 
-		public File File
+		public IFile File
 		{
 			get { return file_; }
 		}
@@ -132,7 +132,7 @@ namespace AUI.FileDialog
 			}
 		}
 
-		protected virtual bool IncludeDir(File f)
+		protected virtual bool IncludeDir(IFile f)
 		{
 			return true;
 		}
@@ -181,7 +181,7 @@ namespace AUI.FileDialog
 
 	class DirectoryItem : BasicDirectoryItem
 	{
-		public DirectoryItem(FileTree tree, File f)
+		public DirectoryItem(FileTree tree, IFile f)
 			: base(tree, f)
 		{
 		}
@@ -238,9 +238,9 @@ namespace AUI.FileDialog
 			get { return false; }
 		}
 
-		protected override bool IncludeDir(File f)
+		protected override bool IncludeDir(IFile f)
 		{
-			var lc = f.Filename.ToLower();
+			var lc = f.Name.ToLower();
 			return (lc == "downloads" || lc == "scene");
 		}
 	}
@@ -248,14 +248,14 @@ namespace AUI.FileDialog
 
 	class PackageItem : BasicDirectoryItem
 	{
-		private readonly ShortCut sc_;
+		private readonly IFile p_;
 
-		public PackageItem(FileTree tree, ShortCut sc)
-			: base(tree, new File(sc.path), sc.package)
+		public PackageItem(FileTree tree, IFile p)
+			: base(tree, new File(p.Path), p.Name)
 		{
-			sc_ = sc;
+			p_ = p;
 
-			Tooltip = $"path: {sc.path}\npackage:{sc.package}\npackageFilter:{sc.packageFilter}";
+			Tooltip = $"path: {p_.Path}\npackage:{p_.Name}";
 			Icons.GetPackageIcon(t => Icon = t);
 		}
 
@@ -290,7 +290,7 @@ namespace AUI.FileDialog
 
 		public override IFileContainer CreateContainer()
 		{
-			return new PackageContainer(sc_);
+			return new PackageContainer(p_);
 		}
 	}
 
@@ -432,12 +432,12 @@ namespace AUI.FileDialog
 
 		protected override void GetChildren()
 		{
-			foreach (var p in Cache.GetPackages(Cache.ScenesRoot))
+			foreach (Package p in Cache.GetPackages(Cache.ScenesRoot, null))
 			{
-				if (string.IsNullOrEmpty(p.package))
+				if (string.IsNullOrEmpty(p.ShortCut.package))
 					continue;
 
-				if (!string.IsNullOrEmpty(p.packageFilter))
+				if (!string.IsNullOrEmpty(p.ShortCut.packageFilter))
 					continue;
 
 				Add(new PackageItem(FileTree, p));

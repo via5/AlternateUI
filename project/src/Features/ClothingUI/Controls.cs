@@ -15,7 +15,7 @@ namespace AUI.ClothingUI
 		public delegate void AndHandler(bool b);
 		public event AndHandler AndChanged;
 
-		private readonly ToggledPanel panel_ = new ToggledPanel("");
+		private readonly VUI.ToggledPanel panel_ = new VUI.ToggledPanel("");
 		private readonly VUI.TreeView tree_ = new VUI.TreeView();
 		private readonly SearchBox search_;
 		private readonly VUI.ComboBox<string> and_ = null;
@@ -359,14 +359,14 @@ namespace AUI.ClothingUI
 	class OptionsControls
 	{
 		private readonly Controls controls_;
-		private readonly ToggledPanel panel_;
+		private readonly VUI.ToggledPanel panel_;
 		private readonly VUI.IntTextSlider cols_, rows_;
 		private bool ignore_ = false;
 
 		public OptionsControls(Controls c)
 		{
 			controls_ = c;
-			panel_ = new ToggledPanel("...", true, true);
+			panel_ = new VUI.ToggledPanel("...", true, true);
 
 			var p = new VUI.Panel(new VUI.GridLayout(3, 10));
 
@@ -618,14 +618,14 @@ namespace AUI.ClothingUI
 
 
 		private readonly Controls controls_;
-		private readonly ToggledPanel panel_;
+		private readonly VUI.ToggledPanel panel_;
 		private readonly VUI.Panel itemsPanel_;
 		private readonly List<ItemPanel> items_ = new List<ItemPanel>();
 
 		public CurrentControls(Controls c)
 		{
 			controls_ = c;
-			panel_ = new ToggledPanel("Current", false, true);
+			panel_ = new VUI.ToggledPanel("Current", false, true);
 			itemsPanel_ = new VUI.Panel(new VUI.VerticalFlow(0));
 
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));

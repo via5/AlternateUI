@@ -1,4 +1,6 @@
 ﻿using MVR.FileManagementSecure;
+using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace AUI.FileDialog
@@ -6,7 +8,7 @@ namespace AUI.FileDialog
 	class FilePanel
 	{
 		private readonly FileDialog fd_;
-		private File file_ = null;
+		private IFile file_ = null;
 
 		private readonly VUI.Panel panel_;
 		private readonly VUI.Image thumbnail_;
@@ -42,7 +44,7 @@ namespace AUI.FileDialog
 			panel_.Events.PointerExit += OnPointerExit;
 		}
 
-		public File File
+		public IFile File
 		{
 			get { return file_; }
 		}
@@ -100,11 +102,11 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void Set(File f)
+		public void Set(IFile f)
 		{
 			file_ = f;
 
-			name_.Text = file_.Filename;
+			name_.Text = file_.Name;
 			panel_.Tooltip.Text = MakeTooltip();
 			panel_.Render = true;
 			SetIcon();
@@ -129,10 +131,15 @@ namespace AUI.FileDialog
 				}
 			}
 
-			tt += $"\nCreated: {FileManagerSecure.FileCreationTime(file_.Path)}";
-			tt += $"\nLast modified: {FileManagerSecure.FileLastWriteTime(file_.Path)}";
+			tt += $"\nCreated: {FormatDT(file_.DateCreated)}";
+			tt += $"\nLast modified: {FormatDT(file_.DateModified)}";
 
 			return tt;
+		}
+
+		private string FormatDT(DateTime dt)
+		{
+			return dt.ToString(CultureInfo.CurrentCulture);
 		}
 
 		private void SetIcon()
@@ -151,7 +158,7 @@ namespace AUI.FileDialog
 
 				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
 				{
-					File forFile = file_;
+					IFile forFile = file_;
 
 					Icons.GetFileIcon(file_.Path, tt =>
 					{

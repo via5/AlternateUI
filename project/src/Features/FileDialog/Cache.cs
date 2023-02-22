@@ -14,19 +14,23 @@ namespace AUI.FileDialog
 			private readonly string parent_;
 			private readonly string normalizedParent_;
 			private readonly string[] exts_;
+			private readonly int sort_, sortDir_;
 
-			public CacheInfo(string parent, string[] exts)
+			public CacheInfo(string parent, Filter f)
 			{
 				parent_ = parent;
 				normalizedParent_ = parent.Replace('\\', '/');
-				exts_ = exts;
+				exts_ = f?.Extensions;
+				sort_ = f?.Sort ?? Filter.NoSort;
+				sortDir_ = f?.SortDirection ?? Filter.SortAscending;
 			}
 
 			public override int GetHashCode()
 			{
 				return HashHelper.Combine(
 					normalizedParent_.GetHashCode(),
-					HashHelper.HashArray(exts_));
+					HashHelper.HashArray(exts_),
+					sort_, sortDir_);
 			}
 
 			public override bool Equals(object o)
@@ -38,7 +42,9 @@ namespace AUI.FileDialog
 			{
 				return
 					normalizedParent_ == o.normalizedParent_ &&
-					ArraysEqual(exts_, o.exts_);
+					ArraysEqual(exts_, o.exts_) &&
+					sort_ == o.sort_ &&
+					sortDir_ == o.sortDir_;
 			}
 
 			private bool ArraysEqual<T>(T[] a, T[] b)
@@ -56,15 +62,28 @@ namespace AUI.FileDialog
 
 		public class Filter
 		{
+			public const int NoSort = 0;
+			public const int SortFilename = 1;
+			public const int SortType = 2;
+			public const int SortDateModified = 3;
+			public const int SortDateCreated = 4;
+
+			public const int SortAscending = 0;
+			public const int SortDescending = 1;
+
 			private readonly string search_;
 			private readonly string searchLc_;
 			private readonly string[] exts_;
 			private readonly Regex searchRe_;
+			private readonly int sort_;
+			private readonly int sortDir_;
 
-			public Filter(string search, string[] extensions)
+			public Filter(string search, string[] extensions, int sort, int sortDir)
 			{
 				search_ = search;
 				exts_ = extensions;
+				sort_ = sort;
+				sortDir_ = sortDir;
 
 				if (VUI.Utilities.IsRegex(search_))
 				{
@@ -88,6 +107,16 @@ namespace AUI.FileDialog
 				get { return exts_; }
 			}
 
+			public int Sort
+			{
+				get { return sort_; }
+			}
+
+			public int SortDirection
+			{
+				get { return sortDir_; }
+			}
+
 			public bool ExtensionMatches(string path)
 			{
 				if (exts_ != null)
@@ -104,20 +133,155 @@ namespace AUI.FileDialog
 				return true;
 			}
 
-			public bool SearchMatches(File f)
+			public bool SearchMatches(IFile f)
 			{
 				if (searchLc_ != null)
 				{
-					if (f.Filename.ToLower().IndexOf(searchLc_) == -1)
+					if (f.Name.ToLower().IndexOf(searchLc_) == -1)
 						return false;
 				}
 				else if (searchRe_ != null)
 				{
-					if (!searchRe_.IsMatch(f.Filename))
+					if (!searchRe_.IsMatch(f.Name))
 						return false;
 				}
 
 				return true;
+			}
+
+
+			public class FilenameComparer : IComparer<IFile>
+			{
+				private readonly int dir_;
+
+				public FilenameComparer(int dir)
+				{
+					dir_ = dir;
+				}
+
+				public static int SCompare(IFile a, IFile b, int dir)
+				{
+					if (dir == SortAscending)
+						return U.CompareNatural(a.Name, b.Name);
+					else
+						return U.CompareNatural(b.Name, a.Name);
+				}
+
+				public int Compare(IFile a, IFile b)
+				{
+					return SCompare(a, b, dir_);
+				}
+			}
+
+			public class TypeComparer : IComparer<IFile>
+			{
+				private readonly int dir_;
+
+				public TypeComparer(int dir)
+				{
+					dir_ = dir;
+				}
+
+				public int Compare(IFile a, IFile b)
+				{
+					int c;
+
+					if (dir_ == SortAscending)
+						c = U.CompareNatural(a.Extension, b.Extension);
+					else
+						c = U.CompareNatural(b.Extension, a.Extension);
+
+					if (c == 0)
+						c = FilenameComparer.SCompare(a, b, dir_);
+
+					return c;
+				}
+			}
+
+			public class DateModifiedComparer : IComparer<IFile>
+			{
+				private readonly int dir_;
+
+				public DateModifiedComparer(int dir)
+				{
+					dir_ = dir;
+				}
+
+				public int Compare(IFile a, IFile b)
+				{
+					int c;
+
+					if (dir_ == SortAscending)
+						c = DateTime.Compare(a.DateModified, b.DateModified);
+					else
+						c = DateTime.Compare(b.DateModified, a.DateModified);
+
+					if (c == 0)
+						c = FilenameComparer.SCompare(a, b, dir_);
+
+					return c;
+				}
+			}
+
+			public class DateCreatedComparer : IComparer<IFile>
+			{
+				private readonly int dir_;
+
+				public DateCreatedComparer(int dir)
+				{
+					dir_ = dir;
+				}
+
+				public int Compare(IFile a, IFile b)
+				{
+					int c;
+
+					if (dir_ == SortAscending)
+						c = DateTime.Compare(a.DateCreated, b.DateCreated);
+					else
+						c = DateTime.Compare(b.DateCreated, a.DateCreated);
+
+					if (c == 0)
+						c = FilenameComparer.SCompare(a, b, dir_);
+
+					return c;
+				}
+			}
+
+			public void SortList(List<IFile> list)
+			{
+				switch (sort_)
+				{
+					case SortFilename:
+					{
+						list.Sort(new FilenameComparer(sortDir_));
+						break;
+					}
+
+					case SortType:
+					{
+						list.Sort(new TypeComparer(sortDir_));
+						break;
+					}
+
+					case SortDateModified:
+					{
+						list.Sort(new DateModifiedComparer(sortDir_));
+						break;
+					}
+
+					case SortDateCreated:
+					{
+						list.Sort(new DateCreatedComparer(sortDir_));
+						break;
+					}
+
+					case NoSort:
+					{
+						// no-op
+						break;
+					}
+				}
 			}
 		}
 
@@ -148,26 +312,26 @@ namespace AUI.FileDialog
 		};
 
 
-		private static readonly Dictionary<CacheInfo, List<File>> files_ =
-			new Dictionary<CacheInfo, List<File>>();
+		private static readonly Dictionary<CacheInfo, List<IFile>> files_ =
+			new Dictionary<CacheInfo, List<IFile>>();
 
-		private static readonly Dictionary<CacheInfo, List<File>> dirs_ =
-			new Dictionary<CacheInfo, List<File>>();
+		private static readonly Dictionary<CacheInfo, List<IFile>> dirs_ =
+			new Dictionary<CacheInfo, List<IFile>>();
 
-		private static readonly Dictionary<CacheInfo, List<ShortCut>> packages_ =
-			new Dictionary<CacheInfo, List<ShortCut>>();
+		private static readonly Dictionary<CacheInfo, List<IFile>> packages_ =
+			new Dictionary<CacheInfo, List<IFile>>();
 
-		private static List<File> packagesFlat_ = null;
+		private static List<IFile> packagesFlat_ = null;
 
 
-		public static List<File> GetDirectories(string parent, Filter filter)
+		public static List<IFile> GetDirectories(string parent, Filter filter)
 		{
-			List<File> all;
-			var ci = new CacheInfo(parent, null);
+			List<IFile> all;
+			var ci = new CacheInfo(parent, filter);
 
 			if (!dirs_.TryGetValue(ci, out all))
 			{
-				all = new List<File>();
+				all = new List<IFile>();
 				foreach (var d in FileManagerSecure.GetDirectories(parent))
 				{
 					if (filter == null || filter.ExtensionMatches(d))
@@ -178,7 +342,7 @@ namespace AUI.FileDialog
 				dirs_.Add(ci, all);
 			}
 
-			List<File> list;
+			List<IFile> list;
 
 			if (filter == null || filter.Search == "")
 			{
@@ -186,7 +350,7 @@ namespace AUI.FileDialog
 			}
 			else
 			{
-				list = new List<File>();
+				list = new List<IFile>();
 
 				foreach (var f in all)
 				{
@@ -204,14 +368,14 @@ namespace AUI.FileDialog
 			return (list.Count > 0);
 		}
 
-		public static List<File> GetFiles(string parent, Filter filter)
+		public static List<IFile> GetFiles(string parent, Filter filter)
 		{
-			List<File> all = null;
-			var ci = new CacheInfo(parent, filter.Extensions);
+			List<IFile> all = null;
+			var ci = new CacheInfo(parent, filter);
 
 			if (!files_.TryGetValue(ci, out all))
 			{
-				all = new List<File>();
+				all = new List<IFile>();
 
 				foreach (var f in FileManagerSecure.GetFiles(parent))
 				{
@@ -219,11 +383,11 @@ namespace AUI.FileDialog
 						all.Add(new File(f));
 				}
 
-				U.NatSort(all);
+				filter.SortList(all);
 				files_.Add(ci, all);
 			}
 
-			List<File> list;
+			List<IFile> list;
 
 			if (filter == null || filter.Search == "")
 			{
@@ -231,7 +395,7 @@ namespace AUI.FileDialog
 			}
 			else
 			{
-				list = new List<File>();
+				list = new List<IFile>();
 
 				foreach (var f in all)
 				{
@@ -243,14 +407,14 @@ namespace AUI.FileDialog
 			return list;
 		}
 
-		public static List<File> GetFilesRecursive(string parent, Filter filter)
+		public static List<IFile> GetFilesRecursive(string parent, Filter filter)
 		{
-			var list = new List<File>();
+			var list = new List<IFile>();
 			GetFilesRecursive(parent, filter, list);
 			return list;
 		}
 
-		private static void GetFilesRecursive(string parent, Filter filter, List<File> list)
+		private static void GetFilesRecursive(string parent, Filter filter, List<IFile> list)
 		{
 			list.AddRange(GetFiles(parent, filter));
 
@@ -269,11 +433,11 @@ namespace AUI.FileDialog
 			return FileManagerSecure.IsDirectoryInPackage(dir);
 		}
 
-		public static List<File> GetPackagesFlat(string parent, Filter filter)
+		public static List<IFile> GetPackagesFlat(string parent, Filter filter)
 		{
 			if (packagesFlat_ == null)
 			{
-				packagesFlat_ = new List<File>();
+				packagesFlat_ = new List<IFile>();
 
 				foreach (var p in FileManagerSecure.GetShortCutsForDirectory(parent))
 				{
@@ -290,25 +454,29 @@ namespace AUI.FileDialog
 			return packagesFlat_;
 		}
 
-		public static List<ShortCut> GetPackages(string parent)
+		public static List<IFile> GetPackages(string parent, Filter filter)
 		{
-			var ci = new CacheInfo(parent, null);
-			List<ShortCut> list;
+			var ci = new CacheInfo(parent, filter);
+			List<IFile> list;
 
 			if (!packages_.TryGetValue(ci, out list))
 			{
-				list = FileManagerSecure.GetShortCutsForDirectory(parent);
+				foreach (var sc in FileManagerSecure.GetShortCutsForDirectory(parent))
+					list.Add(new Package(sc));
+
 				packages_.Add(ci, list);
 			}
+
+			filter.SortList(list);
 
 			return list;
 		}
 
-		public static ShortCut GetPackage(string path)
+		public static IFile GetPackage(string path)
 		{
-			foreach (var p in GetPackages(ScenesRoot))
+			foreach (var p in GetPackages(ScenesRoot, null))
 			{
-				if (p.path == path)
+				if (p.Path == path)
 					return p;
 			}
 

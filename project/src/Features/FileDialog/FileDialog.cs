@@ -1,11 +1,22 @@
-﻿using SimpleJSON;
+﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
 namespace AUI.FileDialog
 {
-	class File
+	interface IFile
+	{
+		string Path { get; }
+		string Name { get; }
+		string Extension { get; }
+		DateTime DateCreated { get; }
+		DateTime DateModified { get; }
+	}
+
+
+	class File : IFile
 	{
 		private readonly string path_;
 
@@ -19,14 +30,70 @@ namespace AUI.FileDialog
 			get { return path_; }
 		}
 
-		public string Filename
+		public string Name
 		{
 			get { return AUI.Path.Filename(path_); }
+		}
+
+		public string Extension
+		{
+			get { return AUI.Path.Extension(path_); }
+		}
+
+		public DateTime DateCreated
+		{
+			get { return FileManagerSecure.FileCreationTime(path_); }
+		}
+
+		public DateTime DateModified
+		{
+			get { return FileManagerSecure.FileLastWriteTime(path_); }
 		}
 
 		public override string ToString()
 		{
 			return AUI.Path.Filename(path_);
+		}
+	}
+
+
+	class Package : IFile
+	{
+		private readonly ShortCut sc_;
+
+		public Package(ShortCut sc)
+		{
+			sc_ = sc;
+		}
+
+		public ShortCut ShortCut
+		{
+			get { return sc_; }
+		}
+
+		public string Path
+		{
+			get { return sc_.path; }
+		}
+
+		public string Name
+		{
+			get { return sc_.package; }
+		}
+
+		public string Extension
+		{
+			get { return ".var"; }
+		}
+
+		public DateTime DateCreated
+		{
+			get { return FileManagerSecure.FileCreationTime(Path); }
+		}
+
+		public DateTime DateModified
+		{
+			get { return FileManagerSecure.FileLastWriteTime(Path); }
 		}
 	}
 
@@ -67,6 +134,10 @@ namespace AUI.FileDialog
 			}
 		}
 
+		class SortItem
+		{
+		}
+
 
 		private const int FontSize = 24;
 
@@ -84,16 +155,19 @@ namespace AUI.FileDialog
 		private VUI.TextBox filename_ = null;
 		private VUI.ComboBox<ExtensionItem> extensions_;
 		private VUI.Panel optionsPanel_ = null;
-		private List<File> files_ = null;
+		private VUI.MenuButton sortPanel_ = null;
+		private List<IFile> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
-		private File selected_ = null;
+		private IFile selected_ = null;
 		private VUI.Button action_ = null;
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
 		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
+		private int sort_ = Cache.Filter.SortFilename;
+		private int sortDir_ = Cache.Filter.SortAscending;
 		private readonly List<PinInfo> pins_ = new List<PinInfo>();
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
@@ -161,12 +235,12 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public File Selected
+		public IFile Selected
 		{
 			get { return selected_; }
 		}
 
-		public void Select(File p)
+		public void Select(IFile p)
 		{
 			if (selected_ == p)
 				return;
@@ -175,7 +249,7 @@ namespace AUI.FileDialog
 				FindPanel(selected_)?.SetSelectedInternal(false);
 
 			selected_ = p;
-			filename_.Text = selected_?.Filename ?? "";
+			filename_.Text = selected_?.Name ?? "";
 
 			if (selected_ != null)
 				FindPanel(selected_)?.SetSelectedInternal(true);
@@ -183,7 +257,7 @@ namespace AUI.FileDialog
 			UpdateActionButton();
 		}
 
-		private FilePanel FindPanel(File f)
+		private FilePanel FindPanel(IFile f)
 		{
 			for (int i = 0; i < panels_.Length; ++i)
 			{
@@ -365,6 +439,10 @@ namespace AUI.FileDialog
 			top_ = 0;
 			container_.Search = search_.Text;
 			container_.Extensions = extensions_.Selected?.Extensions;
+			container_.Sort = sort_;
+			container_.SortDirection = sortDir_;
+
+			Log.Error($"refresh {sort_} {sortDir_}");
 
 			SetFiles(container_.GetFiles(this));
 			SetPath();
@@ -428,13 +506,54 @@ namespace AUI.FileDialog
 			root_.ContentPanel.Add(window_, VUI.BorderLayout.Center);
 		}
 
+		private VUI.RadioMenuItem MakeSortItem(string text, int sort)
+		{
+			VUI.RadioButton.ChangedCallback cb = (bool b) =>
+			{
+				if (b)
+				{
+					sort_ = sort;
+					Refresh();
+				}
+			};
+
+			return new VUI.RadioMenuItem(text, cb, (sort_ == sort), "sort");
+		}
+
+		private VUI.RadioMenuItem MakeSortDirItem(string text, int sortDir)
+		{
+			VUI.RadioButton.ChangedCallback cb = (bool b) =>
+			{
+				if (b)
+				{
+					sortDir_ = sortDir;
+					Refresh();
+				}
+			};
+
+			return new VUI.RadioMenuItem(text, cb, (sortDir_ == sortDir), "sortDir");
+		}
+
 		private VUI.Panel CreateTop()
 		{
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 
+			var sortMenu = new VUI.Menu();
+
+			sortMenu.AddMenuItem(MakeSortItem("Filename", Cache.Filter.SortFilename));
+			sortMenu.AddMenuItem(MakeSortItem("Type", Cache.Filter.SortType));
+			sortMenu.AddMenuItem(MakeSortItem("Date modified", Cache.Filter.SortDateModified));
+			sortMenu.AddMenuItem(MakeSortItem("Date created", Cache.Filter.SortDateCreated));
+			sortMenu.AddSeparator();
+			sortMenu.AddMenuItem(MakeSortDirItem("Ascending", Cache.Filter.SortAscending));
+			sortMenu.AddMenuItem(MakeSortDirItem("Descending", Cache.Filter.SortDescending));
+
+			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
+
 			optionsPanel_ = new VUI.Panel(new VUI.HorizontalFlow(10));
 			optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
 			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
+			optionsPanel_.Add(sortPanel_.Button);
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
 			var left = new VUI.Panel(new VUI.BorderLayout(10));
@@ -504,7 +623,7 @@ namespace AUI.FileDialog
 
 		private VUI.Panel CreateBottom()
 		{
-			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+			var p = new VUI.Panel(new VUI.VerticalFlow(20));
 			p.Padding = new VUI.Insets(20);
 			p.Borders = new VUI.Insets(0, 1, 0, 0);
 
@@ -588,9 +707,8 @@ namespace AUI.FileDialog
 				sb_.Value = top_ * ScrollbarSize();
 		}
 
-		private void SetFiles(List<File> list)
+		private void SetFiles(List<IFile> list)
 		{
-			U.NatSort(list);
 			files_ = list;
 
 			if (root_.Bounds.Height <= 0)
@@ -782,6 +900,60 @@ namespace AUI.FileDialog
 			}
 		}
 
+		private void OnSortFilename(bool b)
+		{
+			if (b)
+			{
+				sort_ = Cache.Filter.SortFilename;
+				Refresh();
+			}
+		}
+
+		private void OnSortType(bool b)
+		{
+			if (b)
+			{
+				sort_ = Cache.Filter.SortType;
+				Refresh();
+			}
+		}
+
+		private void OnSortModified(bool b)
+		{
+			if (b)
+			{
+				sort_ = Cache.Filter.SortDateModified;
+				Refresh();
+			}
+		}
+
+		private void OnSortCreated(bool b)
+		{
+			if (b)
+			{
+				sort_ = Cache.Filter.SortDateCreated;
+				Refresh();
+			}
+		}
+
+		private void OnSortAscending(bool b)
+		{
+			if (b)
+			{
+				sortDir_ = Cache.Filter.SortAscending;
+				Refresh();
+			}
+		}
+
+		private void OnSortDescending(bool b)
+		{
+			if (b)
+			{
+				sortDir_ = Cache.Filter.SortDescending;
+				Refresh();
+			}
+		}
+
 		private List<ExtensionItem> GetOpenSceneExtensions()
 		{
 			var list = new List<ExtensionItem>();
@@ -814,7 +986,6 @@ namespace AUI.FileDialog
 			foreach (var e in Cache.SceneExtensions)
 				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
 
-			//list.Add(new ExtensionItem(Cache.DefaultSceneExtension, new string[] { Cache.DefaultSceneExtension }));
 			return list;
 		}
 	}
