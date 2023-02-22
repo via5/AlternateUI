@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using MVR.FileManagementSecure;
+using UnityEngine;
 
 namespace AUI.FileDialog
 {
@@ -104,9 +105,38 @@ namespace AUI.FileDialog
 			file_ = f;
 
 			name_.Text = file_.Filename;
-			panel_.Tooltip.Text = file_.Path;
+			panel_.Tooltip.Text = MakeTooltip();
 			panel_.Render = true;
+			SetIcon();
+		}
 
+		private string MakeTooltip()
+		{
+			string tt = $"Path: {file_.Path}";
+
+			if (FileManagerSecure.IsFileInPackage(file_.Path) ||
+				FileManagerSecure.IsDirectoryInPackage(file_.Path))
+			{
+				var col = file_.Path.IndexOf(":");
+				if (col != -1)
+				{
+					var s = file_.Path.Substring(0, col);
+
+					if (FileManagerSecure.PackageExists(s))
+						tt += $"\nPackage: {s}";
+					else
+						tt += $"\nPackage: {s} (not found)";
+				}
+			}
+
+			tt += $"\nCreated: {FileManagerSecure.FileCreationTime(file_.Path)}";
+			tt += $"\nLast modified: {FileManagerSecure.FileLastWriteTime(file_.Path)}";
+
+			return tt;
+		}
+
+		private void SetIcon()
+		{
 			var t = Icons.GetFileIconFromCache(file_.Path);
 
 			if (t == null)
