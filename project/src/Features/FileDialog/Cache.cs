@@ -264,6 +264,11 @@ namespace AUI.FileDialog
 			return (scs != null && scs.Count > 0);
 		}
 
+		public static bool DirectoryInPackage(string dir)
+		{
+			return FileManagerSecure.IsDirectoryInPackage(dir);
+		}
+
 		public static List<File> GetPackagesFlat(string parent, Filter filter)
 		{
 			if (packagesFlat_ == null)

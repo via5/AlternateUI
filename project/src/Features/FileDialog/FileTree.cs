@@ -1,5 +1,4 @@
 ﻿using MVR.FileManagementSecure;
-using SimpleJSON;
 using System.Collections.Generic;
 
 namespace AUI.FileDialog
@@ -11,8 +10,10 @@ namespace AUI.FileDialog
 			string Type { get; }
 			string Path { get; }
 			bool CanPin { get; }
+			bool Virtual { get; }
+			bool IsFlattened { get; }
 
-			void SetFlattenDirectories(bool b);
+			void SetFlags(int f);
 			IFileContainer CreateContainer();
 		}
 
@@ -51,10 +52,19 @@ namespace AUI.FileDialog
 			public abstract string Type { get; }
 			public abstract string Path { get; }
 			public abstract bool CanPin { get; }
+			public abstract bool Virtual { get; }
+			public abstract bool IsFlattened { get; }
 
-			public virtual void SetFlattenDirectories(bool b)
+			public virtual void SetFlags(int f)
 			{
-				// no-op
+				bool visible = true;
+
+				if (Virtual && Bits.IsSet(f, Writeable))
+					visible = false;
+				else if (IsFlattened && Bits.IsSet(f, FlattenDirectories))
+					visible = false;
+
+				Visible = visible;
 			}
 
 			public abstract IFileContainer CreateContainer();
@@ -154,6 +164,16 @@ namespace AUI.FileDialog
 				get { return false; }
 			}
 
+			public override bool Virtual
+			{
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return true; }
+			}
+
 			public override IFileContainer CreateContainer()
 			{
 				return new AllFlatContainer("", false);
@@ -185,6 +205,16 @@ namespace AUI.FileDialog
 			{
 				get { return "Directory"; }
 			}
+
+			public override bool Virtual
+			{
+				get { return Cache.DirectoryInPackage(Path); }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return false; }
+			}
 		}
 
 
@@ -198,6 +228,16 @@ namespace AUI.FileDialog
 			public override string Type
 			{
 				get { return "SavesRoot"; }
+			}
+
+			public override bool Virtual
+			{
+				get { return false; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return false; }
 			}
 
 			protected override bool IncludeDir(File f)
@@ -240,6 +280,16 @@ namespace AUI.FileDialog
 				get { return "Package"; }
 			}
 
+			public override bool Virtual
+			{
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return false; }
+			}
+
 			public override IFileContainer CreateContainer()
 			{
 				return new PackageContainer(sc_);
@@ -270,9 +320,14 @@ namespace AUI.FileDialog
 				get { return true; }
 			}
 
-			public override void SetFlattenDirectories(bool b)
+			public override bool Virtual
 			{
-				Visible = !b;
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return true; }
 			}
 
 			public override IFileContainer CreateContainer()
@@ -305,9 +360,14 @@ namespace AUI.FileDialog
 				get { return true; }
 			}
 
-			public override void SetFlattenDirectories(bool b)
+			public override bool Virtual
 			{
-				Visible = !b;
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return true; }
 			}
 
 			public override IFileContainer CreateContainer()
@@ -341,6 +401,16 @@ namespace AUI.FileDialog
 			public override bool CanPin
 			{
 				get { return true; }
+			}
+
+			public override bool Virtual
+			{
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return false; }
 			}
 
 			public override IFileContainer CreateContainer()
@@ -408,6 +478,16 @@ namespace AUI.FileDialog
 			}
 
 			public override bool CanPin
+			{
+				get { return false; }
+			}
+
+			public override bool Virtual
+			{
+				get { return true; }
+			}
+
+			public override bool IsFlattened
 			{
 				get { return false; }
 			}
@@ -502,17 +582,24 @@ namespace AUI.FileDialog
 				return mc;
 			}
 
-			public override void SetFlattenDirectories(bool b)
+			public override void SetFlags(int f)
 			{
-				flat_.Visible = !b;
+				flat_.Visible = !Bits.IsSet(f, FlattenDirectories);
+
+				var cs = Children;
+				if (cs != null && cs.Count > 0)
+				{
+					foreach (IFileTreeItem c in cs)
+					{
+						if (c != null)
+							c.SetFlags(f);
+					}
+				}
 			}
 
 			public override IFileContainer CreateContainer()
 			{
-				if (FileTree.FlattenDirectories)
-					return CreateMergedContainer("Pinned");
-				else
-					return new EmptyContainer("Pinned");
+				return CreateMergedContainer("Pinned");
 			}
 
 			private FileTreeItem CreateItem(string type, string path)
@@ -563,6 +650,16 @@ namespace AUI.FileDialog
 				get { return false; }
 			}
 
+			public override bool Virtual
+			{
+				get { return true; }
+			}
+
+			public override bool IsFlattened
+			{
+				get { return true; }
+			}
+
 			public override IFileContainer CreateContainer()
 			{
 				return pinned_.CreateMergedContainer("Pinned flattened");
@@ -573,6 +670,10 @@ namespace AUI.FileDialog
 		public delegate void ItemHandler(IFileTreeItem item);
 		public event ItemHandler SelectionChanged;
 
+		public const int NoFlags = 0x00;
+		public const int FlattenDirectories = 0x01;
+		public const int Writeable = 0x02;
+
 
 		private readonly FileDialog fd_;
 		private readonly VUI.TreeView tree_;
@@ -582,7 +683,6 @@ namespace AUI.FileDialog
 		private readonly PinnedRootItem pinned_ = null;
 		private readonly SavesRootItem savesRoot_ = null;
 		private readonly PackagesRootItem packagesRoot_ = null;
-		private bool flatten_ = false;
 
 		public FileTree(FileDialog fd, int fontSize, List<PinInfo> pins)
 		{
@@ -621,36 +721,18 @@ namespace AUI.FileDialog
 			get { return tree_; }
 		}
 
-		public bool FlattenDirectories
+		public void SetFlags(int f)
 		{
-			get
+			foreach (FileTreeItem item in root_.Children)
 			{
-				return flatten_;
-			}
-
-			set
-			{
-				flatten_ = value;
-
-				foreach (FileTreeItem item in root_.Children)
-				{
-					if (item != null)
-						item.SetFlattenDirectories(flatten_);
-				}
+				if (item != null)
+					item.SetFlags(f);
 			}
 		}
 
 		public List<IFileTreeItem> GetPins()
 		{
 			return pinned_.GetPins();
-		}
-
-		public void Set(bool write)
-		{
-			allFlat_.Visible = !write;
-			packagesFlat_.Visible = !write;
-			savesRoot_.Visible = true;
-			packagesRoot_.Visible = !write;
 		}
 
 		public void PinSelected(bool b)

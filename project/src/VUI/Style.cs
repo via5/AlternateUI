@@ -342,6 +342,11 @@ namespace VUI
 		{
 			get { return new Color(0.15f, 0.15f, 0.15f); }
 		}
+
+		public Color TreeViewToggleBorderColor
+		{
+			get { return new Color(0.25f, 0.25f, 0.25f); }
+		}
 	}
 
 

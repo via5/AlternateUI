@@ -87,7 +87,7 @@ namespace AUI.FileDialog
 		private List<File> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
-		private FilePanel selected_ = null;
+		private File selected_ = null;
 		private VUI.Button action_ = null;
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
@@ -161,31 +161,42 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public FilePanel SelectedPanel
+		public File Selected
 		{
 			get { return selected_; }
 		}
 
-		public void Select(FilePanel p)
+		public void Select(File p)
 		{
 			if (selected_ == p)
 				return;
 
 			if (selected_ != null)
-				selected_.SetSelectedInternal(false);
+				FindPanel(selected_)?.SetSelectedInternal(false);
 
 			selected_ = p;
-			filename_.Text = selected_?.File?.Filename ?? "";
+			filename_.Text = selected_?.Filename ?? "";
 
 			if (selected_ != null)
-				selected_.SetSelectedInternal(true);
+				FindPanel(selected_)?.SetSelectedInternal(true);
 
 			UpdateActionButton();
 		}
 
+		private FilePanel FindPanel(File f)
+		{
+			for (int i = 0; i < panels_.Length; ++i)
+			{
+				if (panels_[i].File == f)
+					return panels_[i];
+			}
+
+			return null;
+		}
+
 		public void Activate(FilePanel p)
 		{
-			Select(p);
+			Select(p.File);
 			ExecuteAction();
 		}
 
@@ -194,7 +205,7 @@ namespace AUI.FileDialog
 			if (!CanOpen())
 				return;
 
-			Log.Info($"open {selected_.File.Path}");
+			Log.Info($"open {selected_.Path}");
 
 			Hide();
 			//SuperController.singleton.Load(selected_.File.Path);
@@ -295,8 +306,7 @@ namespace AUI.FileDialog
 					action_.Text = "Open";
 					optionsPanel_.Visible = true;
 					extensions_.SetItems(GetOpenSceneExtensions());
-					tree_.Set(false);
-					tree_.FlattenDirectories = FlattenDirectories;
+					tree_.SetFlags(GetTreeFlags());
 					break;
 				}
 
@@ -306,14 +316,26 @@ namespace AUI.FileDialog
 					action_.Text = "Save";
 					optionsPanel_.Visible = false;
 					extensions_.SetItems(GetSaveSceneExtensions());
-					tree_.FlattenDirectories = false;
-					tree_.Set(true);
+					tree_.SetFlags(GetTreeFlags());
 					break;
 				}
 			}
 
 			root_.Visible = true;
 			UpdateActionButton();
+		}
+
+		private int GetTreeFlags()
+		{
+			int f = FileTree.NoFlags;
+
+			if (FlattenDirectories)
+				f |= FileTree.FlattenDirectories;
+
+			if (type_ == SaveScene)
+				f |= FileTree.Writeable;
+
+			return f;
 		}
 
 		public void Hide()
@@ -523,7 +545,9 @@ namespace AUI.FileDialog
 
 		private void OnClicked(VUI.PointerEvent e)
 		{
-			Select(null);
+			if (e.Button == VUI.PointerEvent.LeftButton)
+				Select(null);
+
 			e.Bubble = false;
 		}
 
@@ -599,6 +623,7 @@ namespace AUI.FileDialog
 				var fp = panels_[panelIndex];
 
 				fp.Set(f);
+				fp.SetSelectedInternal(selected_ == f);
 
 				++panelIndex;
 				if (panelIndex >= Columns * Rows)
@@ -642,7 +667,7 @@ namespace AUI.FileDialog
 
 		private void UpdateFlatten()
 		{
-			tree_.FlattenDirectories = flattenDirs_;
+			tree_.SetFlags(GetTreeFlags());
 			SetContainer(container_);
 		}
 

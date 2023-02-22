@@ -210,8 +210,11 @@ namespace AUI.FileDialog
 		public override void DoGetFiles(
 			FileDialog fd, List<File> list, Cache.Filter filter)
 		{
-			foreach (var c in containers_)
-				c.DoGetFiles(fd, list, filter);
+			if (fd.FlattenDirectories)
+			{
+				foreach (var c in containers_)
+					c.DoGetFiles(fd, list, filter);
+			}
 		}
 	}
 }

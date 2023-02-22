@@ -543,6 +543,7 @@ namespace VUI
 					toggle_ = new ToolButton("", OnToggle);
 					toggle_.BackgroundColor = new Color(0, 0, 0, 0);
 					toggle_.Borders = new Insets(1);
+					toggle_.BorderColor = Style.Theme.TreeViewToggleBorderColor;
 
 					panel_.Add(toggle_);
 					toggle_.Create();
@@ -1206,30 +1207,36 @@ namespace VUI
 
 		private void OnClick(PointerEvent e)
 		{
-			var n = NodeAt(e.Pointer);
-
-			if (n?.Item != null)
-			{
-				n.Item.Selected = true;
-				ItemClicked?.Invoke(n.Item);
-			}
-
-			e.Bubble = false;
-		}
-
-		private void OnDoubleClick(PointerEvent e)
-		{
-			if (doubleClickToggle_)
+			if (e.Button == PointerEvent.LeftButton)
 			{
 				var n = NodeAt(e.Pointer);
 
 				if (n?.Item != null)
 				{
 					n.Item.Selected = true;
-					n.Item.Toggle();
+					ItemClicked?.Invoke(n.Item);
 				}
 
 				e.Bubble = false;
+			}
+		}
+
+		private void OnDoubleClick(PointerEvent e)
+		{
+			if (e.Button == PointerEvent.LeftButton)
+			{
+				if (doubleClickToggle_)
+				{
+					var n = NodeAt(e.Pointer);
+
+					if (n?.Item != null)
+					{
+						n.Item.Selected = true;
+						n.Item.Toggle();
+					}
+
+					e.Bubble = false;
+				}
 			}
 		}
 

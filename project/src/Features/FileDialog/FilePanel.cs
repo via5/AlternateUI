@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using VUI;
 
 namespace AUI.FileDialog
 {
@@ -26,7 +25,8 @@ namespace AUI.FileDialog
 			name_.Alignment = VUI.Label.AlignCenter | VUI.Label.AlignTop;
 			name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 60);
 
-			thumbnail_.Borders = new VUI.Insets(1);
+			panel_.Borders = new VUI.Insets(1);
+			panel_.BorderColor = new Color(0, 0, 0, 0);
 
 			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
 			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
@@ -48,26 +48,36 @@ namespace AUI.FileDialog
 
 		private void OnClick(VUI.PointerEvent e)
 		{
-			fd_.Select(this);
+			if (e.Button == VUI.PointerEvent.LeftButton)
+				fd_.Select(File);
+
 			e.Bubble = false;
 		}
 
 		private void OnDoubleClick(VUI.PointerEvent e)
 		{
-			fd_.Activate(this);
+			if (e.Button == VUI.PointerEvent.LeftButton)
+				fd_.Activate(this);
+
 			e.Bubble = false;
 		}
 
 		private void OnPointerEnter(VUI.PointerEvent e)
 		{
-			if (fd_.SelectedPanel != this)
-				panel_.BackgroundColor = Style.Theme.HighlightBackgroundColor;
+			if (fd_.Selected != File)
+			{
+				panel_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
+				panel_.BorderColor = VUI.Style.Theme.BorderColor;
+			}
 		}
 
 		private void OnPointerExit(VUI.PointerEvent e)
 		{
-			if (fd_.SelectedPanel != this)
+			if (fd_.Selected != File)
+			{
 				panel_.BackgroundColor = new Color(0, 0, 0, 0);
+				panel_.BorderColor = new Color(0, 0, 0, 0);
+			}
 		}
 
 		public VUI.Panel Panel
@@ -78,9 +88,15 @@ namespace AUI.FileDialog
 		public void SetSelectedInternal(bool b)
 		{
 			if (b)
+			{
 				panel_.BackgroundColor = VUI.Style.Theme.SelectionBackgroundColor;
+				panel_.BorderColor = VUI.Style.Theme.BorderColor;
+			}
 			else
+			{
 				panel_.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+				panel_.BorderColor = new Color(0, 0, 0, 0);
+			}
 		}
 
 		public void Set(File f)
