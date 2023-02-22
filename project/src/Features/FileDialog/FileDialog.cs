@@ -759,7 +759,7 @@ namespace AUI.FileDialog
 			Refresh();
 		}
 
-		private void OnTreeSelection(FileTree.IFileTreeItem item)
+		private void OnTreeSelection(IFileTreeItem item)
 		{
 			try
 			{
