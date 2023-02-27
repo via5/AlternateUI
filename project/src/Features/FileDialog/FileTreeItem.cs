@@ -1,28 +1,26 @@
-﻿using MVR.FileManagementSecure;
-using System.Collections.Generic;
-
-namespace AUI.FileDialog
+﻿namespace AUI.FileDialog
 {
 	interface IFileTreeItem
 	{
-		string Type { get; }
-		string Path { get; }
-		bool CanPin { get; }
-		bool Virtual { get; }
-		bool IsFlattened { get; }
-
+		IFilesystemObject Object { get; }
 		void SetFlags(int f);
-		IFileContainer CreateContainer();
 	}
 
-	abstract class FileTreeItem : VUI.TreeView.Item, IFileTreeItem
+
+	class FileTreeItem : VUI.TreeView.Item, IFileTreeItem
 	{
 		private readonly FileTree tree_;
+		private readonly IFilesystemObject o_;
 
-		protected FileTreeItem(FileTree tree, string text)
-			: base(text)
+		private bool checkedHasChildren_ = false;
+		private bool hasChildren_ = false;
+
+		public FileTreeItem(FileTree tree, IFilesystemObject o)
+			: base(o.DisplayName)
 		{
 			tree_ = tree;
+			o_ = o;
+			o_.Icon.GetTexture(t => Icon = t);
 		}
 
 		public FileTree FileTree
@@ -30,53 +28,64 @@ namespace AUI.FileDialog
 			get { return tree_; }
 		}
 
-		public string FullPath
+		public IFilesystemObject Object
 		{
-			get
-			{
-				string s = Path;
-
-				var parent = Parent as FileTreeItem;
-				while (parent != null)
-				{
-					s = parent.Path + "/" + s;
-					parent = parent.Parent as FileTreeItem;
-				}
-
-				return s;
-			}
+			get { return o_; }
 		}
-
-		public abstract string Type { get; }
-		public abstract string Path { get; }
-		public abstract bool CanPin { get; }
-		public abstract bool Virtual { get; }
-		public abstract bool IsFlattened { get; }
 
 		public virtual void SetFlags(int f)
 		{
 			bool visible = true;
 
-			if (Virtual && Bits.IsSet(f, FileTree.Writeable))
+			if (o_.Virtual && Bits.IsSet(f, FileTree.Writeable))
 				visible = false;
-			else if (IsFlattened && Bits.IsSet(f, FileTree.FlattenDirectories))
+			else if (o_.IsFlattened && Bits.IsSet(f, FileTree.FlattenDirectories))
 				visible = false;
 
 			Visible = visible;
 		}
 
-		public abstract IFileContainer CreateContainer();
+		public override bool HasChildren
+		{
+			get
+			{
+				if (!checkedHasChildren_)
+				{
+					var d = (o_ as IFilesystemContainer);
+					hasChildren_ = (d != null && d.HasSubDirectories(null));
+					checkedHasChildren_ = true;
+				}
+
+				return hasChildren_;
+			}
+		}
+
+		protected override void GetChildren()
+		{
+			var d = (o_ as IFilesystemContainer);
+
+			if (d != null)
+			{
+				var f = new Filter("", null, Filter.SortFilename, Filter.SortAscending);
+				foreach (var c in d.GetSubDirectories(f))
+					Add(new FileTreeItem(tree_, c));
+
+				//var dirs = FS.GetDirectories(file_.Path, null);
+				//
+				//foreach (var d in dirs)
+				//{
+				//	if (IncludeDir(d))
+				//		Add(new DirectoryItem(FileTree, d));
+				//}
+			}
+		}
 	}
 
-
+	/*
 	abstract class BasicDirectoryItem : FileTreeItem
 	{
-		private readonly IFile file_;
-		private bool checkedHasChildren_ = false;
-		private bool hasChildren_ = false;
-
 		protected BasicDirectoryItem(FileTree tree, IFile f)
-			: this(tree, f, f.Name)
+			: this(tree, f, f.DisplayName)
 		{
 		}
 
@@ -84,7 +93,6 @@ namespace AUI.FileDialog
 			: base(tree, display)
 		{
 			file_ = f;
-			Icons.GetDirectoryIcon(t => Icon = t);
 		}
 
 		public IFile File
@@ -102,34 +110,9 @@ namespace AUI.FileDialog
 			get { return File.Path; }
 		}
 
-		public override bool HasChildren
-		{
-			get
-			{
-				if (!checkedHasChildren_)
-				{
-					hasChildren_ = Cache.HasDirectories(file_.Path, null);
-					checkedHasChildren_ = true;
-				}
-
-				return hasChildren_;
-			}
-		}
-
 		public override IFileContainer CreateContainer()
 		{
 			return new DirectoryContainer(file_.Path);
-		}
-
-		protected override void GetChildren()
-		{
-			var dirs = Cache.GetDirectories(file_.Path, null);
-
-			foreach (var d in dirs)
-			{
-				if (IncludeDir(d))
-					Add(new DirectoryItem(FileTree, d));
-			}
 		}
 
 		protected virtual bool IncludeDir(IFile f)
@@ -206,7 +189,7 @@ namespace AUI.FileDialog
 
 		public override bool Virtual
 		{
-			get { return Cache.DirectoryInPackage(Path); }
+			get { return FS.DirectoryInPackage(Path); }
 		}
 
 		public override bool IsFlattened
@@ -219,7 +202,7 @@ namespace AUI.FileDialog
 	class SavesRootItem : BasicDirectoryItem
 	{
 		public SavesRootItem(FileTree tree)
-			: base(tree, new File(Cache.SavesRoot))
+			: base(tree, new File(FS.SavesRoot))
 		{
 		}
 
@@ -240,7 +223,7 @@ namespace AUI.FileDialog
 
 		protected override bool IncludeDir(IFile f)
 		{
-			var lc = f.Name.ToLower();
+			var lc = f.DisplayName.ToLower();
 			return (lc == "downloads" || lc == "scene");
 		}
 	}
@@ -251,17 +234,17 @@ namespace AUI.FileDialog
 		private readonly IFile p_;
 
 		public PackageItem(FileTree tree, IFile p)
-			: base(tree, new File(p.Path), p.Name)
+			: base(tree, new File(p.Path), p.DisplayName)
 		{
 			p_ = p;
 
-			Tooltip = $"path: {p_.Path}\npackage:{p_.Name}";
+			Tooltip = $"path: {p_.Path}\npackage:{p_.DisplayName}";
 			Icons.GetPackageIcon(t => Icon = t);
 		}
 
 		public static PackageItem FromPath(FileTree tree, string path)
 		{
-			var sc = Cache.GetPackage(path);
+			var sc = FS.GetPackage(path);
 			if (sc == null)
 			{
 				AlternateUI.Instance.Log.Error(
@@ -422,7 +405,7 @@ namespace AUI.FileDialog
 			{
 				if (!checkedHasChildren_)
 				{
-					hasChildren_ = Cache.HasPackages(Cache.ScenesRoot);
+					hasChildren_ = FS.HasPackages(null);
 					checkedHasChildren_ = true;
 				}
 
@@ -432,16 +415,8 @@ namespace AUI.FileDialog
 
 		protected override void GetChildren()
 		{
-			foreach (Package p in Cache.GetPackages(Cache.ScenesRoot, null))
-			{
-				if (string.IsNullOrEmpty(p.ShortCut.package))
-					continue;
-
-				if (!string.IsNullOrEmpty(p.ShortCut.packageFilter))
-					continue;
-
+			foreach (Package p in FS.GetPackages(null))
 				Add(new PackageItem(FileTree, p));
-			}
 		}
 	}
 
@@ -662,5 +637,5 @@ namespace AUI.FileDialog
 		{
 			return pinned_.CreateMergedContainer("Pinned flattened");
 		}
-	}
+	}*/
 }

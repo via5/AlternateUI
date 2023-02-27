@@ -3,6 +3,7 @@ project\src\Utilities.cs
 project\src\Version.cs
 project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs
+project\src\Common\Icons.cs
 project\src\Common\MRU\MRUAtomInfo.cs
 project\src\Common\MRU\MRUAtomUIModifier.cs
 project\src\Features\CuaUI.cs
@@ -18,10 +19,12 @@ project\src\Features\ClothingUI\ClothingUI.cs
 project\src\Features\ClothingUI\Controls.cs
 project\src\Features\FileDialog\Cache.cs
 project\src\Features\FileDialog\Containers.cs
+project\src\Features\FileDialog\Directory.cs
 project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FilePanel.cs
 project\src\Features\FileDialog\FileTree.cs
 project\src\Features\FileDialog\FileTreeItem.cs
+project\src\Features\FileDialog\Filter.cs
 project\src\Features\MorphUI\Categories.cs
 project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs

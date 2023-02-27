@@ -14,12 +14,12 @@ namespace AUI.FileDialog
 
 		private readonly FileDialog fd_;
 		private readonly VUI.TreeView tree_;
-		private readonly RootItem root_;
-		private readonly AllFlatItem allFlat_ = null;
-		private readonly PackagesFlatItem packagesFlat_ = null;
-		private readonly PinnedRootItem pinned_ = null;
-		private readonly SavesRootItem savesRoot_ = null;
-		private readonly PackagesRootItem packagesRoot_ = null;
+		private readonly FileTreeItem root_;
+		//private readonly AllFlatItem allFlat_ = null;
+		//private readonly PackagesFlatItem packagesFlat_ = null;
+		//private readonly PinnedRootItem pinned_ = null;
+		//private readonly SavesRootItem savesRoot_ = null;
+		//private readonly PackagesRootItem packagesRoot_ = null;
 
 		public FileTree(FileDialog fd, int fontSize, List<PinInfo> pins)
 		{
@@ -32,20 +32,20 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			root_ = new RootItem(this);
+			root_ = new FileTreeItem(this, FS.Instance.GetRootDirectory());
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
 
 
-			allFlat_ = root_.Add(new AllFlatItem(this));
-			packagesFlat_ = root_.Add(new PackagesFlatItem(this));
-			pinned_ = root_.Add(new PinnedRootItem(this, pins));
-			savesRoot_ = root_.Add(new SavesRootItem(this));
-			packagesRoot_ = root_.Add(new PackagesRootItem(this));
-
-			root_.Expanded = true;
-			pinned_.Expanded = true;
+			//allFlat_ = root_.Add(new AllFlatItem(this));
+			//packagesFlat_ = root_.Add(new PackagesFlatItem(this));
+			//pinned_ = root_.Add(new PinnedRootItem(this, pins));
+			//savesRoot_ = root_.Add(new SavesRootItem(this));
+			//packagesRoot_ = root_.Add(new PackagesRootItem(this));
+			//
+			//root_.Expanded = true;
+			//pinned_.Expanded = true;
 		}
 
 		public FileDialog FileDialog
@@ -60,36 +60,41 @@ namespace AUI.FileDialog
 
 		public void SetFlags(int f)
 		{
-			foreach (FileTreeItem item in root_.Children)
+			if (root_.Children != null)
 			{
-				if (item != null)
-					item.SetFlags(f);
+				foreach (FileTreeItem item in root_.Children)
+				{
+					if (item != null)
+						item.SetFlags(f);
+				}
 			}
 		}
 
 		public List<IFileTreeItem> GetPins()
 		{
-			return pinned_.GetPins();
+			return new List<IFileTreeItem>();
+			//return pinned_.GetPins();
 		}
 
 		public void PinSelected(bool b)
 		{
-			var s = tree_.Selected as FileTreeItem;
-			if (s == null)
-				return;
-
-			if (b)
-				pinned_.AddPinned(s);
-			else
-				pinned_.RemovePinned(s);
+			//var s = tree_.Selected as FileTreeItem;
+			//if (s == null)
+			//	return;
+			//
+			//if (b)
+			//	pinned_.AddPinned(s);
+			//else
+			//	pinned_.RemovePinned(s);
 		}
 
 		public bool IsPinned(IFileTreeItem item)
 		{
-			if (item == null)
-				return false;
-
-			return pinned_.HasPinned(item);
+			//if (item == null)
+			//	return false;
+			//
+			//return pinned_.HasPinned(item);
+			return false;
 		}
 
 		public bool Select(string path)
@@ -139,12 +144,9 @@ namespace AUI.FileDialog
 		private void OnSelection(VUI.TreeView.Item item)
 		{
 			var fi = item as FileTreeItem;
-			var c = fi?.CreateContainer();
+			var o = fi?.Object as IFilesystemContainer;
 
-			if (c == null)
-				c = new EmptyContainer("");
-
-			fd_.SetContainer(c);
+			fd_.SetContainer(o ?? new NullDirectory());
 			SelectionChanged?.Invoke(fi);
 		}
 	}

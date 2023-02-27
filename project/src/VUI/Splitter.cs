@@ -11,6 +11,7 @@ namespace VUI
 		private Point dragStart_;
 		private float initialPos_ = 0;
 		private bool dragging_ = false;
+		private bool on_ = false;
 
 		public SplitterHandle(Splitter sp)
 		{
@@ -30,16 +31,22 @@ namespace VUI
 
 		private void OnPointerEnter(PointerEvent e)
 		{
-			AUI.FileDialog.Icons.GetResizeWE((t) =>
+			on_ = true;
+
+			AUI.Icons.ResizeWE.GetTexture((t) =>
 			{
-				Cursor.SetCursor(
-					t as Texture2D,
-					new Vector2(t.width/2, t.height/2), CursorMode.ForceSoftware);
+				if (on_)
+				{
+					Cursor.SetCursor(
+						t as Texture2D,
+						new Vector2(t.width / 2, t.height / 2), CursorMode.ForceSoftware);
+				}
 			});
 		}
 
 		private void OnPointerExit(PointerEvent e)
 		{
+			on_ = false;
 			Cursor.SetCursor(null, new Vector2(0, 0), CursorMode.Auto);
 		}
 

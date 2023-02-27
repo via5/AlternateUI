@@ -8,7 +8,7 @@ namespace AUI.FileDialog
 	class FilePanel
 	{
 		private readonly FileDialog fd_;
-		private IFile file_ = null;
+		private IFilesystemObject o_ = null;
 
 		private readonly VUI.Panel panel_;
 		private readonly VUI.Image thumbnail_;
@@ -44,15 +44,15 @@ namespace AUI.FileDialog
 			panel_.Events.PointerExit += OnPointerExit;
 		}
 
-		public IFile File
+		public IFilesystemObject Object
 		{
-			get { return file_; }
+			get { return o_; }
 		}
 
 		private void OnClick(VUI.PointerEvent e)
 		{
 			if (e.Button == VUI.PointerEvent.LeftButton)
-				fd_.Select(File);
+				fd_.Select(Object);
 
 			e.Bubble = false;
 		}
@@ -67,7 +67,7 @@ namespace AUI.FileDialog
 
 		private void OnPointerEnter(VUI.PointerEvent e)
 		{
-			if (fd_.Selected != File)
+			if (fd_.Selected != Object)
 			{
 				panel_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
 				panel_.BorderColor = VUI.Style.Theme.BorderColor;
@@ -76,7 +76,7 @@ namespace AUI.FileDialog
 
 		private void OnPointerExit(VUI.PointerEvent e)
 		{
-			if (fd_.Selected != File)
+			if (fd_.Selected != Object)
 			{
 				panel_.BackgroundColor = new Color(0, 0, 0, 0);
 				panel_.BorderColor = new Color(0, 0, 0, 0);
@@ -102,11 +102,11 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void Set(IFile f)
+		public void Set(IFilesystemObject o)
 		{
-			file_ = f;
+			o_ = o;
 
-			name_.Text = file_.Name;
+			name_.Text = o_.DisplayName;
 			panel_.Tooltip.Text = MakeTooltip();
 			panel_.Render = true;
 			SetIcon();
@@ -114,25 +114,14 @@ namespace AUI.FileDialog
 
 		private string MakeTooltip()
 		{
-			string tt = $"Path: {file_.Path}";
+			string tt = $"Path: {o_.VirtualPath}";
+			var p = o_.ParentPackage;
 
-			if (FileManagerSecure.IsFileInPackage(file_.Path) ||
-				FileManagerSecure.IsDirectoryInPackage(file_.Path))
-			{
-				var col = file_.Path.IndexOf(":");
-				if (col != -1)
-				{
-					var s = file_.Path.Substring(0, col);
+			if (p != null)
+				tt += $"\nPackage: {p.DisplayName}";
 
-					if (FileManagerSecure.PackageExists(s))
-						tt += $"\nPackage: {s}";
-					else
-						tt += $"\nPackage: {s} (not found)";
-				}
-			}
-
-			tt += $"\nCreated: {FormatDT(file_.DateCreated)}";
-			tt += $"\nLast modified: {FormatDT(file_.DateModified)}";
+			tt += $"\nCreated: {FormatDT(o_.DateCreated)}";
+			tt += $"\nLast modified: {FormatDT(o_.DateModified)}";
 
 			return tt;
 		}
@@ -144,9 +133,13 @@ namespace AUI.FileDialog
 
 		private void SetIcon()
 		{
-			var t = Icons.GetFileIconFromCache(file_.Path);
+			var i = o_.Icon;
 
-			if (t == null)
+			if (i.CachedTexture != null)
+			{
+				SetTexture(i.CachedTexture);
+			}
+			else
 			{
 				if (thumbnailTimer_ != null)
 				{
@@ -158,20 +151,14 @@ namespace AUI.FileDialog
 
 				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
 				{
-					IFile forFile = file_;
+					var forObject = Object;
 
-					Icons.GetFileIcon(file_.Path, tt =>
+					i.GetTexture(t =>
 					{
-						if (file_ == forFile)
-						{
-							SetTexture(tt);
-						}
+						if (o_ == forObject)
+							SetTexture(t);
 					});
 				});
-			}
-			else
-			{
-				SetTexture(t);
 			}
 		}
 

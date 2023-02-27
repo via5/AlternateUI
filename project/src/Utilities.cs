@@ -103,7 +103,8 @@ namespace AUI
 			{
 				int hash = arg1;
 				hash = 31 * hash + arg2;
-				return 31 * hash + arg3;
+				hash = 31 * hash + arg3;
+				return hash;
 			}
 		}
 
@@ -115,6 +116,19 @@ namespace AUI
 				hash = 31 * hash + arg2;
 				hash = 31 * hash + arg3;
 				hash = 31 * hash + arg4;
+				return hash;
+			}
+		}
+
+		public static int Combine(int arg1, int arg2, int arg3, int arg4, int arg5)
+		{
+			unchecked
+			{
+				int hash = arg1;
+				hash = 31 * hash + arg2;
+				hash = 31 * hash + arg3;
+				hash = 31 * hash + arg4;
+				hash = 31 * hash + arg5;
 				return hash;
 			}
 		}
