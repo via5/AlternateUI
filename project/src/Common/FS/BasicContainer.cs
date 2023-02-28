@@ -248,7 +248,7 @@ namespace AUI.FS
 					var name = Path.Filename(filePath);
 
 					if (filter == null || filter.Matches(name))
-						c.Files.entries.Add(new File(fs_, this, name));
+						c.Files.entries.Add(new FSFile(fs_, this, name));
 				}
 			}
 
