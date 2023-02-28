@@ -47,6 +47,23 @@ namespace VUI
 				set { parent_ = value; }
 			}
 
+			public int Index
+			{
+				get
+				{
+					if (parent_?.Children != null)
+					{
+						for (int i = 0; i < parent_.Children.Count; ++i)
+						{
+							if (parent_.Children[i] == this)
+								return i;
+						}
+					}
+
+					return -1;
+				}
+			}
+
 			public string Tooltip
 			{
 				get { return tooltip_; }
@@ -344,18 +361,23 @@ namespace VUI
 				}
 			}
 
-			public T Add<T>(T child) where T : Item
+			public T Add<T>(T item) where T : Item
+			{
+				return Insert(children_?.Count ?? 0, item);
+			}
+
+			public T Insert<T>(int index, T item) where T : Item
 			{
 				if (children_ == null)
 					children_ = new List<Item>();
 
-				children_.Add(child);
-				child.Parent = this;
+				children_.Insert(index, item);
+				item.Parent = this;
 				gotChildren_ = true;
 
 				NodesChanged();
 
-				return child;
+				return item;
 			}
 
 			public void Remove(Item child)

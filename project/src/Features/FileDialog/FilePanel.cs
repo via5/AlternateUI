@@ -108,13 +108,17 @@ namespace AUI.FileDialog
 
 			name_.Text = o_.DisplayName;
 			panel_.Tooltip.Text = MakeTooltip();
+			panel_.Tooltip.FontSize = name_.FontSize;
 			panel_.Render = true;
 			SetIcon();
 		}
 
 		private string MakeTooltip()
 		{
-			string tt = $"Path: {o_.VirtualPath}";
+			string tt =
+				$"Path: {o_.VirtualPath}\n" +
+				$"Real: {o_.MakeRealPath()}\n";
+
 			var p = o_.ParentPackage;
 
 			if (p != null)

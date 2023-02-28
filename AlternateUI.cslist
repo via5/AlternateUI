@@ -18,7 +18,6 @@ project\src\Features\Tweaks.cs
 project\src\Features\ClothingUI\ClothingPanel.cs
 project\src\Features\ClothingUI\ClothingUI.cs
 project\src\Features\ClothingUI\Controls.cs
-project\src\Features\FileDialog\Cache.cs
 project\src\Features\FileDialog\Containers.cs
 project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FilePanel.cs

@@ -304,6 +304,7 @@ namespace AUI.FileDialog
 			}
 
 			root_.Visible = true;
+			tree_.Enable();
 			UpdateActionButton();
 		}
 
@@ -322,6 +323,7 @@ namespace AUI.FileDialog
 
 		public void Hide()
 		{
+			tree_.Disable();
 			root_.Visible = false;
 		}
 
@@ -350,8 +352,6 @@ namespace AUI.FileDialog
 		private void Refresh()
 		{
 			top_ = 0;
-
-			Log.Error($"{dir_.MakeRealPath()}");
 
 			List<IFilesystemObject> files;
 
@@ -741,33 +741,20 @@ namespace AUI.FileDialog
 		{
 			o["flattenDirs"] = new JSONData(flattenDirs_);
 			o["flattenPackages"] = new JSONData(flattenPackages_);
-
-			//if (tree_ != null)
-			//{
-			//	var pins = tree_.GetPins();
-			//
-			//	if (pins.Count > 0)
-			//	{
-			//		var a = new JSONArray();
-			//
-			//		foreach (var p in pins)
-			//		{
-			//			var po = new JSONClass();
-			//			po["path"] = p.FullPath;
-			//			a.Add(po);
-			//		}
-			//
-			//		o["pins"] = a;
-			//	}
-			//}
 		}
 
 		private void OnPin(bool b)
 		{
 			if (ignorePin_) return;
 
-			tree_.PinSelected(b);
-			AlternateUI.Instance.Save();
+			var s = tree_.Selected as IFilesystemContainer;
+			if (s != null)
+			{
+				if (b)
+					FS.Instance.Pin(s);
+				else
+					FS.Instance.Unpin(s);
+			}
 		}
 
 		private void OnPathSubmitted(string s)
@@ -797,17 +784,18 @@ namespace AUI.FileDialog
 			try
 			{
 				ignorePin_ = true;
+				var c = item?.Object as IFilesystemContainer;
 
-				//if (item != null && item.CanPin)
-				//{
-				//	pin_.Enabled = true;
-				//	pin_.Checked = tree_.IsPinned(item);
-				//}
-				//else
-				//{
-				//	pin_.Enabled = false;
-				//	pin_.Checked = false;
-				//}
+				if (c != null)
+				{
+					pin_.Enabled = true;
+					pin_.Checked = FS.Instance.IsPinned(c);
+				}
+				else
+				{
+					pin_.Enabled = false;
+					pin_.Checked = false;
+				}
 			}
 			finally
 			{

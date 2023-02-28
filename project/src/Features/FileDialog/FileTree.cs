@@ -11,7 +11,6 @@ namespace AUI.FileDialog
 		public const int FlattenDirectories = 0x01;
 		public const int Writeable = 0x02;
 
-
 		private readonly FileDialog fd_;
 		private readonly VUI.TreeView tree_;
 		private readonly FileTreeItem root_;
@@ -37,14 +36,13 @@ namespace AUI.FileDialog
 
 			tree_.SelectionChanged += OnSelection;
 
-
 			//allFlat_ = root_.Add(new AllFlatItem(this));
 			//packagesFlat_ = root_.Add(new PackagesFlatItem(this));
 			//pinned_ = root_.Add(new PinnedRootItem(this, pins));
 			//savesRoot_ = root_.Add(new SavesRootItem(this));
 			//packagesRoot_ = root_.Add(new PackagesRootItem(this));
 			//
-			//root_.Expanded = true;
+			root_.Expanded = true;
 			//pinned_.Expanded = true;
 		}
 
@@ -56,6 +54,25 @@ namespace AUI.FileDialog
 		public VUI.Widget Widget
 		{
 			get { return tree_; }
+		}
+
+		public IFilesystemObject Selected
+		{
+			get
+			{
+				var fi = tree_.Selected as FileTreeItem;
+				return fi?.Object;
+			}
+		}
+
+		public void Enable()
+		{
+			FS.Instance.ObjectChanged += OnObjectChanged;
+		}
+
+		public void Disable()
+		{
+			FS.Instance.ObjectChanged -= OnObjectChanged;
 		}
 
 		public void SetFlags(int f)
@@ -70,31 +87,39 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public List<IFileTreeItem> GetPins()
+		private void OnObjectChanged(IFilesystemObject o)
 		{
-			return new List<IFileTreeItem>();
-			//return pinned_.GetPins();
+			var item = FindItem(o);
+			if (item == null)
+				return;
+
+			item.Refresh();
 		}
 
-		public void PinSelected(bool b)
+		public FileTreeItem FindItem(IFilesystemObject o)
 		{
-			//var s = tree_.Selected as FileTreeItem;
-			//if (s == null)
-			//	return;
-			//
-			//if (b)
-			//	pinned_.AddPinned(s);
-			//else
-			//	pinned_.RemovePinned(s);
+			return FindItem(tree_.RootItem, o);
 		}
 
-		public bool IsPinned(IFileTreeItem item)
+		private FileTreeItem FindItem(VUI.TreeView.Item parent, IFilesystemObject o)
 		{
-			//if (item == null)
-			//	return false;
-			//
-			//return pinned_.HasPinned(item);
-			return false;
+			var cs = parent.Children;
+
+			if (cs != null)
+			{
+				for (int i=0; i<cs.Count; ++i)
+				{
+					var c = cs[i] as FileTreeItem;
+					if (c.Object == o)
+						return c;
+
+					var r = FindItem(c, o);
+					if (r != null)
+						return r;
+				}
+			}
+
+			return null;
 		}
 
 		public bool Select(string path)

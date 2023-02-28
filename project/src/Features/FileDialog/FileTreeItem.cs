@@ -45,6 +45,49 @@
 			Visible = visible;
 		}
 
+		public void Refresh()
+		{
+			if (!checkedHasChildren_)
+				return;
+
+			checkedHasChildren_ = false;
+			if (!HasChildren)
+			{
+				Clear();
+				return;
+			}
+
+			var dirs = (o_ as IFilesystemContainer).GetSubDirectories(CreateFilter());
+
+			{
+				int i = 0;
+				while (i < Children.Count)
+				{
+					bool found = false;
+
+					for (int j = 0; j < dirs.Count; ++j)
+					{
+						if (Children[i] == dirs[j])
+						{
+							found = true;
+							break;
+						}
+					}
+
+					if (!found)
+						Remove(Children[i]);
+					else
+						++i;
+				}
+			}
+
+			for (int i = 0; i < dirs.Count; ++i)
+			{
+				if (i >= Children.Count || Children[i] != dirs[i])
+					Insert(i, new FileTreeItem(tree_, dirs[i]));
+			}
+		}
+
 		public override bool HasChildren
 		{
 			get
@@ -66,8 +109,7 @@
 
 			if (d != null)
 			{
-				var f = new Filter("", null, Filter.SortFilename, Filter.SortAscending);
-				foreach (var c in d.GetSubDirectories(f))
+				foreach (var c in d.GetSubDirectories(CreateFilter()))
 					Add(new FileTreeItem(tree_, c));
 
 				//var dirs = FS.GetDirectories(file_.Path, null);
@@ -78,6 +120,11 @@
 				//		Add(new DirectoryItem(FileTree, d));
 				//}
 			}
+		}
+
+		private Filter CreateFilter()
+		{
+			return new Filter("", null, Filter.SortFilename, Filter.SortAscending);
 		}
 	}
 
