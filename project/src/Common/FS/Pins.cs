@@ -193,6 +193,11 @@ namespace AUI.FS
 			c_ = c;
 		}
 
+		public override string ToString()
+		{
+			return $"PinnedObject({c_})";
+		}
+
 		public override string Name { get { return c_.Name; } }
 		public override string VirtualPath { get { return c_.VirtualPath; } }
 		public override DateTime DateCreated { get { return c_.DateCreated; } }

@@ -334,7 +334,7 @@ namespace AUI.FileDialog
 				ignoreSearch_ = false;
 			}
 
-			Refresh();
+			RefreshFiles();
 		}
 
 		protected FS.Filter CreateFilter()
@@ -342,7 +342,16 @@ namespace AUI.FileDialog
 			return new FS.Filter(search_.Text, extensions_.Selected?.Extensions, sort_, sortDir_);
 		}
 
-		private void Refresh()
+		public void Refresh()
+		{
+			Log.Info("refreshing");
+
+			FS.Filesystem.Instance.ClearCaches();
+			RefreshDirectories();
+			RefreshFiles();
+		}
+
+		public void RefreshFiles()
 		{
 			top_ = 0;
 
@@ -357,6 +366,11 @@ namespace AUI.FileDialog
 			SetPath();
 			SetPanels(0);
 			UpdateActionButton();
+		}
+
+		public void RefreshDirectories()
+		{
+			tree_.Refresh();
 		}
 
 		protected override void DoEnable()
@@ -422,7 +436,7 @@ namespace AUI.FileDialog
 				if (b)
 				{
 					sort_ = sort;
-					Refresh();
+					RefreshFiles();
 				}
 			};
 
@@ -436,7 +450,7 @@ namespace AUI.FileDialog
 				if (b)
 				{
 					sortDir_ = sortDir;
-					Refresh();
+					RefreshFiles();
 				}
 			};
 
@@ -463,6 +477,7 @@ namespace AUI.FileDialog
 			optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
 			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
 			optionsPanel_.Add(sortPanel_.Button);
+			optionsPanel_.Add(new VUI.Button("Refresh", Refresh));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
 
 			var left = new VUI.Panel(new VUI.BorderLayout(10));
@@ -741,12 +756,12 @@ namespace AUI.FileDialog
 		private void OnSearchChanged(string s)
 		{
 			if (ignoreSearch_) return;
-			Refresh();
+			RefreshFiles();
 		}
 
 		private void OnExtensionChanged(ExtensionItem e)
 		{
-			Refresh();
+			RefreshFiles();
 		}
 
 		private void OnTreeSelection(IFileTreeItem item)
@@ -778,7 +793,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sort_ = FS.Filter.SortFilename;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 
@@ -787,7 +802,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sort_ = FS.Filter.SortType;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 
@@ -796,7 +811,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sort_ = FS.Filter.SortDateModified;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 
@@ -805,7 +820,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sort_ = FS.Filter.SortDateCreated;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 
@@ -814,7 +829,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sortDir_ = FS.Filter.SortAscending;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 
@@ -823,7 +838,7 @@ namespace AUI.FileDialog
 			if (b)
 			{
 				sortDir_ = FS.Filter.SortDescending;
-				Refresh();
+				RefreshFiles();
 			}
 		}
 

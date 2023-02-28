@@ -75,6 +75,15 @@ namespace AUI.FileDialog
 			FS.Filesystem.Instance.ObjectChanged -= OnObjectChanged;
 		}
 
+		public void Refresh()
+		{
+			if (root_.Children != null)
+			{
+				foreach (FileTreeItem item in root_.Children)
+					item.Refresh(true);
+			}
+		}
+
 		public void SetFlags(int f)
 		{
 			if (root_.Children != null)
@@ -93,7 +102,7 @@ namespace AUI.FileDialog
 			if (item == null)
 				return;
 
-			item.Refresh();
+			item.Refresh(false);
 		}
 
 		public FileTreeItem FindItem(FS.IFilesystemObject o)
@@ -110,7 +119,7 @@ namespace AUI.FileDialog
 				for (int i=0; i<cs.Count; ++i)
 				{
 					var c = cs[i] as FileTreeItem;
-					if (c.Object == o)
+					if (c.Object.IsSameObject(o))
 						return c;
 
 					var r = FindItem(c, o);

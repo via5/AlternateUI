@@ -178,6 +178,12 @@ namespace VUI
 				}
 			}
 
+			public List<Item> GetInternalChildren()
+			{
+				return children_;
+			}
+
+
 			public bool Expanded
 			{
 				get
@@ -396,14 +402,22 @@ namespace VUI
 			{
 				if (children_ != null && children_.Count > 0)
 				{
+					TreeView?.NodeAboutToGetClearedInternal(this);
+
 					for (int i=0; i<children_.Count; ++i)
 						children_[i].Parent = null;
 
+					expanded_ = false;
 					children_.Clear();
 					NodesChanged();
 				}
 
 				gotChildren_ = false;
+			}
+
+			public void UpdateToggle()
+			{
+				NodesChanged();
 			}
 
 			public void FireCheckedChanged(bool b)
@@ -914,6 +928,12 @@ namespace VUI
 				SelectedGone();
 
 			i.Parent = null;
+		}
+
+		public void NodeAboutToGetClearedInternal(Item node)
+		{
+			if (Selected != null && Selected.IsContainedBy(node))
+				SelectedGone();
 		}
 
 		public void VisibilityChangedInternal(Item i)

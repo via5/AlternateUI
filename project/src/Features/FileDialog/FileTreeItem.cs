@@ -10,17 +10,23 @@
 	class FileTreeItem : VUI.TreeView.Item, IFileTreeItem
 	{
 		private readonly FileTree tree_;
-		private readonly FS.IFilesystemObject o_;
+		private readonly string path_;
 
 		private bool checkedHasChildren_ = false;
 		private bool hasChildren_ = false;
+		private FS.IFilesystemContainer o_ = null;
 
 		public FileTreeItem(FileTree tree, FS.IFilesystemObject o)
 			: base(o.DisplayName)
 		{
 			tree_ = tree;
-			o_ = o;
-			o_.Icon.GetTexture(t => Icon = t);
+			path_ = o.VirtualPath;
+			o.Icon.GetTexture(t => Icon = t);
+		}
+
+		public override string ToString()
+		{
+			return $"FileTreeItem({path_})";
 		}
 
 		public FileTree FileTree
@@ -30,61 +36,101 @@
 
 		public FS.IFilesystemObject Object
 		{
-			get { return o_; }
+			get { return GetFSObject(); }
+		}
+
+		private FS.IFilesystemContainer GetFSObject()
+		{
+			if (o_ == null)
+				o_ = FS.Filesystem.Instance.Resolve(path_) as FS.IFilesystemContainer;
+
+			return o_;
 		}
 
 		public virtual void SetFlags(int f)
 		{
 			bool visible = true;
 
-			if (o_.Virtual && Bits.IsSet(f, FileTree.Writeable))
+			var o = GetFSObject();
+			if (o == null)
+				return;
+
+			if (o.Virtual && Bits.IsSet(f, FileTree.Writeable))
 				visible = false;
-			else if (o_.IsFlattened && Bits.IsSet(f, FileTree.FlattenDirectories))
+			else if (o.IsFlattened && Bits.IsSet(f, FileTree.FlattenDirectories))
 				visible = false;
 
 			Visible = visible;
 		}
 
-		public void Refresh()
+		public void Refresh(bool recursive)
 		{
+			o_ = null;
+
 			if (!checkedHasChildren_)
 				return;
 
 			checkedHasChildren_ = false;
-			if (!HasChildren)
+
+			if (!Expanded)
+			{
+				Clear();
+				UpdateToggle();
+				return;
+			}
+
+			var o = GetFSObject();
+			if (o == null || !HasChildren)
 			{
 				Clear();
 				return;
 			}
 
-			var dirs = (o_ as FS.IFilesystemContainer).GetSubDirectories(CreateFilter());
+			var dirs = o.GetSubDirectories(CreateFilter());
 
 			{
-				int i = 0;
-				while (i < Children.Count)
-				{
-					bool found = false;
+				var cs = GetInternalChildren();
 
-					for (int j = 0; j < dirs.Count; ++j)
+				if (cs != null)
+				{
+					int i = 0;
+					while (i < cs.Count)
 					{
-						if (Children[i] == dirs[j])
+						bool found = false;
+						var c = cs[i] as FileTreeItem;
+
+						for (int j = 0; j < dirs.Count; ++j)
 						{
-							found = true;
-							break;
+							if (c.GetFSObject().IsSameObject(dirs[j]))
+							{
+								found = true;
+								break;
+							}
+						}
+
+						if (!found)
+						{
+							Remove(c);
+						}
+						else
+						{
+							if (recursive)
+								c.Refresh(true);
+
+							++i;
 						}
 					}
-
-					if (!found)
-						Remove(Children[i]);
-					else
-						++i;
 				}
 			}
 
-			for (int i = 0; i < dirs.Count; ++i)
 			{
-				if (i >= Children.Count || Children[i] != dirs[i])
-					Insert(i, new FileTreeItem(tree_, dirs[i]));
+				var cs = GetInternalChildren();
+
+				for (int i = 0; i < dirs.Count; ++i)
+				{
+					if (i >= cs.Count || !(cs[i] as FileTreeItem).GetFSObject().IsSameObject(dirs[i]))
+						Insert(i, new FileTreeItem(tree_, dirs[i]));
+				}
 			}
 		}
 
@@ -94,7 +140,7 @@
 			{
 				if (!checkedHasChildren_)
 				{
-					var d = (o_ as FS.IFilesystemContainer);
+					var d = GetFSObject();
 					hasChildren_ = (d != null && d.HasSubDirectories(null));
 					checkedHasChildren_ = true;
 				}
@@ -105,7 +151,7 @@
 
 		protected override void GetChildren()
 		{
-			var d = (o_ as FS.IFilesystemContainer);
+			var d = GetFSObject();
 
 			if (d != null)
 			{

@@ -6,7 +6,6 @@ namespace AUI.FS
 {
 	using FMS = FileManagerSecure;
 
-
 	abstract class BasicFilesystemObject : IFilesystemObject
 	{
 		protected readonly Filesystem fs_;
@@ -144,13 +143,21 @@ namespace AUI.FS
 
 		protected class Caches
 		{
-			private Cache<IFilesystemObject> files_ = new Cache<IFilesystemObject>();
-			private Cache<IFilesystemContainer> dirs_ = new Cache<IFilesystemContainer>();
+			private readonly Filesystem fs_;
+			private Cache<IFilesystemObject> files_ = null;
+			private Cache<IFilesystemContainer> dirs_ = null;
+			private int cacheToken_ = -1;
+
+			public Caches(Filesystem fs)
+			{
+				fs_ = fs;
+			}
 
 			public Cache<IFilesystemObject> Files
 			{
 				get
 				{
+					CheckToken();
 					if (files_ == null)
 						files_ = new Cache<IFilesystemObject>();
 
@@ -162,6 +169,7 @@ namespace AUI.FS
 			{
 				get
 				{
+					CheckToken();
 					if (dirs_ == null)
 						dirs_ = new Cache<IFilesystemContainer>();
 
@@ -171,26 +179,43 @@ namespace AUI.FS
 
 			public void Clear()
 			{
-				files_?.Clear();
-				dirs_?.Clear();
+				cacheToken_ = -1;
+			}
+
+			private void CheckToken()
+			{
+				if (cacheToken_ != fs_.CacheToken)
+				{
+					cacheToken_ = fs_.CacheToken;
+					files_?.Clear();
+					dirs_?.Clear();
+				}
 			}
 		}
 
 
 		private readonly string name_;
-		protected Caches c_ = new Caches();
-		protected Caches rc_ = new Caches();
+		protected readonly Caches c_;
+		protected readonly Caches rc_;
 
 
 		public BasicFilesystemContainer(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent)
 		{
 			name_ = name;
+			c_ = new Caches(fs);
+			rc_ = new Caches(fs);
 		}
 
 		public override string Name
 		{
 			get { return name_; }
+		}
+
+		public void ClearCaches()
+		{
+			c_.Clear();
+			rc_.Clear();
 		}
 
 		public bool HasSubDirectories(Filter filter)
@@ -229,12 +254,6 @@ namespace AUI.FS
 		}
 
 		protected abstract void GetFilesRecursiveImpl(Filter filter);
-
-		public void ClearCaches()
-		{
-			c_.Clear();
-			rc_.Clear();
-		}
 
 
 		protected List<IFilesystemContainer> DoGetSubDirectories(Caches c, Filter filter)
@@ -386,7 +405,7 @@ namespace AUI.FS
 			}
 			catch (Exception)
 			{
-				AlternateUI.Instance.Log.Error($"bad directory '{path}'");
+				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}'");
 				return new string[0];
 			}
 		}
@@ -399,7 +418,7 @@ namespace AUI.FS
 			}
 			catch (Exception)
 			{
-				AlternateUI.Instance.Log.Error($"bad directory '{path}'");
+				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}'");
 				return new string[0];
 			}
 		}

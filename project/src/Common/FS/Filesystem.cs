@@ -46,6 +46,8 @@ namespace AUI.FS
 		private readonly RootDirectory root_;
 		private readonly PackageRootDirectory packagesRoot_;
 
+		private int cacheToken_ = 1;
+
 
 		public Filesystem()
 		{
@@ -58,6 +60,16 @@ namespace AUI.FS
 		public static Filesystem Instance
 		{
 			get { return instance_; }
+		}
+
+		public int CacheToken
+		{
+			get { return cacheToken_; }
+		}
+
+		public void ClearCaches()
+		{
+			++cacheToken_;
 		}
 
 		public void Pin(IFilesystemContainer o)
@@ -108,6 +120,9 @@ namespace AUI.FS
 
 		public bool IsSameObject(IFilesystemObject a, IFilesystemObject b)
 		{
+			if (a == b)
+				return true;
+
 			string pa = a.VirtualPath.Replace('\\', '/');
 			string pb = b.VirtualPath.Replace('\\', '/');
 
@@ -298,6 +313,11 @@ namespace AUI.FS
 		public string MakeRealPath()
 		{
 			return "";
+		}
+
+		public void ClearCaches()
+		{
+			// no-op
 		}
 
 		public bool IsSameObject(IFilesystemObject o)
