@@ -50,7 +50,7 @@ namespace AUI.FileDialog
 		private int type_ = NoType;
 		private VUI.Root root_ = null;
 		private VUI.Window window_ = null;
-		private IFilesystemContainer dir_ = new NullDirectory();
+		private FS.IFilesystemContainer dir_ = new FS.NullDirectory();
 		private VUI.CheckBox pin_ = null;
 		private VUI.TextBox path_ = null;
 		private SearchBox search_ = null;
@@ -58,18 +58,18 @@ namespace AUI.FileDialog
 		private VUI.ComboBox<ExtensionItem> extensions_;
 		private VUI.Panel optionsPanel_ = null;
 		private VUI.MenuButton sortPanel_ = null;
-		private List<IFilesystemObject> files_ = null;
+		private List<FS.IFilesystemObject> files_ = null;
 		private FileTree tree_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
-		private IFilesystemObject selected_ = null;
+		private FS.IFilesystemObject selected_ = null;
 		private VUI.Button action_ = null;
 		private VUI.ScrollBar sb_ = null;
 		private string cwd_;
 		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
-		private int sort_ = Filter.SortFilename;
-		private int sortDir_ = Filter.SortAscending;
+		private int sort_ = FS.Filter.SortFilename;
+		private int sortDir_ = FS.Filter.SortAscending;
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
@@ -136,12 +136,12 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public IFilesystemObject Selected
+		public FS.IFilesystemObject Selected
 		{
 			get { return selected_; }
 		}
 
-		public void Select(IFilesystemObject o)
+		public void Select(FS.IFilesystemObject o)
 		{
 			if (selected_ == o)
 				return;
@@ -158,7 +158,7 @@ namespace AUI.FileDialog
 			UpdateActionButton();
 		}
 
-		private FilePanel FindPanel(IFilesystemObject o)
+		private FilePanel FindPanel(FS.IFilesystemObject o)
 		{
 			for (int i = 0; i < panels_.Length; ++i)
 			{
@@ -223,7 +223,7 @@ namespace AUI.FileDialog
 
 			if (file.IndexOf('.') == -1)
 			{
-				var e = extensions_.Selected?.Extensions[0] ?? Filesystem.DefaultSceneExtension;
+				var e = extensions_.Selected?.Extensions[0] ?? FS.Filesystem.DefaultSceneExtension;
 				file += e;
 			}
 
@@ -267,7 +267,7 @@ namespace AUI.FileDialog
 
 				Create();
 
-				SetContainer(new NullDirectory());
+				SetContainer(new FS.NullDirectory());
 				UpdateFlatten();
 			}
 
@@ -320,7 +320,7 @@ namespace AUI.FileDialog
 			root_.Visible = false;
 		}
 
-		public void SetContainer(IFilesystemContainer o)
+		public void SetContainer(FS.IFilesystemContainer o)
 		{
 			dir_ = o;
 
@@ -337,16 +337,16 @@ namespace AUI.FileDialog
 			Refresh();
 		}
 
-		protected Filter CreateFilter()
+		protected FS.Filter CreateFilter()
 		{
-			return new Filter(search_.Text, extensions_.Selected?.Extensions, sort_, sortDir_);
+			return new FS.Filter(search_.Text, extensions_.Selected?.Extensions, sort_, sortDir_);
 		}
 
 		private void Refresh()
 		{
 			top_ = 0;
 
-			List<IFilesystemObject> files;
+			List<FS.IFilesystemObject> files;
 
 			if (FlattenDirectories)
 				files = dir_.GetFilesRecursive(CreateFilter());
@@ -449,13 +449,13 @@ namespace AUI.FileDialog
 
 			var sortMenu = new VUI.Menu();
 
-			sortMenu.AddMenuItem(MakeSortItem("Filename", Filter.SortFilename));
-			sortMenu.AddMenuItem(MakeSortItem("Type", Filter.SortType));
-			sortMenu.AddMenuItem(MakeSortItem("Date modified", Filter.SortDateModified));
-			sortMenu.AddMenuItem(MakeSortItem("Date created", Filter.SortDateCreated));
+			sortMenu.AddMenuItem(MakeSortItem("Filename", FS.Filter.SortFilename));
+			sortMenu.AddMenuItem(MakeSortItem("Type", FS.Filter.SortType));
+			sortMenu.AddMenuItem(MakeSortItem("Date modified", FS.Filter.SortDateModified));
+			sortMenu.AddMenuItem(MakeSortItem("Date created", FS.Filter.SortDateCreated));
 			sortMenu.AddSeparator();
-			sortMenu.AddMenuItem(MakeSortDirItem("Ascending", Filter.SortAscending));
-			sortMenu.AddMenuItem(MakeSortDirItem("Descending", Filter.SortDescending));
+			sortMenu.AddMenuItem(MakeSortDirItem("Ascending", FS.Filter.SortAscending));
+			sortMenu.AddMenuItem(MakeSortDirItem("Descending", FS.Filter.SortDescending));
 
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
@@ -616,7 +616,7 @@ namespace AUI.FileDialog
 				sb_.Value = top_ * ScrollbarSize();
 		}
 
-		private void SetFiles(List<IFilesystemObject> list)
+		private void SetFiles(List<FS.IFilesystemObject> list)
 		{
 			files_ = list;
 
@@ -717,13 +717,13 @@ namespace AUI.FileDialog
 		{
 			if (ignorePin_) return;
 
-			var s = tree_.Selected as IFilesystemContainer;
+			var s = tree_.Selected as FS.IFilesystemContainer;
 			if (s != null)
 			{
 				if (b)
-					FS.Instance.Pin(s);
+					FS.Filesystem.Instance.Pin(s);
 				else
-					FS.Instance.Unpin(s);
+					FS.Filesystem.Instance.Unpin(s);
 			}
 		}
 
@@ -754,12 +754,12 @@ namespace AUI.FileDialog
 			try
 			{
 				ignorePin_ = true;
-				var c = item?.Object as IFilesystemContainer;
+				var c = item?.Object as FS.IFilesystemContainer;
 
 				if (c != null)
 				{
 					pin_.Enabled = true;
-					pin_.Checked = FS.Instance.IsPinned(c);
+					pin_.Checked = FS.Filesystem.Instance.IsPinned(c);
 				}
 				else
 				{
@@ -777,7 +777,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sort_ = Filter.SortFilename;
+				sort_ = FS.Filter.SortFilename;
 				Refresh();
 			}
 		}
@@ -786,7 +786,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sort_ = Filter.SortType;
+				sort_ = FS.Filter.SortType;
 				Refresh();
 			}
 		}
@@ -795,7 +795,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sort_ = Filter.SortDateModified;
+				sort_ = FS.Filter.SortDateModified;
 				Refresh();
 			}
 		}
@@ -804,7 +804,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sort_ = Filter.SortDateCreated;
+				sort_ = FS.Filter.SortDateCreated;
 				Refresh();
 			}
 		}
@@ -813,7 +813,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sortDir_ = Filter.SortAscending;
+				sortDir_ = FS.Filter.SortAscending;
 				Refresh();
 			}
 		}
@@ -822,7 +822,7 @@ namespace AUI.FileDialog
 		{
 			if (b)
 			{
-				sortDir_ = Filter.SortDescending;
+				sortDir_ = FS.Filter.SortDescending;
 				Refresh();
 			}
 		}
@@ -834,7 +834,7 @@ namespace AUI.FileDialog
 			string all = "";
 			var allExts = new List<string>();
 
-			foreach (var e in Filesystem.SceneExtensions)
+			foreach (var e in FS.Filesystem.SceneExtensions)
 			{
 				if (all != "")
 					all += "; ";
@@ -846,7 +846,7 @@ namespace AUI.FileDialog
 			all = "All scene files (" + all + ")";
 			list.Add(new ExtensionItem(all, allExts.ToArray()));
 
-			foreach (var e in Filesystem.SceneExtensions)
+			foreach (var e in FS.Filesystem.SceneExtensions)
 				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
 
 			return list;
@@ -856,7 +856,7 @@ namespace AUI.FileDialog
 		{
 			var list = new List<ExtensionItem>();
 
-			foreach (var e in Filesystem.SceneExtensions)
+			foreach (var e in FS.Filesystem.SceneExtensions)
 				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
 
 			return list;

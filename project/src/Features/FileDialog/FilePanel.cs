@@ -7,7 +7,7 @@ namespace AUI.FileDialog
 	class FilePanel
 	{
 		private readonly FileDialog fd_;
-		private IFilesystemObject o_ = null;
+		private FS.IFilesystemObject o_ = null;
 
 		private readonly VUI.Panel panel_;
 		private readonly VUI.Image thumbnail_;
@@ -43,7 +43,7 @@ namespace AUI.FileDialog
 			panel_.Events.PointerExit += OnPointerExit;
 		}
 
-		public IFilesystemObject Object
+		public FS.IFilesystemObject Object
 		{
 			get { return o_; }
 		}
@@ -101,7 +101,7 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void Set(IFilesystemObject o)
+		public void Set(FS.IFilesystemObject o)
 		{
 			o_ = o;
 

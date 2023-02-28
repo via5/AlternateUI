@@ -31,7 +31,7 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			root_ = new FileTreeItem(this, FS.Instance.GetRootDirectory());
+			root_ = new FileTreeItem(this, FS.Filesystem.Instance.GetRootDirectory());
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
@@ -56,7 +56,7 @@ namespace AUI.FileDialog
 			get { return tree_; }
 		}
 
-		public IFilesystemObject Selected
+		public FS.IFilesystemObject Selected
 		{
 			get
 			{
@@ -67,12 +67,12 @@ namespace AUI.FileDialog
 
 		public void Enable()
 		{
-			FS.Instance.ObjectChanged += OnObjectChanged;
+			FS.Filesystem.Instance.ObjectChanged += OnObjectChanged;
 		}
 
 		public void Disable()
 		{
-			FS.Instance.ObjectChanged -= OnObjectChanged;
+			FS.Filesystem.Instance.ObjectChanged -= OnObjectChanged;
 		}
 
 		public void SetFlags(int f)
@@ -87,7 +87,7 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private void OnObjectChanged(IFilesystemObject o)
+		private void OnObjectChanged(FS.IFilesystemObject o)
 		{
 			var item = FindItem(o);
 			if (item == null)
@@ -96,12 +96,12 @@ namespace AUI.FileDialog
 			item.Refresh();
 		}
 
-		public FileTreeItem FindItem(IFilesystemObject o)
+		public FileTreeItem FindItem(FS.IFilesystemObject o)
 		{
 			return FindItem(tree_.RootItem, o);
 		}
 
-		private FileTreeItem FindItem(VUI.TreeView.Item parent, IFilesystemObject o)
+		private FileTreeItem FindItem(VUI.TreeView.Item parent, FS.IFilesystemObject o)
 		{
 			var cs = parent.Children;
 
@@ -169,9 +169,9 @@ namespace AUI.FileDialog
 		private void OnSelection(VUI.TreeView.Item item)
 		{
 			var fi = item as FileTreeItem;
-			var o = fi?.Object as IFilesystemContainer;
+			var o = fi?.Object as FS.IFilesystemContainer;
 
-			fd_.SetContainer(o ?? new NullDirectory());
+			fd_.SetContainer(o ?? new FS.NullDirectory());
 			SelectionChanged?.Invoke(fi);
 		}
 	}

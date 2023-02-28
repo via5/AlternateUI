@@ -96,8 +96,10 @@
   <ItemGroup>
     <Compile Include="src\Common\AtomUIModifier.cs" />
     <Compile Include="src\Common\Common.cs" />
+    <Compile Include="src\Common\FS\BasicContainer.cs" />
     <Compile Include="src\Common\FS\Filesystem.cs" />
     <Compile Include="src\Common\FS\Filter.cs" />
+    <Compile Include="src\Common\FS\Interfaces.cs" />
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />

@@ -2,7 +2,7 @@
 {
 	interface IFileTreeItem
 	{
-		IFilesystemObject Object { get; }
+		FS.IFilesystemObject Object { get; }
 		void SetFlags(int f);
 	}
 
@@ -10,12 +10,12 @@
 	class FileTreeItem : VUI.TreeView.Item, IFileTreeItem
 	{
 		private readonly FileTree tree_;
-		private readonly IFilesystemObject o_;
+		private readonly FS.IFilesystemObject o_;
 
 		private bool checkedHasChildren_ = false;
 		private bool hasChildren_ = false;
 
-		public FileTreeItem(FileTree tree, IFilesystemObject o)
+		public FileTreeItem(FileTree tree, FS.IFilesystemObject o)
 			: base(o.DisplayName)
 		{
 			tree_ = tree;
@@ -28,7 +28,7 @@
 			get { return tree_; }
 		}
 
-		public IFilesystemObject Object
+		public FS.IFilesystemObject Object
 		{
 			get { return o_; }
 		}
@@ -57,7 +57,7 @@
 				return;
 			}
 
-			var dirs = (o_ as IFilesystemContainer).GetSubDirectories(CreateFilter());
+			var dirs = (o_ as FS.IFilesystemContainer).GetSubDirectories(CreateFilter());
 
 			{
 				int i = 0;
@@ -94,7 +94,7 @@
 			{
 				if (!checkedHasChildren_)
 				{
-					var d = (o_ as IFilesystemContainer);
+					var d = (o_ as FS.IFilesystemContainer);
 					hasChildren_ = (d != null && d.HasSubDirectories(null));
 					checkedHasChildren_ = true;
 				}
@@ -105,7 +105,7 @@
 
 		protected override void GetChildren()
 		{
-			var d = (o_ as IFilesystemContainer);
+			var d = (o_ as FS.IFilesystemContainer);
 
 			if (d != null)
 			{
@@ -114,9 +114,9 @@
 			}
 		}
 
-		private Filter CreateFilter()
+		private FS.Filter CreateFilter()
 		{
-			return new Filter("", null, Filter.SortFilename, Filter.SortAscending);
+			return new FS.Filter("", null, FS.Filter.SortFilename, FS.Filter.SortAscending);
 		}
 	}
 }
