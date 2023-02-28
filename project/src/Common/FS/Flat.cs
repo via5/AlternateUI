@@ -42,6 +42,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
+		}
+
 		public override bool IsFlattened
 		{
 			get { return true; }
@@ -115,6 +120,11 @@ namespace AUI.FS
 		}
 
 		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override bool ChildrenVirtual
 		{
 			get { return true; }
 		}
@@ -193,6 +203,11 @@ namespace AUI.FS
 		public override bool Virtual
 		{
 			get { return true; }
+		}
+
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
 		}
 
 		public override bool IsFlattened

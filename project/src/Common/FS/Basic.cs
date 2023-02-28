@@ -89,6 +89,7 @@ namespace AUI.FS
 		public abstract Icon Icon { get; }
 		public abstract bool CanPin { get; }
 		public abstract bool Virtual { get; }
+		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
 
 
@@ -268,11 +269,23 @@ namespace AUI.FS
 				foreach (var dirPath in GetDirectoriesFromFMS(MakeRealPath()))
 				{
 					var name = Path.Filename(dirPath);
-					c.Directories.entries.Add(new FSDirectory(fs_, this, name));
+
+					if (IncludeDirectory(name))
+						c.Directories.entries.Add(new FSDirectory(fs_, this, name));
 				}
 			}
 
 			return FilterCaches(c.Directories, filter);
+		}
+
+		protected virtual bool IncludeDirectory(string name)
+		{
+			return true;
+		}
+
+		protected virtual bool IncludeFile(string name)
+		{
+			return true;
 		}
 
 		internal void DoGetFilesRecursive(List<IFilesystemObject> list)
@@ -293,8 +306,11 @@ namespace AUI.FS
 				{
 					var name = Path.Filename(filePath);
 
-					if (filter == null || filter.Matches(name))
-						c.Files.entries.Add(new FSFile(fs_, this, name));
+					if (IncludeFile(name))
+					{
+						if (filter == null || filter.Matches(name))
+							c.Files.entries.Add(new FSFile(fs_, this, name));
+					}
 				}
 			}
 

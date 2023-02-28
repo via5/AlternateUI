@@ -17,6 +17,7 @@ namespace AUI.FS
 
 		bool CanPin { get; }
 		bool Virtual { get; }
+		bool ChildrenVirtual { get; }
 		bool IsFlattened { get; }
 		IPackage ParentPackage { get; }
 

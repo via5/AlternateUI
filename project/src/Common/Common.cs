@@ -20,7 +20,7 @@
 				0, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
 
 			clear_ = new VUI.ToolButton("X");
-			clear_.Margins = new VUI.Insets(0, 2, 5, 2);
+			clear_.Margins = new VUI.Insets(0, 2, 3, 1);
 			clear_.MaximumSize = new VUI.Size(35, 35);
 			clear_.Clicked += () => box_.Text = "";
 

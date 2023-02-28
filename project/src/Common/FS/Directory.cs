@@ -40,6 +40,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
+		}
+
 		public override bool IsFlattened
 		{
 			get { return false; }

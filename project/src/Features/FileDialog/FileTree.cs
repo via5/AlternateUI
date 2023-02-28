@@ -14,11 +14,6 @@ namespace AUI.FileDialog
 		private readonly FileDialog fd_;
 		private readonly VUI.TreeView tree_;
 		private readonly FileTreeItem root_;
-		//private readonly AllFlatItem allFlat_ = null;
-		//private readonly PackagesFlatItem packagesFlat_ = null;
-		//private readonly PinnedRootItem pinned_ = null;
-		//private readonly SavesRootItem savesRoot_ = null;
-		//private readonly PackagesRootItem packagesRoot_ = null;
 
 		public FileTree(FileDialog fd, int fontSize)
 		{
@@ -31,19 +26,23 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			root_ = new FileTreeItem(this, FS.Filesystem.Instance.GetRootDirectory());
+			var fsRoot = FS.Filesystem.Instance.GetRootDirectory();
+
+			root_ = new FileTreeItem(this, fsRoot);
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
 
-			//allFlat_ = root_.Add(new AllFlatItem(this));
-			//packagesFlat_ = root_.Add(new PackagesFlatItem(this));
-			//pinned_ = root_.Add(new PinnedRootItem(this, pins));
-			//savesRoot_ = root_.Add(new SavesRootItem(this));
-			//packagesRoot_ = root_.Add(new PackagesRootItem(this));
-			//
 			root_.Expanded = true;
-			//pinned_.Expanded = true;
+			Expand(fsRoot.PinnedRoot);
+			Expand(fsRoot.Saves);
+		}
+
+		private void Expand(FS.IFilesystemContainer o, bool b = true)
+		{
+			var i = FindItem(o);
+			if (i != null)
+				i.Expanded = b;
 		}
 
 		public FileDialog FileDialog

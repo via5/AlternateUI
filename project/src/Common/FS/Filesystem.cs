@@ -179,7 +179,7 @@ namespace AUI.FS
 		private readonly AllFlatDirectory allFlat_;
 		private readonly PackagesFlatDirectory packagesFlat_;
 		private readonly PinnedFlatDirectory pinnedFlat_;
-		private readonly FSDirectory saves_;
+		private readonly SavesDirectory saves_;
 		private readonly PinnedRoot pinned_;
 		private List<IFilesystemContainer> dirs_ = null;
 
@@ -189,7 +189,7 @@ namespace AUI.FS
 			allFlat_ = new AllFlatDirectory(fs_, this);
 			packagesFlat_ = new PackagesFlatDirectory(fs_, this);
 			pinnedFlat_ = new PinnedFlatDirectory(fs, this);
-			saves_ = new FSDirectory(fs_, this, "Saves");
+			saves_ = new SavesDirectory(fs_, this);
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
@@ -207,7 +207,7 @@ namespace AUI.FS
 			}
 		}
 
-		public FSDirectory Saves
+		public SavesDirectory Saves
 		{
 			get { return saves_; }
 		}
@@ -240,6 +240,11 @@ namespace AUI.FS
 		public override bool Virtual
 		{
 			get { return true; }
+		}
+
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
 		}
 
 		public override bool IsFlattened
@@ -293,6 +298,33 @@ namespace AUI.FS
 	}
 
 
+	class SavesDirectory : FSDirectory
+	{
+		private readonly string[] whitelist_;
+
+		public SavesDirectory(Filesystem fs, IFilesystemContainer parent)
+			: base(fs, parent, "Saves")
+		{
+			whitelist_ = new string[]
+			{
+				"Downloads",
+				"scene",
+			};
+		}
+
+		protected override bool IncludeDirectory(string name)
+		{
+			for (int i = 0; i < whitelist_.Length; ++i)
+			{
+				if (whitelist_[i] == name)
+					return true;
+			}
+
+			return false;
+		}
+	}
+
+
 
 	class NullDirectory : IDirectory
 	{
@@ -307,6 +339,7 @@ namespace AUI.FS
 		public DateTime DateModified { get { return DateTime.MaxValue; } }
 		public bool CanPin { get { return false; } }
 		public bool Virtual { get { return true; } }
+		public bool ChildrenVirtual { get { return true; } }
 		public bool IsFlattened { get { return false; } }
 		public IPackage ParentPackage { get { return null; } }
 

@@ -357,7 +357,7 @@ namespace AUI.FileDialog
 
 			List<FS.IFilesystemObject> files;
 
-			if (FlattenDirectories)
+			if (FlattenDirectories && type_ == OpenScene)
 				files = dir_.GetFilesRecursive(CreateFilter());
 			else
 				files = dir_.GetFiles(CreateFilter());

@@ -157,6 +157,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
+		}
+
 		public override bool IsFlattened
 		{
 			get { return false; }
@@ -210,6 +215,7 @@ namespace AUI.FS
 		public override Icon Icon { get { return c_.Icon; } }
 		public override bool CanPin { get { return false; } }
 		public override bool Virtual { get { return c_.Virtual; } }
+		public override bool ChildrenVirtual { get { return c_.ChildrenVirtual; } }
 		public override bool IsFlattened { get { return c_.IsFlattened; } }
 		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
 
