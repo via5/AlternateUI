@@ -20,7 +20,7 @@ namespace AUI.FileDialog
 		//private readonly SavesRootItem savesRoot_ = null;
 		//private readonly PackagesRootItem packagesRoot_ = null;
 
-		public FileTree(FileDialog fd, int fontSize, List<PinInfo> pins)
+		public FileTree(FileDialog fd, int fontSize)
 		{
 			fd_ = fd;
 			tree_ = new VUI.TreeView();

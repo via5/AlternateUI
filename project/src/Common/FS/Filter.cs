@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace AUI.FileDialog
+namespace AUI
 {
 	class Filter
 	{

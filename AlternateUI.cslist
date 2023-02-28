@@ -5,6 +5,7 @@ project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs
 project\src\Common\Icons.cs
 project\src\Common\FS\Filesystem.cs
+project\src\Common\FS\Filter.cs
 project\src\Common\MRU\MRUAtomInfo.cs
 project\src\Common\MRU\MRUAtomUIModifier.cs
 project\src\Features\CuaUI.cs
@@ -22,7 +23,6 @@ project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FilePanel.cs
 project\src\Features\FileDialog\FileTree.cs
 project\src\Features\FileDialog\FileTreeItem.cs
-project\src\Features\FileDialog\Filter.cs
 project\src\Features\MorphUI\Categories.cs
 project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs

@@ -97,6 +97,7 @@
     <Compile Include="src\Common\AtomUIModifier.cs" />
     <Compile Include="src\Common\Common.cs" />
     <Compile Include="src\Common\FS\Filesystem.cs" />
+    <Compile Include="src\Common\FS\Filter.cs" />
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
@@ -109,7 +110,6 @@
     <Compile Include="src\Features\FileDialog\FilePanel.cs" />
     <Compile Include="src\Features\FileDialog\FileTree.cs" />
     <Compile Include="src\Features\FileDialog\FileTreeItem.cs" />
-    <Compile Include="src\Features\FileDialog\Filter.cs" />
     <Compile Include="src\Features\LightUI.cs" />
     <Compile Include="src\Features\LogUI.cs" />
     <Compile Include="src\Features\MorphUI\Categories.cs" />

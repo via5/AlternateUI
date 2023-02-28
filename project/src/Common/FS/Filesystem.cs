@@ -3,7 +3,7 @@ using SimpleJSON;
 using System;
 using System.Collections.Generic;
 
-namespace AUI.FileDialog
+namespace AUI
 {
 	using FMS = FileManagerSecure;
 

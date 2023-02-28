@@ -6,12 +6,6 @@ using UnityEngine.UI;
 
 namespace AUI.FileDialog
 {
-	class PinInfo
-	{
-		public string type, path, text;
-	}
-
-
 	class FileDialog : BasicFeature
 	{
 		class ReplacedButton
@@ -76,7 +70,6 @@ namespace AUI.FileDialog
 		private bool flattenPackages_ = true;
 		private int sort_ = Filter.SortFilename;
 		private int sortDir_ = Filter.SortAscending;
-		private readonly List<PinInfo> pins_ = new List<PinInfo>();
 		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
@@ -491,7 +484,7 @@ namespace AUI.FileDialog
 
 		private VUI.Panel CreateTree()
 		{
-			tree_ = new FileTree(this, FontSize, pins_);
+			tree_ = new FileTree(this, FontSize);
 			tree_.SelectionChanged += OnTreeSelection;
 
 			var p = new VUI.Panel(new VUI.BorderLayout());
@@ -712,29 +705,6 @@ namespace AUI.FileDialog
 
 			if (o.HasKey("flattenPackages"))
 				flattenPackages_ = o["flattenPackages"].AsBool;
-
-			if (o.HasKey("pins"))
-			{
-				var a = o["pins"].AsArray;
-				if (a != null)
-				{
-					foreach (JSONClass po in a)
-					{
-						if (po == null)
-							continue;
-
-						var p = new PinInfo();
-						p.type = po["type"]?.Value;
-						p.path = po["path"]?.Value;
-						p.text = po["text"]?.Value;
-
-						if (p.type == null || p.path == null)
-							continue;
-
-						pins_.Add(p);
-					}
-				}
-			}
 		}
 
 		protected override void DoSaveOptions(JSONClass o)
