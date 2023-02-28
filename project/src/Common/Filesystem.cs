@@ -1239,12 +1239,6 @@ namespace AUI.FileDialog
 					}
 				}
 			}
-
-			//AddPinned("VaM/Saves");
-			//AddPinned("VaM/Saves/scene/_vam");
-			//AddPinned("VaM/Packages");
-			//AddPinned("VaM/Packages/MeshedVR.DemoScenes.2", "bleh");
-			//AddPinned("VaM/Packages/MeshedVR.DemoScenes.2/MeshedVR/DemoScenes/Cyber");
 		}
 
 		public void Save()

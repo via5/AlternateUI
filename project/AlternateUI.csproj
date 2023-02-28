@@ -105,7 +105,6 @@
     <Compile Include="src\Features\ClothingUI\Controls.cs" />
     <Compile Include="src\Features\CuaUI.cs" />
     <Compile Include="src\Features\Feature.cs" />
-    <Compile Include="src\Features\FileDialog\Containers.cs" />
     <Compile Include="src\Features\FileDialog\FileDialog.cs" />
     <Compile Include="src\Features\FileDialog\FilePanel.cs" />
     <Compile Include="src\Features\FileDialog\FileTree.cs" />
