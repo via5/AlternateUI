@@ -3,8 +3,8 @@ project\src\Utilities.cs
 project\src\Version.cs
 project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs
-project\src\Common\Filesystem.cs
 project\src\Common\Icons.cs
+project\src\Common\FS\Filesystem.cs
 project\src\Common\MRU\MRUAtomInfo.cs
 project\src\Common\MRU\MRUAtomUIModifier.cs
 project\src\Features\CuaUI.cs
