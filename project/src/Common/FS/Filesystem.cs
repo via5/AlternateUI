@@ -11,6 +11,9 @@ namespace AUI.FS
 		public delegate void ObjectHandler(IFilesystemObject o);
 		public event ObjectHandler ObjectChanged;
 
+		public delegate void Handler();
+		public event Handler PinsChanged;
+
 		public struct Extension
 		{
 			public string name;
@@ -40,12 +43,8 @@ namespace AUI.FS
 
 		private static readonly Filesystem instance_ = new Filesystem();
 
-		private readonly Dictionary<string, IFilesystemContainer> dirs_ =
-			new Dictionary<string, IFilesystemContainer>();
-
 		private readonly RootDirectory root_;
 		private readonly PackageRootDirectory packagesRoot_;
-
 		private int cacheToken_ = 1;
 
 
@@ -103,12 +102,12 @@ namespace AUI.FS
 			return FMS.IsDirectoryInPackage(path);
 		}
 
-		public IFilesystemContainer GetRootDirectory()
+		public RootDirectory GetRootDirectory()
 		{
 			return root_;
 		}
 
-		public IFilesystemContainer GetPackagesRootDirectory()
+		public PackageRootDirectory GetPackagesRootDirectory()
 		{
 			return packagesRoot_;
 		}
@@ -116,6 +115,11 @@ namespace AUI.FS
 		public void FireObjectChanged(IFilesystemObject o)
 		{
 			ObjectChanged?.Invoke(o);
+		}
+
+		public void FirePinsChanged()
+		{
+			PinsChanged?.Invoke();
 		}
 
 		public bool IsSameObject(IFilesystemObject a, IFilesystemObject b)
@@ -172,13 +176,19 @@ namespace AUI.FS
 
 	class RootDirectory : BasicFilesystemContainer
 	{
+		private readonly AllFlatDirectory allFlat_;
+		private readonly PackagesFlatDirectory packagesFlat_;
+		private readonly PinnedFlatDirectory pinnedFlat_;
 		private readonly FSDirectory saves_;
 		private readonly PinnedRoot pinned_;
-		private readonly List<IFilesystemObject> empty_ = new List<IFilesystemObject>();
+		private List<IFilesystemContainer> dirs_ = null;
 
 		public RootDirectory(Filesystem fs)
 			: base(fs, null, "VaM")
 		{
+			allFlat_ = new AllFlatDirectory(fs_, this);
+			packagesFlat_ = new PackagesFlatDirectory(fs_, this);
+			pinnedFlat_ = new PinnedFlatDirectory(fs, this);
 			saves_ = new FSDirectory(fs_, this, "Saves");
 			pinned_ = new PinnedRoot(fs_, this);
 		}
@@ -186,6 +196,15 @@ namespace AUI.FS
 		public override string ToString()
 		{
 			return "RootDirectory";
+		}
+
+		public List<IFilesystemContainer> Directories
+		{
+			get
+			{
+				MakeDirectories();
+				return dirs_;
+			}
 		}
 
 		public FSDirectory Saves
@@ -235,21 +254,265 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
 		{
-			var list = new List<IFilesystemContainer>();
-			list.Add(pinned_);
-			list.Add(saves_);
-			list.Add(fs_.GetPackagesRootDirectory());
-			return list;
+			return Directories;
 		}
 
 		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
 		{
-			return empty_;
+			// no-op
+			if (c.Files.entries == null)
+				c.Files.entries = new List<IFilesystemObject>();
+
+			return c.Files.entries;
 		}
 
-		protected override void GetFilesRecursiveImpl(Filter filter)
+		public List<IFilesystemContainer> GetRealDirectories()
 		{
-			DoGetFilesRecursive(rc_.Files.entries);
+			return new List<IFilesystemContainer>
+			{
+				saves_,
+				fs_.GetPackagesRootDirectory()
+			};
+		}
+
+		private void MakeDirectories()
+		{
+			if (dirs_ == null)
+			{
+				dirs_ = new List<IFilesystemContainer>
+				{
+					allFlat_,
+					packagesFlat_,
+					pinnedFlat_,
+					pinned_,
+					saves_,
+					fs_.GetPackagesRootDirectory()
+				};
+			}
+		}
+	}
+
+
+	class AllFlatDirectory : BasicFilesystemContainer
+	{
+		private List<IFilesystemContainer> dirs_ = null;
+
+		public AllFlatDirectory(Filesystem fs, IFilesystemContainer parent)
+			: base(fs, parent, "All flattened")
+		{
+		}
+
+		public override string ToString()
+		{
+			return "AllFlatDirectory";
+		}
+
+		public override DateTime DateCreated
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override DateTime DateModified
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override Icon Icon
+		{
+			get { return Icons.Directory; }
+		}
+
+		public override bool CanPin
+		{
+			get { return false; }
+		}
+
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override bool IsFlattened
+		{
+			get { return true; }
+		}
+
+		public override string MakeRealPath()
+		{
+			return "";
+		}
+
+		public override List<IFilesystemObject> GetFiles(Filter filter)
+		{
+			// always recursive
+			return GetFilesRecursive(filter);
+		}
+
+		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		{
+			if (dirs_ == null)
+				dirs_ = fs_.GetRootDirectory().GetRealDirectories();
+
+			return dirs_;
+		}
+
+		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
+		{
+			// no-op
+			if (c.Files.entries == null)
+				c.Files.entries = new List<IFilesystemObject>();
+
+			return c.Files.entries;
+		}
+	}
+
+
+	class PackagesFlatDirectory : BasicFilesystemObject, IFilesystemContainer
+	{
+		public PackagesFlatDirectory(Filesystem fs, IFilesystemContainer parent)
+			: base(fs, parent, "Packages flattened")
+		{
+		}
+
+		public override string Name
+		{
+			get { return "Packages flattened"; }
+		}
+
+		public override string ToString()
+		{
+			return "PackagesFlatDirectory";
+		}
+
+		public override DateTime DateCreated
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override DateTime DateModified
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override Icon Icon
+		{
+			get { return Icons.Package; }
+		}
+
+		public override bool CanPin
+		{
+			get { return false; }
+		}
+
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override bool IsFlattened
+		{
+			get { return true; }
+		}
+
+		public override string MakeRealPath()
+		{
+			return "";
+		}
+
+		public List<IFilesystemObject> GetFiles(Filter filter)
+		{
+			// always recursive
+			return GetFilesRecursive(filter);
+		}
+
+		public List<IFilesystemObject> GetFilesRecursive(Filter filter)
+		{
+			return fs_.GetPackagesRootDirectory().GetFilesRecursive(filter);
+		}
+
+		public void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
+		{
+			fs_.GetPackagesRootDirectory().GetFilesRecursiveUnfiltered(list);
+		}
+
+		public List<IFilesystemContainer> GetSubDirectories(Filter filter)
+		{
+			return fs_.GetPackagesRootDirectory().GetSubDirectories(filter);
+		}
+
+		public bool HasSubDirectories(Filter filter)
+		{
+			return fs_.GetPackagesRootDirectory().HasSubDirectories(filter);
+		}
+	}
+
+
+	class PinnedFlatDirectory : BasicFilesystemContainer
+	{
+		public PinnedFlatDirectory(Filesystem fs, IFilesystemContainer parent)
+			: base(fs, parent, "Pinned flattened")
+		{
+			fs_.PinsChanged += ClearCaches;
+		}
+
+		public override string ToString()
+		{
+			return "PinnedFlatDirectory";
+		}
+
+		public override DateTime DateCreated
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override DateTime DateModified
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override Icon Icon
+		{
+			get { return Icons.Directory; }
+		}
+
+		public override bool CanPin
+		{
+			get { return false; }
+		}
+
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override bool IsFlattened
+		{
+			get { return true; }
+		}
+
+		public override string MakeRealPath()
+		{
+			return "";
+		}
+
+		public override List<IFilesystemObject> GetFiles(Filter filter)
+		{
+			// always recursive
+			return GetFilesRecursive(filter);
+		}
+
+		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		{
+			return fs_.GetRootDirectory().PinnedRoot.Pinned;
+		}
+
+		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
+		{
+			// no-op
+			if (c.Files.entries == null)
+				c.Files.entries = new List<IFilesystemObject>();
+
+			return c.Files.entries;
 		}
 	}
 

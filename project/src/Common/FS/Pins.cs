@@ -27,6 +27,11 @@ namespace AUI.FS
 			return AlternateUI.Instance.GetConfigFilePath("aui.fs.pinned.json");
 		}
 
+		public List<IFilesystemContainer> Pinned
+		{
+			get { return pinned_; }
+		}
+
 		public void Load()
 		{
 			if (FMS.FileExists(GetConfigFile()))
@@ -128,6 +133,7 @@ namespace AUI.FS
 		{
 			Save();
 			ClearCaches();
+			fs_.FirePinsChanged();
 			fs_.FireObjectChanged(this);
 		}
 
@@ -173,12 +179,11 @@ namespace AUI.FS
 
 		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
 		{
-			return emptyFiles_;
-		}
+			// no-op
+			if (c.Files.entries == null)
+				c.Files.entries = new List<IFilesystemObject>();
 
-		protected override void GetFilesRecursiveImpl(Filter filter)
-		{
-			DoGetFilesRecursive(rc_.Files.entries);
+			return c.Files.entries;
 		}
 	}
 

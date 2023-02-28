@@ -773,7 +773,7 @@ namespace AUI.FileDialog
 
 				if (c != null)
 				{
-					pin_.Enabled = true;
+					pin_.Enabled = c.CanPin;
 					pin_.Checked = FS.Filesystem.Instance.IsPinned(c);
 				}
 				else

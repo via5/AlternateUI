@@ -177,10 +177,5 @@ namespace AUI.FS
 		{
 			return DoGetFiles(c, filter);
 		}
-
-		protected override void GetFilesRecursiveImpl(Filter filter)
-		{
-			DoGetFilesRecursive(rc_.Files.entries);
-		}
 	}
 }

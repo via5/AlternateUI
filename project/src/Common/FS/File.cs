@@ -27,12 +27,12 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return FMS.FileCreationTime(VirtualPath); }
+			get { return FMS.FileCreationTime(MakeRealPath()); }
 		}
 
 		public override DateTime DateModified
 		{
-			get { return FMS.FileLastWriteTime(VirtualPath); }
+			get { return FMS.FileLastWriteTime(MakeRealPath()); }
 		}
 
 		public override bool CanPin

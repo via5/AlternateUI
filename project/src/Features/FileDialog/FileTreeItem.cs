@@ -1,4 +1,6 @@
-﻿namespace AUI.FileDialog
+﻿using System.Collections.Generic;
+
+namespace AUI.FileDialog
 {
 	interface IFileTreeItem
 	{
@@ -86,7 +88,7 @@
 				return;
 			}
 
-			var dirs = o.GetSubDirectories(CreateFilter());
+			var dirs = GetSubDirectories(o);
 
 			{
 				var cs = GetInternalChildren();
@@ -141,7 +143,7 @@
 				if (!checkedHasChildren_)
 				{
 					var d = GetFSObject();
-					hasChildren_ = (d != null && d.HasSubDirectories(null));
+					hasChildren_ = (d != null && !d.IsFlattened && HasSubDirectories(d));
 					checkedHasChildren_ = true;
 				}
 
@@ -153,11 +155,21 @@
 		{
 			var d = GetFSObject();
 
-			if (d != null)
+			if (d != null && !d.IsFlattened)
 			{
-				foreach (var c in d.GetSubDirectories(CreateFilter()))
+				foreach (var c in GetSubDirectories(d))
 					Add(new FileTreeItem(tree_, c));
 			}
+		}
+
+		private List<FS.IFilesystemContainer> GetSubDirectories(FS.IFilesystemContainer o)
+		{
+			return o.GetSubDirectories(CreateFilter());
+		}
+
+		private bool HasSubDirectories(FS.IFilesystemContainer o)
+		{
+			return o.HasSubDirectories(null);
 		}
 
 		private FS.Filter CreateFilter()

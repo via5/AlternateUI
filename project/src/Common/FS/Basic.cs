@@ -113,7 +113,7 @@ namespace AUI.FS
 
 	abstract class BasicFilesystemContainer : BasicFilesystemObject, IFilesystemContainer
 	{
-		protected class Cache<EntriesType> where EntriesType : IFilesystemObject
+		public class Cache<EntriesType> where EntriesType : IFilesystemObject
 		{
 			public List<EntriesType> entries = null;
 
@@ -141,7 +141,7 @@ namespace AUI.FS
 			}
 		}
 
-		protected class Caches
+		public class Caches
 		{
 			private readonly Filesystem fs_;
 			private Cache<IFilesystemObject> files_ = null;
@@ -218,26 +218,26 @@ namespace AUI.FS
 			rc_.Clear();
 		}
 
-		public bool HasSubDirectories(Filter filter)
+		public virtual bool HasSubDirectories(Filter filter)
 		{
 			return (GetSubDirectories(filter).Count > 0);
 		}
 
-		public List<IFilesystemContainer> GetSubDirectories(Filter filter)
+		public virtual List<IFilesystemContainer> GetSubDirectories(Filter filter)
 		{
 			return GetSubDirectoriesImpl(filter);
 		}
 
 		protected abstract List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter);
 
-		public List<IFilesystemObject> GetFiles(Filter filter)
+		public virtual List<IFilesystemObject> GetFiles(Filter filter)
 		{
 			return GetFilesImpl(c_, filter);
 		}
 
 		protected abstract List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter);
 
-		public List<IFilesystemObject> GetFilesRecursive(Filter filter)
+		public virtual List<IFilesystemObject> GetFilesRecursive(Filter filter)
 		{
 			if (rc_.Files.entries == null)
 			{
@@ -248,12 +248,15 @@ namespace AUI.FS
 			return FilterCaches(rc_.Files, filter);
 		}
 
-		public void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
+		public virtual void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
 		{
 			DoGetFilesRecursive(list);
 		}
 
-		protected abstract void GetFilesRecursiveImpl(Filter filter);
+		protected virtual void GetFilesRecursiveImpl(Filter filter)
+		{
+			DoGetFilesRecursive(rc_.Files.entries);
+		}
 
 
 		protected List<IFilesystemContainer> DoGetSubDirectories(Caches c, Filter filter)
