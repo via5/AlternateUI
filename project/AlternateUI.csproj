@@ -101,6 +101,7 @@
     <Compile Include="src\Common\FS\File.cs" />
     <Compile Include="src\Common\FS\Filesystem.cs" />
     <Compile Include="src\Common\FS\Filter.cs" />
+    <Compile Include="src\Common\FS\Flat.cs" />
     <Compile Include="src\Common\FS\Interfaces.cs" />
     <Compile Include="src\Common\FS\Package.cs" />
     <Compile Include="src\Common\FS\Pins.cs" />

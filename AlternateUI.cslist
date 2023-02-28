@@ -9,6 +9,7 @@ project\src\Common\FS\Directory.cs
 project\src\Common\FS\File.cs
 project\src\Common\FS\Filesystem.cs
 project\src\Common\FS\Filter.cs
+project\src\Common\FS\Flat.cs
 project\src\Common\FS\Interfaces.cs
 project\src\Common\FS\Package.cs
 project\src\Common\FS\Pins.cs
