@@ -5,17 +5,13 @@ namespace AUI.FS
 {
 	using FMS = FileManagerSecure;
 
-	class FSFile : IFile
+	class FSFile : BasicFilesystemObject, IFile
 	{
-		private readonly Filesystem fs_;
-		private readonly IFilesystemContainer parent_;
 		private readonly string name_;
-		private string displayName_ = null;
 
 		public FSFile(Filesystem fs, IFilesystemContainer parent, string name)
+			: base(fs, parent)
 		{
-			fs_ = fs;
-			parent_ = parent;
 			name_ = name;
 		}
 
@@ -24,100 +20,42 @@ namespace AUI.FS
 			return $"File({VirtualPath})";
 		}
 
-		public IFilesystemContainer Parent
-		{
-			get { return parent_; }
-		}
-
-		public string Name
+		public override string Name
 		{
 			get { return name_; }
 		}
 
-		public string VirtualPath
-		{
-			get
-			{
-				string s = name_;
-
-				var parent = Parent;
-				while (parent != null)
-				{
-					s = parent.Name + "/" + s;
-					parent = parent.Parent;
-				}
-
-				return s;
-			}
-		}
-
-		public virtual string DisplayName
-		{
-			get
-			{
-				return displayName_ ?? Name;
-			}
-
-			set
-			{
-				displayName_ = value;
-			}
-		}
-
-		public bool HasCustomDisplayName
-		{
-			get { return (displayName_ != null); }
-		}
-
-		public DateTime DateCreated
+		public override DateTime DateCreated
 		{
 			get { return FMS.FileCreationTime(VirtualPath); }
 		}
 
-		public DateTime DateModified
+		public override DateTime DateModified
 		{
 			get { return FMS.FileLastWriteTime(VirtualPath); }
 		}
 
-		public bool CanPin
+		public override bool CanPin
 		{
 			get { return false; }
 		}
 
-		public bool Virtual
+		public override bool Virtual
 		{
 			get { return false; }
 		}
 
-		public bool IsFlattened
+		public override bool IsFlattened
 		{
 			get { return false; }
 		}
 
-		public IPackage ParentPackage
-		{
-			get
-			{
-				IFilesystemObject o = this;
-
-				while (o != null)
-				{
-					if (o is IPackage)
-						return o as IPackage;
-
-					o = o.Parent;
-				}
-
-				return null;
-			}
-		}
-
-		public Icon Icon
+		public override Icon Icon
 		{
 			get { return Icons.File(MakeRealPath()); }
 		}
 
-		public string MakeRealPath()
+		public override string MakeRealPath()
 		{
 			string s = Name;
 
@@ -125,11 +63,6 @@ namespace AUI.FS
 				s = Parent.MakeRealPath() + s;
 
 			return s;
-		}
-
-		public bool IsSameObject(IFilesystemObject o)
-		{
-			return fs_.IsSameObject(this, o);
 		}
 	}
 }

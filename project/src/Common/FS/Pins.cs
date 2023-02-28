@@ -95,7 +95,7 @@ namespace AUI.FS
 		{
 			if (!IsPinned(o))
 			{
-				pinned_.Add(new PinnedObject(this, o, display));
+				pinned_.Add(new PinnedObject(fs_, this, o, display));
 				Changed();
 			}
 		}
@@ -183,49 +183,25 @@ namespace AUI.FS
 	}
 
 
-	class PinnedObject : IFilesystemContainer
+	class PinnedObject : BasicFilesystemObject, IFilesystemContainer
 	{
-		private readonly PinnedRoot parent_;
 		private readonly IFilesystemContainer c_;
-		private string displayName_ = null;
 
-		public PinnedObject(PinnedRoot parent, IFilesystemContainer c, string displayName = null)
+		public PinnedObject(Filesystem fs, PinnedRoot parent, IFilesystemContainer c, string displayName = null)
+			: base(fs, parent)
 		{
-			parent_ = parent;
 			c_ = c;
-			displayName_ = displayName;
 		}
 
-		public IFilesystemContainer Parent { get { return parent_; } }
-		public string Name { get { return c_.Name; } }
-		public string VirtualPath { get { return c_.VirtualPath; } }
-
-		public string DisplayName
-		{
-			get
-			{
-				return displayName_ ?? c_.DisplayName;
-			}
-
-			set
-			{
-				displayName_ = value;
-				parent_.Save();
-			}
-		}
-
-		public bool HasCustomDisplayName
-		{
-			get { return (displayName_ != null); }
-		}
-
-		public DateTime DateCreated { get { return c_.DateCreated; } }
-		public DateTime DateModified { get { return c_.DateModified; } }
-		public Icon Icon { get { return c_.Icon; } }
-		public bool CanPin { get { return false; } }
-		public bool Virtual { get { return c_.Virtual; } }
-		public bool IsFlattened { get { return c_.IsFlattened; } }
-		public IPackage ParentPackage { get { return c_.ParentPackage; } }
+		public override string Name { get { return c_.Name; } }
+		public override string VirtualPath { get { return c_.VirtualPath; } }
+		public override DateTime DateCreated { get { return c_.DateCreated; } }
+		public override DateTime DateModified { get { return c_.DateModified; } }
+		public override Icon Icon { get { return c_.Icon; } }
+		public override bool CanPin { get { return false; } }
+		public override bool Virtual { get { return c_.Virtual; } }
+		public override bool IsFlattened { get { return c_.IsFlattened; } }
+		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
 
 		public List<IFilesystemObject> GetFiles(Filter filter)
 		{
@@ -252,14 +228,19 @@ namespace AUI.FS
 			return c_.HasSubDirectories(filter);
 		}
 
-		public string MakeRealPath()
+		public override string MakeRealPath()
 		{
 			return c_.MakeRealPath();
 		}
 
-		public bool IsSameObject(IFilesystemObject o)
+		public override bool IsSameObject(IFilesystemObject o)
 		{
 			return c_.IsSameObject(o);
+		}
+
+		protected override void DisplayNameChanged()
+		{
+			(Parent as PinnedRoot).Save();
 		}
 	}
 }
