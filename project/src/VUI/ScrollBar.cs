@@ -40,6 +40,9 @@ namespace VUI
 			var p = e.Pointer;
 			var delta = p - dragStart_;
 
+			if (Math.Abs(delta.X) > Style.Metrics.ScrollBarMaxDragDistance)
+				delta.Y = 0;
+
 			var r = Rectangle.FromSize(
 				initialBounds_.Left,
 				initialBounds_.Top + (delta.Y),
@@ -151,7 +154,7 @@ namespace VUI
 			return new Size(Style.Metrics.ScrollBarWidth, DontCare);
 		}
 
-		public override void UpdateBounds()
+		protected override void BeforeUpdateBounds()
 		{
 			var r = AbsoluteClientBounds;
 			var h = Math.Max(r.Height - range_, 50);
@@ -164,8 +167,6 @@ namespace VUI
 
 			handle_.SetBounds(r);
 			DoLayoutImpl();
-
-			base.UpdateBounds();
 		}
 
 		private void OnHandleMoved()

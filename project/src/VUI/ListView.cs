@@ -198,9 +198,8 @@ namespace VUI
 			Style.Polish(this);
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
 			Utilities.SetRectTransform(Popup.popup.popupPanel, ClientBounds);
 		}
 

@@ -29,14 +29,6 @@ namespace AUI.FS
 
 		public static string SavesRoot = "Saves";
 
-		public static string DefaultSceneExtension = ".json";
-		public static Extension[] SceneExtensions = new Extension[]
-		{
-			new Extension("Scenes", ".json"),
-			new Extension("VAC files", ".vac"),
-			new Extension("Zip files", ".zip"),
-		};
-
 
 		public const int ResolveDefault = 0x00;
 		public const int ResolveDirsOnly = 0x01;
@@ -180,6 +172,7 @@ namespace AUI.FS
 		private readonly PackagesFlatDirectory packagesFlat_;
 		private readonly PinnedFlatDirectory pinnedFlat_;
 		private readonly SavesDirectory saves_;
+		private readonly FSDirectory custom_;
 		private readonly PinnedRoot pinned_;
 		private List<IFilesystemContainer> dirs_ = null;
 
@@ -190,6 +183,7 @@ namespace AUI.FS
 			packagesFlat_ = new PackagesFlatDirectory(fs_, this);
 			pinnedFlat_ = new PinnedFlatDirectory(fs, this);
 			saves_ = new SavesDirectory(fs_, this);
+			custom_ = new FSDirectory(fs_, this, "Custom");
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
@@ -210,6 +204,11 @@ namespace AUI.FS
 		public SavesDirectory Saves
 		{
 			get { return saves_; }
+		}
+
+		public FSDirectory Custom
+		{
+			get { return custom_; }
 		}
 
 		public PinnedRoot PinnedRoot
@@ -276,6 +275,7 @@ namespace AUI.FS
 			return new List<IFilesystemContainer>
 			{
 				saves_,
+				custom_,
 				fs_.GetPackagesRootDirectory()
 			};
 		}
@@ -291,6 +291,7 @@ namespace AUI.FS
 					pinnedFlat_,
 					pinned_,
 					saves_,
+					custom_,
 					fs_.GetPackagesRootDirectory()
 				};
 			}
@@ -314,13 +315,14 @@ namespace AUI.FS
 
 		protected override bool IncludeDirectory(string name)
 		{
-			for (int i = 0; i < whitelist_.Length; ++i)
-			{
-				if (whitelist_[i] == name)
-					return true;
-			}
-
-			return false;
+			//for (int i = 0; i < whitelist_.Length; ++i)
+			//{
+			//	if (whitelist_[i] == name)
+			//		return true;
+			//}
+			//
+			//return false;
+			return true;
 		}
 	}
 

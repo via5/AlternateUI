@@ -810,7 +810,6 @@ namespace VUI
 				borderGraphics_.Color = borderColor_;
 
 				UpdateActiveState();
-				SetBackground();
 			}
 
 			foreach (var w in children_)
@@ -859,10 +858,6 @@ namespace VUI
 			Utilities.SetLayoutElement(mainObjectLE_, r.Size);
 		}
 
-		private void SetBackground()
-		{
-		}
-
 		private void SetBorderBounds()
 		{
 			var r = new Rectangle(0, 0, Bounds.Size);
@@ -876,9 +871,9 @@ namespace VUI
 			Utilities.SetRectTransform(widgetObjectRT_, ClientBounds);
 		}
 
-		public virtual void UpdateBounds()
+		public void UpdateBounds()
 		{
-			SetBackground();
+			BeforeUpdateBounds();
 
 			SetMainObjectBounds();
 			SetBorderBounds();
@@ -888,6 +883,18 @@ namespace VUI
 				w.UpdateBounds();
 
 			UpdateActiveState();
+
+			AfterUpdateBounds();
+		}
+
+		protected virtual void BeforeUpdateBounds()
+		{
+			// no-op
+		}
+
+		protected virtual void AfterUpdateBounds()
+		{
+			// no-op
 		}
 
 		public void NeedsLayout(string why, bool force = false)

@@ -78,9 +78,8 @@ namespace VUI
 			SetBackground();
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
 			SetBackground();
 		}
 

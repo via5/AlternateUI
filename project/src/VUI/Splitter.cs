@@ -199,10 +199,8 @@ namespace VUI
 			return ps;
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
-
 			if (first_ == null || second_ == null)
 				return;
 

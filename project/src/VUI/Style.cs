@@ -144,11 +144,22 @@ namespace VUI
 			get { return 10; }
 		}
 
+		// width of the bar
+		//
 		public float ScrollBarWidth
 		{
 			get { return 40; }
 		}
 
+		// max distance from handle, resets the scroll position if it's exceeded
+		//
+		public float ScrollBarMaxDragDistance
+		{
+			get { return 175; }
+		}
+
+		// width/height of the splitter handle
+		//
 		public float SplitterHandleSize
 		{
 			get { return 10; }
@@ -315,7 +326,7 @@ namespace VUI
 
 		public Color DialogTitleBackgroundColor
 		{
-			get { return new Color(0.10f, 0.10f, 0.10f); }
+			get { return new Color(0.05f, 0.05f, 0.05f); }
 		}
 
 		public Color SelectedTabBackgroundColor

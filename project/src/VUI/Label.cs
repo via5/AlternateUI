@@ -26,6 +26,7 @@ namespace VUI
 		private Transform ellipsis_ = null;
 		private RectTransform ellipsisRT_ = null;
 		private Text ellipsisText_ = null;
+		private Rectangle lastClip_ = Rectangle.Zero;
 		private UnityEngine.UI.Image ellipsisBackground_ = null;
 		private int wrap_ = Overflow;
 		private bool autoTooltip_ = false;
@@ -194,9 +195,8 @@ namespace VUI
 			Style.Polish(this);
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
 			textObject_.alignment = ToTextAnchor(align_);
 			UpdateClip();
 		}
@@ -290,12 +290,20 @@ namespace VUI
 
 		private void ClearClip()
 		{
+			lastClip_ = Rectangle.Zero;
 			textObject_.SetClipRect(Rect.zero, false);
 		}
 
 		private void SetClip(Rectangle r)
 		{
-			textObject_.SetClipRect(r.ToRect(), true);
+			if ((int)r.Left != (int)lastClip_.Left ||
+				(int)r.Top != (int)lastClip_.Top ||
+				(int)r.Right != (int)lastClip_.Right ||
+				(int)r.Bottom != (int)lastClip_.Bottom)
+			{
+				lastClip_ = r;
+				textObject_.SetClipRect(r.ToRect(), true);
+			}
 		}
 
 		private void CreateEllipsis()
@@ -417,6 +425,11 @@ namespace VUI
 			{
 				return base.DebugLine + " '" + text_ + "'";
 			}
+		}
+
+		public override string ToString()
+		{
+			return $"{base.ToString()} '{text_}'";
 		}
 	}
 }

@@ -91,7 +91,7 @@ namespace AUI.FS
 			{
 				foreach (var e in exts_)
 				{
-					if (path.EndsWith(e))
+					if (e == "*.*" || path.EndsWith(e))
 						return true;
 				}
 

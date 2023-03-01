@@ -823,19 +823,32 @@ namespace VUI
 
 		private void SetTopItem(int index, bool updateSb, bool rebuild = true)
 		{
-			topItemIndex_ = Utilities.Clamp(index, 0, Math.Max(itemCount_ - visibleCount_, 0));
+			int newTop = Utilities.Clamp(index, 0, Math.Max(itemCount_ - visibleCount_, 0));
 
-			if (updateSb)
+			if (newTop != topItemIndex_)
 			{
-				float v = topItemIndex_ * (FullItemHeight);
-				if (v + FullItemHeight > vsb_.Range)
-					v = vsb_.Range;
+				topItemIndex_ = newTop;
 
-				vsb_.Value = v;
+				if (updateSb)
+				{
+					float v = topItemIndex_ * (FullItemHeight);
+					if (v + FullItemHeight > vsb_.Range)
+						v = vsb_.Range;
+
+					try
+					{
+						ignoreVScroll_ = true;
+						vsb_.Value = v;
+					}
+					finally
+					{
+						ignoreVScroll_ = false;
+					}
+				}
+
+				if (rebuild)
+					Rebuild();
 			}
-
-			if (rebuild)
-				Rebuild();
 		}
 
 		public Item RootItem
@@ -1048,12 +1061,7 @@ namespace VUI
 			}
 
 			if (i >= 0)
-			{
-				if (WidgetObject == null)
-					Glue.PluginManager.StartCoroutine(CoScrollTo(i));
-				else
-					DoScrollTo(i);
-			}
+				Glue.PluginManager.StartCoroutine(CoScrollTo(i));
 		}
 
 		private IEnumerator CoScrollTo(int index)
@@ -1222,14 +1230,13 @@ namespace VUI
 			//Style.Polish(this);
 		}
 
-		public override void UpdateBounds()
+		protected override void BeforeUpdateBounds()
 		{
 			var r = AbsoluteClientBounds;
 			r.Left = r.Right - vsb_.GetRealMinimumSize().Width;
 			vsb_.SetBounds(r);
 
 			UpdateNodes();
-			base.UpdateBounds();
 		}
 
 		protected override Size DoGetPreferredSize(
@@ -1253,16 +1260,7 @@ namespace VUI
 
 		private void OnWheel(WheelEvent e)
 		{
-			try
-			{
-				ignoreVScroll_ = true;
-				SetTopItem(topItemIndex_ + (int)-e.Delta.Y, true);
-			}
-			finally
-			{
-				ignoreVScroll_ = false;
-			}
-
+			SetTopItem(topItemIndex_ + (int)-e.Delta.Y, true);
 			e.Bubble = false;
 		}
 

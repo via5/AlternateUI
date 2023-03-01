@@ -197,7 +197,9 @@ namespace VUI
 			var start = Time.realtimeSinceStartup;
 			a();
 			var end = Time.realtimeSinceStartup;
-			Glue.LogError(what + ": " + (end - start) + "s");
+			var d = end - start;
+
+			Glue.LogError($"{what}: {d:0.00000} s");
 		}
 
 		public static void BringToTop(GameObject o)

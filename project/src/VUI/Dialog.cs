@@ -18,7 +18,8 @@
 
 			content_.Margins = new Insets(10, 10, 10, 10);
 			title_.BackgroundColor = Style.Theme.DialogTitleBackgroundColor;
-			title_.Padding = new Insets(10, 5, 0, 10);
+			title_.Padding = new Insets(10, 7, 0, 10);
+			title_.FontStyle = UnityEngine.FontStyle.Bold;
 
 			Add(title_, BorderLayout.Top);
 			Add(content_, BorderLayout.Center);
@@ -35,6 +36,7 @@
 			get { return content_; }
 		}
 	}
+
 
 	class Dialog : Window
 	{

@@ -59,7 +59,7 @@ namespace AUI.FileDialog
 
 			if (o.ChildrenVirtual && Bits.IsSet(f, FileTree.Writeable))
 				visible = false;
-			else if (o.IsFlattened && Bits.IsSet(f, FileTree.FlattenDirectories))
+			else if (o.IsFlattened && Bits.IsAnySet(f, FileTree.FlattenDirectories | FileTree.Writeable))
 				visible = false;
 
 			Visible = visible;

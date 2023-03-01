@@ -33,6 +33,8 @@ namespace VUI
 
 		private string text_ = "";
 		private UIDynamicButton button_ = null;
+		private RectTransform buttonRT_ = null;
+		private RectTransform buttonTextRT_ = null;
 		private int align_ = Label.AlignCenter | Label.AlignVCenter;
 		private Polishing polishing_ = Polishing.Default;
 
@@ -136,6 +138,9 @@ namespace VUI
 			button_.buttonText.text = text_;
 			button_.buttonText.alignment = Label.ToTextAnchor(align_);
 
+			buttonRT_ = button_.GetComponent<RectTransform>();
+			buttonTextRT_ = button_.buttonText.GetComponent<RectTransform>();
+
 			Style.Setup(this, polishing_);
 		}
 
@@ -150,28 +155,23 @@ namespace VUI
 			Style.Polish(this, polishing_);
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
-
 			// padding must go inside the button so it's applied to the text
 			// instead of around the button itself
 
 			// remove padding around the button itself
-			var rt = button_.GetComponent<RectTransform>();
+			buttonRT_.offsetMin = new Vector2(
+				buttonRT_.offsetMin.x - 2 - Padding.Left,
+				buttonRT_.offsetMin.y - 1 - Padding.Bottom);
 
-			rt.offsetMin = new Vector2(
-				rt.offsetMin.x - 2 - Padding.Left,
-				rt.offsetMin.y - 1 - Padding.Bottom);
-
-			rt.offsetMax = new Vector2(
-				rt.offsetMax.x + 2 + Padding.Right,
-				rt.offsetMax.y + 2 +  Padding.Top);
+			buttonRT_.offsetMax = new Vector2(
+				buttonRT_.offsetMax.x + 2 + Padding.Right,
+				buttonRT_.offsetMax.y + 2 +  Padding.Top);
 
 			// add padding around the text instead
-			rt = button_.buttonText.GetComponent<RectTransform>();
-			rt.offsetMin = new Vector2(Padding.Left, Padding.Bottom);
-			rt.offsetMax = new Vector2(-Padding.Right, -Padding.Top);
+			buttonTextRT_.offsetMin = new Vector2(Padding.Left, Padding.Bottom);
+			buttonTextRT_.offsetMax = new Vector2(-Padding.Right, -Padding.Top);
 		}
 
 		protected override Size DoGetPreferredSize(

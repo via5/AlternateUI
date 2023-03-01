@@ -83,7 +83,7 @@ namespace VUI
 					DoLayout();
 					var t = Time.realtimeSinceStartup - start;
 
-					Glue.LogVerbose($"layout {Name}: {t:0.000:}s");
+					Glue.LogInfo($"layout {Name}: {t:0.000:}s");
 
 					dirty_ = false;
 				}
@@ -313,7 +313,7 @@ namespace VUI
 
 				if (old != null)
 				{
-					if (!h.HasParent(old))
+					if (h == null || !h.HasParent(old))
 						old.OnPointerExitInternalSynth();
 				}
 

@@ -9,122 +9,135 @@ namespace AUI.FileDialog
 {
 	interface IFileDialogMode
 	{
-		void Init(FileDialog fd);
-		void Execute(FileDialog fd);
+		string GetPath();
+		string GetTitle();
+		FileDialog.ExtensionItem[] GetExtensions();
+		string GetActionText();
+		bool IsWritable();
 		bool CanExecute(FileDialog fd);
-		int GetTreeFlags();
+		void Execute(FileDialog fd);
 	}
 
 
-	class NoSceneMode : IFileDialogMode
+	abstract class BasicMode : IFileDialogMode
 	{
-		public bool CanExecute(FileDialog fd)
+		private readonly string title_;
+		private readonly FileDialog.ExtensionItem[] exts_;
+		private string lastPath_ = "";
+
+		protected BasicMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
+		{
+			title_ = title;
+			exts_ = exts;
+			lastPath_ = defaultPath;
+		}
+
+		public virtual string GetPath()
+		{
+			return lastPath_;
+		}
+
+		public virtual string GetTitle()
+		{
+			return title_;
+		}
+
+		public virtual FileDialog.ExtensionItem[] GetExtensions()
+		{
+			return exts_;
+		}
+
+		public abstract string GetActionText();
+		public abstract bool IsWritable();
+		public abstract bool CanExecute(FileDialog fd);
+
+		public virtual void Execute(FileDialog fd)
+		{
+			lastPath_ = fd.CurrentDirectory;
+		}
+	}
+
+
+	class NoMode : BasicMode
+	{
+		public NoMode()
+			: base("", new FileDialog.ExtensionItem[0], "")
+		{
+		}
+
+		public override string GetActionText()
+		{
+			return "";
+		}
+
+		public override bool IsWritable()
 		{
 			return false;
 		}
 
-		public void Execute(FileDialog fd)
+		public override bool CanExecute(FileDialog fd)
 		{
-			// no-op
-		}
-
-		public int GetTreeFlags()
-		{
-			return FileTree.NoFlags;
-		}
-
-		public void Init(FileDialog fd)
-		{
-			// no-op
+			return false;
 		}
 	}
 
 
-	class OpenSceneMode : IFileDialogMode
+	class OpenMode : BasicMode
 	{
-		public void Init(FileDialog fd)
+		public OpenMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
+			: base(title, exts, defaultPath)
 		{
-			fd.Title = "Load scene";
-			fd.ActionText = "Open";
-			fd.Extensions = GetExtensions();
-			//optionsPanel_.Visible = true;
 		}
 
-		public void Execute(FileDialog fd)
+		public override string GetActionText()
 		{
-			fd.Open();
+			return "Open";
 		}
 
-		public bool CanExecute(FileDialog fd)
+		public override bool IsWritable()
+		{
+			return false;
+		}
+
+		public override bool CanExecute(FileDialog fd)
 		{
 			return fd.CanOpen();
 		}
 
-		public int GetTreeFlags()
+		public override void Execute(FileDialog fd)
 		{
-			return FileTree.NoFlags;
-		}
-
-		private List<FileDialog.ExtensionItem> GetExtensions()
-		{
-			var list = new List<FileDialog.ExtensionItem>();
-
-			string all = "";
-			var allExts = new List<string>();
-
-			foreach (var e in FS.Filesystem.SceneExtensions)
-			{
-				if (all != "")
-					all += "; ";
-
-				all += "*" + e.ext;
-				allExts.Add(e.ext);
-			}
-
-			all = "All scene files (" + all + ")";
-			list.Add(new FileDialog.ExtensionItem(all, allExts.ToArray()));
-
-			foreach (var e in FS.Filesystem.SceneExtensions)
-				list.Add(new FileDialog.ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
-
-			return list;
+			base.Execute(fd);
+			fd.Open();
 		}
 	}
 
 
-	class SaveSceneMode : IFileDialogMode
+	class SaveMode : BasicMode
 	{
-		public void Init(FileDialog fd)
+		public SaveMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
+			: base(title, exts, defaultPath)
 		{
-			fd.Title = "Save scene";
-			fd.ActionText = "Save";
-			fd.Extensions = GetExtensions();
-			//optionsPanel_.Visible = false;
 		}
 
-		public void Execute(FileDialog fd)
+		public override string GetActionText()
 		{
-			fd.Save();
+			return "Save";
 		}
 
-		public bool CanExecute(FileDialog fd)
+		public override bool IsWritable()
+		{
+			return true;
+		}
+
+		public override bool CanExecute(FileDialog fd)
 		{
 			return fd.CanSave();
 		}
 
-		public int GetTreeFlags()
+		public override void Execute(FileDialog fd)
 		{
-			return FileTree.Writeable;
-		}
-
-		private List<FileDialog.ExtensionItem> GetExtensions()
-		{
-			var list = new List<FileDialog.ExtensionItem>();
-
-			foreach (var e in FS.Filesystem.SceneExtensions)
-				list.Add(new FileDialog.ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
-
-			return list;
+			base.Execute(fd);
+			fd.Save();
 		}
 	}
 
@@ -156,7 +169,7 @@ namespace AUI.FileDialog
 
 		private const int FontSize = 24;
 
-		private IFileDialogMode mode_ = new NoSceneMode();
+		private IFileDialogMode mode_ = new NoMode();
 		private VUI.Root root_ = null;
 		private VUI.Window window_ = null;
 		private FS.IFilesystemContainer dir_ = new FS.NullDirectory();
@@ -166,6 +179,8 @@ namespace AUI.FileDialog
 		private VUI.TextBox filename_ = null;
 		private VUI.ComboBox<ExtensionItem> extensions_;
 		private VUI.Panel optionsPanel_ = null;
+		private VUI.CheckBox flattenDirsButton_ = null;
+		private VUI.CheckBox flattenPackagesButton_ = null;
 		private VUI.MenuButton sortPanel_ = null;
 		private List<FS.IFilesystemObject> files_ = null;
 		private FileTree tree_ = null;
@@ -260,7 +275,7 @@ namespace AUI.FileDialog
 			UpdateActionButton();
 		}
 
-		public void SetCurrentDirectory(string vpath, bool expand = false)
+		public void SetCurrentDirectory(string vpath, bool expand = true)
 		{
 			tree_.Select(vpath, expand);
 		}
@@ -336,7 +351,7 @@ namespace AUI.FileDialog
 			set { action_.Text = value; }
 		}
 
-		public List<ExtensionItem> Extensions
+		public ExtensionItem[] Extensions
 		{
 			set { extensions_.SetItems(value); }
 		}
@@ -356,7 +371,7 @@ namespace AUI.FileDialog
 
 			if (file.IndexOf('.') == -1)
 			{
-				var e = extensions_.Selected?.Extensions[0] ?? FS.Filesystem.DefaultSceneExtension;
+				var e = extensions_.Selected?.Extensions[0] ?? FileDialogUI.DefaultSceneExtension;
 				file += e;
 			}
 
@@ -394,18 +409,29 @@ namespace AUI.FileDialog
 			mode_ = mode;
 
 			root_.Visible = true;
+			ClearPanels();
+			flattenDirsButton_.Visible = !mode_.IsWritable();
+			flattenPackagesButton_.Visible = !mode_.IsWritable();
+
 			tree_.Enable();
-			mode_.Init(this);
+			Title = mode_.GetTitle();
+			ActionText = mode_.GetActionText();
+			Extensions = mode_.GetExtensions();
+			SetCurrentDirectory(mode_.GetPath());
 
 			UpdateActionButton();
+			tree_.SetFlags(GetTreeFlags());
 		}
 
 		private int GetTreeFlags()
 		{
-			int f = mode_.GetTreeFlags();
+			int f = FileTree.NoFlags;
 
 			if (FlattenDirectories)
 				f |= FileTree.FlattenDirectories;
+
+			if (mode_.IsWritable())
+				f |= FileTree.Writeable;
 
 			return f;
 		}
@@ -451,7 +477,7 @@ namespace AUI.FileDialog
 
 			if (dir_.ParentPackage == null)
 			{
-				if (FlattenDirectories && !Bits.IsSet(mode_.GetTreeFlags(), FileTree.Writeable))
+				if (FlattenDirectories && !mode_.IsWritable())
 					files = dir_.GetFilesRecursive(CreateFilter());
 				else
 					files = dir_.GetFiles(CreateFilter());
@@ -535,8 +561,8 @@ namespace AUI.FileDialog
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
 			optionsPanel_ = new VUI.Panel(new VUI.HorizontalFlow(10));
-			optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
-			optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
+			flattenDirsButton_ = optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
+			flattenPackagesButton_ = optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
 			optionsPanel_.Add(sortPanel_.Button);
 			optionsPanel_.Add(new VUI.Button("Refresh", Refresh));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
@@ -609,8 +635,8 @@ namespace AUI.FileDialog
 			filename_.Submitted += (s) => ExecuteAction();
 
 			extensions_ = fn.Add(new VUI.ComboBox<ExtensionItem>(), VUI.BorderLayout.Right);
-			extensions_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
-			extensions_.MaximumSize = new VUI.Size(400, VUI.Widget.DontCare);
+			extensions_.MinimumSize = new VUI.Size(500, VUI.Widget.DontCare);
+			extensions_.MaximumSize = new VUI.Size(500, VUI.Widget.DontCare);
 			extensions_.PopupWidth = 500;
 			extensions_.SelectionChanged += OnExtensionChanged;
 
@@ -652,6 +678,12 @@ namespace AUI.FileDialog
 			float scrollbarSize = filesPanel_.ContentPanel.ClientBounds.Height / Rows / 3;
 
 			filesPanel_.Set(offscreenRows, scrollbarSize);
+		}
+
+		private void ClearPanels()
+		{
+			for (int i = 0; i < panels_.Length; ++i)
+				panels_[i]?.Clear();
 		}
 
 		private void SetPanels(int from)
@@ -807,7 +839,9 @@ namespace AUI.FileDialog
 					fileBrowse_ = c.fileBrowseButton;
 				}
 
-				b_.FileDialogUI.ReplaceButton(fileBrowse_, new OpenSceneMode());
+				b_.FileDialogUI.ReplaceButton(fileBrowse_, new OpenMode(
+					"Open asset bundle", FileDialogUI.GetCUAExtensions(true),
+					"VaM/Custom/Assets"));
 
 				return true;
 			}
@@ -862,10 +896,69 @@ namespace AUI.FileDialog
 		private readonly CUABrowsers cua_;
 		private FileDialog fd_ = new FileDialog();
 
+		public static string DefaultSceneExtension = ".json";
+		public static FS.Filesystem.Extension[] SceneExtensions = new FS.Filesystem.Extension[]
+		{
+			new FS.Filesystem.Extension("Scenes", ".json"),
+			new FS.Filesystem.Extension("VAC files", ".vac"),
+			new FS.Filesystem.Extension("Zip files", ".zip"),
+		};
+
+		public static string DefaultCUAExtension = ".assetbundle";
+		public static FS.Filesystem.Extension[] CUAExtensions = new FS.Filesystem.Extension[]
+		{
+			new FS.Filesystem.Extension("Asset bundles", ".assetbundle")
+		};
+
+
 		public FileDialogUI()
 			: base("fileDialog", "File dialog", false)
 		{
 			cua_ = new CUABrowsers(this);
+		}
+
+		public static FileDialog.ExtensionItem[] GetSceneExtensions(bool includeAll)
+		{
+			return GetExtensions(SceneExtensions, "All scene files", includeAll);
+		}
+
+		public static FileDialog.ExtensionItem[] GetCUAExtensions(bool includeAll)
+		{
+			return GetExtensions(CUAExtensions, "All CUA files", includeAll);
+		}
+
+		public static FileDialog.ExtensionItem[] GetExtensions(
+			FS.Filesystem.Extension[] exts, string allText, bool includeAll)
+		{
+			var list = new List<FileDialog.ExtensionItem>();
+
+			if (includeAll && exts.Length > 1)
+			{
+				string all = "";
+				var allExts = new List<string>();
+
+				foreach (var e in exts)
+				{
+					if (all != "")
+						all += "; ";
+
+					all += "*" + e.ext;
+					allExts.Add(e.ext);
+				}
+
+				all = $"{allText} ({all})";
+				list.Add(new FileDialog.ExtensionItem(all, allExts.ToArray()));
+			}
+
+			foreach (var e in exts)
+				list.Add(new FileDialog.ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
+
+			if (includeAll)
+			{
+				list.Add(new FileDialog.ExtensionItem("All files (*.*)", new string[] { "*.*" }));
+			}
+
+			return list.ToArray();
 		}
 
 		public override string Description
@@ -877,13 +970,17 @@ namespace AUI.FileDialog
 		{
 			var root = SuperController.singleton.transform;
 
-			ReplaceButton(root, "ButtonOpenScene", new OpenSceneMode());
-			ReplaceButton(root, "ButtonSaveScene", new SaveSceneMode());
+			ReplaceButton(root, "ButtonOpenScene", new OpenMode(
+				"Open scene", GetSceneExtensions(true), "VaM/Saves/scene"));
+
+			ReplaceButton(root, "ButtonSaveScene", new SaveMode(
+				"Save scene", GetSceneExtensions(false), "VaM/Saves/scene"));
 
 			fd_.Enable();
 			cua_.Enable();
 
-			//fd_.Show(FileDialog.OpenScene);
+			fd_.Show(new OpenMode(
+				"Open scene", GetSceneExtensions(true), "VaM/Saves/scene"));
 			//fd_.SetCurrentDirectory("VaM/Saves/scene", true);
 		}
 

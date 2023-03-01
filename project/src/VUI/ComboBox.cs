@@ -245,10 +245,8 @@ namespace VUI
 				bg.color = Style.Theme.ComboBoxBackgroundColor;
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
-
 			var rect = arrowObject_.GetComponent<RectTransform>();
 			rect.offsetMin = new Vector2(0, 0);
 			rect.offsetMax = new Vector2(Bounds.Width - 10, Bounds.Height);

@@ -422,9 +422,9 @@ namespace AUI.FS
 			{
 				return FMS.GetDirectories(path);
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}'");
+				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}': {e.Message}");
 				return new string[0];
 			}
 		}
@@ -435,9 +435,9 @@ namespace AUI.FS
 			{
 				return FMS.GetFiles(path);
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}'");
+				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}': {e.Message}");
 				return new string[0];
 			}
 		}

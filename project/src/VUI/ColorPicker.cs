@@ -107,10 +107,8 @@ namespace VUI
 			}
 		}
 
-		public override void UpdateBounds()
+		protected override void AfterUpdateBounds()
 		{
-			base.UpdateBounds();
-
 			try
 			{
 				ignore_ = true;
