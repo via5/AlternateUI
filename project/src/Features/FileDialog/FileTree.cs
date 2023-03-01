@@ -130,7 +130,7 @@ namespace AUI.FileDialog
 			return null;
 		}
 
-		public bool Select(string path)
+		public bool Select(string path, bool expand = false)
 		{
 			path = path.Replace('\\', '/');
 			path = path.Trim();
@@ -139,10 +139,10 @@ namespace AUI.FileDialog
 			if (cs.Count == 0)
 				return false;
 
-			return Select(tree_.RootItem, cs);
+			return Select(tree_.RootItem, cs, expand);
 		}
 
-		private bool Select(VUI.TreeView.Item parent, List<string> cs)
+		private bool Select(VUI.TreeView.Item parent, List<string> cs, bool expand)
 		{
 			if (parent.Children == null)
 				return false;
@@ -156,13 +156,17 @@ namespace AUI.FileDialog
 					{
 						if (cs.Count == 1)
 						{
-							tree_.Select(fi);
+							tree_.Select(fi, true, true);
+
+							if (expand && tree_.Selected != null)
+								tree_.Selected.Expanded = true;
+
 							return true;
 						}
 						else
 						{
 							cs.RemoveAt(0);
-							if (Select(fi, cs))
+							if (Select(fi, cs, expand))
 								return true;
 						}
 					}
@@ -176,11 +180,7 @@ namespace AUI.FileDialog
 
 		private void OnSelection(VUI.TreeView.Item item)
 		{
-			var fi = item as FileTreeItem;
-			var o = fi?.Object as FS.IFilesystemContainer;
-
-			fd_.SetContainer(o ?? new FS.NullDirectory());
-			SelectionChanged?.Invoke(fi);
+			SelectionChanged?.Invoke(item as FileTreeItem);
 		}
 	}
 }

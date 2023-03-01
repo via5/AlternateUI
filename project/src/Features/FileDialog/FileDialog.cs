@@ -1,5 +1,6 @@
 ﻿using SimpleJSON;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -50,11 +51,10 @@ namespace AUI.FileDialog
 		private VUI.MenuButton sortPanel_ = null;
 		private List<FS.IFilesystemObject> files_ = null;
 		private FileTree tree_ = null;
+		private VUI.FixedScrolledPanel filesPanel_ = null;
 		private FilePanel[] panels_ = new FilePanel[0];
 		private FS.IFilesystemObject selected_ = null;
 		private VUI.Button action_ = null;
-		private VUI.ScrollBar sb_ = null;
-		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
 		private int sort_ = FS.Filter.SortFilename;
@@ -81,11 +81,6 @@ namespace AUI.FileDialog
 			get
 			{
 				return tree_.Selected?.VirtualPath ?? "";
-			}
-
-			set
-			{
-				tree_.Select(value);
 			}
 		}
 
@@ -145,6 +140,11 @@ namespace AUI.FileDialog
 				FindPanel(selected_)?.SetSelectedInternal(true);
 
 			UpdateActionButton();
+		}
+
+		public void SetCurrentDirectory(string vpath, bool expand = false)
+		{
+			tree_.Select(vpath, expand);
 		}
 
 		private FilePanel FindPanel(FS.IFilesystemObject o)
@@ -349,8 +349,6 @@ namespace AUI.FileDialog
 
 		public void RefreshFiles()
 		{
-			top_ = 0;
-
 			List<FS.IFilesystemObject> files;
 
 			if (FlattenDirectories && type_ == OpenScene)
@@ -465,39 +463,27 @@ namespace AUI.FileDialog
 
 		private VUI.Panel CreateFilesPanel()
 		{
+			filesPanel_ = new VUI.FixedScrolledPanel();
+			var p = filesPanel_.ContentPanel;
+
 			var gl = new VUI.GridLayout(Columns, 10);
 			gl.UniformWidth = true;
 
-			var files = new VUI.Panel(gl);
-			files.Padding = new VUI.Insets(0, 0, 5, 0);
+			p.Layout = gl;
+			p.Padding = new VUI.Insets(0, 0, 5, 0);
 
 			panels_ = new FilePanel[Columns * Rows];
 
 			for (int j = 0; j < Columns * Rows; ++j)
 			{
 				panels_[j] = new FilePanel(this, FontSize);
-				files.Add(panels_[j].Panel);
+				p.Add(panels_[j].Panel);
 			}
 
-			sb_ = new VUI.ScrollBar();
-			sb_.MinimumSize = new VUI.Size(VUI.Style.Metrics.ScrollBarWidth, 0);
-			sb_.ValueChanged += OnScrollbar;
-			sb_.DragEnded += OnScrollbarDragEnded;
+			filesPanel_.Scrolled += OnScroll;
+			filesPanel_.Events.PointerClick += OnClicked;
 
-			var filesPanel = new VUI.Panel(new VUI.BorderLayout());
-			filesPanel.Add(files, VUI.BorderLayout.Center);
-			filesPanel.Add(sb_, VUI.BorderLayout.Right);
-
-			filesPanel.MinimumSize = new VUI.Size(300, VUI.Widget.DontCare);
-			filesPanel.Margins = new VUI.Insets(0);
-			filesPanel.Padding = new VUI.Insets(5, 0, 0, 0);
-			filesPanel.Borders = new VUI.Insets(0);
-
-			filesPanel.Clickthrough = false;
-			filesPanel.Events.PointerClick += OnClicked;
-			filesPanel.Events.Wheel += OnWheel;
-
-			return filesPanel;
+			return filesPanel_;
 		}
 
 		private VUI.Panel CreateBottom()
@@ -530,15 +516,9 @@ namespace AUI.FileDialog
 			return p;
 		}
 
-		private float ScrollbarSize()
+		private void OnScroll(int top)
 		{
-			return root_.ContentPanel.ClientBounds.Height / Rows / 5;
-		}
-
-		private int OffscreenRows()
-		{
-			int totalRows = (int)Math.Round((float)files_.Count / Columns);
-			return totalRows - Rows;
+			SetPanels(top * Columns);
 		}
 
 		private void OnClicked(VUI.PointerEvent e)
@@ -549,67 +529,21 @@ namespace AUI.FileDialog
 			e.Bubble = false;
 		}
 
-		private void OnWheel(VUI.WheelEvent e)
-		{
-			int offscreenRows = OffscreenRows();
-			int newTop = U.Clamp(top_ + (int)-e.Delta.Y, 0, offscreenRows);
-			float v = newTop * ScrollbarSize();
-
-			if (e.Delta.Y < 0)
-			{
-				// down
-				if (newTop == offscreenRows)
-					v = sb_.Range;
-			}
-
-			sb_.Value = v;
-			root_.Tooltips.Hide();
-
-			e.Bubble = false;
-		}
-
-		private void OnScrollbar(float v)
-		{
-			int y = Math.Max(0, (int)Math.Round(v / ScrollbarSize()));
-
-			if (top_ != y)
-			{
-				top_ = y;
-				SetPanels(top_ * Columns);
-			}
-		}
-
-		private void OnScrollbarDragEnded()
-		{
-			if (top_ >= OffscreenRows())
-				sb_.Value = sb_.Range;
-			else
-				sb_.Value = top_ * ScrollbarSize();
-		}
-
 		private void SetFiles(List<FS.IFilesystemObject> list)
 		{
 			files_ = list;
+			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+		}
 
-			if (root_.Bounds.Height <= 0)
-			{
-				sb_.Range = 0;
-			}
-			else
-			{
-				int offscreenRows = OffscreenRows();
+		private IEnumerator CoSetScrollPanel()
+		{
+			yield return new WaitForEndOfFrame();
 
-				if (offscreenRows <= 0)
-				{
-					sb_.Range = 0;
-					sb_.Enabled = false;
-				}
-				else
-				{
-					sb_.Range = (offscreenRows + 1) * ScrollbarSize() - 1;
-					sb_.Enabled = true;
-				}
-			}
+			int totalRows = (int)Math.Ceiling((float)files_.Count / Columns);
+			int offscreenRows = totalRows - Rows;
+			float scrollbarSize = filesPanel_.ContentPanel.ClientBounds.Height / Rows / 3;
+
+			filesPanel_.Set(offscreenRows, scrollbarSize);
 		}
 
 		private void SetPanels(int from)
@@ -729,11 +663,13 @@ namespace AUI.FileDialog
 
 				if (c != null)
 				{
+					SetContainer(c);
 					pin_.Enabled = c.CanPin;
 					pin_.Checked = FS.Filesystem.Instance.IsPinned(c);
 				}
 				else
 				{
+					SetContainer(new FS.NullDirectory());
 					pin_.Enabled = false;
 					pin_.Checked = false;
 				}
@@ -888,7 +824,7 @@ namespace AUI.FileDialog
 			cua_.Enable();
 
 			fd_.Show(FileDialog.OpenScene);
-			fd_.CurrentDirectory = "VaM/Saves/scene";
+			fd_.SetCurrentDirectory("VaM/Saves/scene", true);
 		}
 
 		protected override void DoDisable()

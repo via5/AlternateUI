@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -47,7 +48,7 @@ namespace VUI
 				set { parent_ = value; }
 			}
 
-			public int Index
+			public int IndexInParent
 			{
 				get
 				{
@@ -1019,7 +1020,7 @@ namespace VUI
 			return f;
 		}
 
-		public void Select(Item item, bool expandParents = true)
+		public void Select(Item item, bool expandParents = true, bool scrollTo = false)
 		{
 			SetSelectedInternal(item, true);
 
@@ -1031,7 +1032,59 @@ namespace VUI
 					parent.Expanded = true;
 					parent = parent.Parent;
 				}
+
+				if (scrollTo)
+					ScrollTo(item);
 			}
+		}
+
+		public void ScrollTo(Item item)
+		{
+			int i = 0;
+			if (!AbsoluteItemIndex(root_, item, ref i) || i < 0)
+			{
+				Glue.LogError($"TreeView: ScrollTo item not found: {item}");
+				return;
+			}
+
+			if (i >= 0)
+			{
+				if (WidgetObject == null)
+					Glue.PluginManager.StartCoroutine(CoScrollTo(i));
+				else
+					DoScrollTo(i);
+			}
+		}
+
+		private IEnumerator CoScrollTo(int index)
+		{
+			yield return new WaitForEndOfFrame();
+			DoScrollTo(index);
+		}
+
+		private void DoScrollTo(int i)
+		{
+			i = Math.Max(i - nodes_.Count / 2, 0);
+			SetTopItem(i, true, false);
+		}
+
+		private bool AbsoluteItemIndex(Item parent, Item item, ref int index)
+		{
+			if (parent.Expanded && parent.Children != null)
+			{
+				foreach (var c in parent.Children)
+				{
+					if (c == item)
+						return true;
+
+					++index;
+
+					if (AbsoluteItemIndex(c, item, ref index))
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		public void SetSelectedInternal(Item item, bool b)
