@@ -245,4 +245,109 @@ namespace VUI
 				handle_.WidgetObject.gameObject, d, ExecuteEvents.pointerDownHandler);
 		}
 	}
+
+
+	class FixedScrolledPanel : Panel
+	{
+		public delegate void Handler(int v);
+		public event Handler Scrolled;
+
+		private readonly ScrollBar sb_;
+		private readonly Panel panel_;
+
+		private float rowSize_ = 1;
+		private int rows_ = 1;
+		private int top_ = 0;
+
+		public FixedScrolledPanel()
+		{
+			sb_ = new ScrollBar();
+			sb_.MinimumSize = new Size(Style.Metrics.ScrollBarWidth, 0);
+			sb_.ValueChanged += OnScrollbar;
+			sb_.DragEnded += OnScrollbarDragEnded;
+
+			panel_ = new Panel();
+
+			Layout = new BorderLayout();
+			MinimumSize = new Size(300, Widget.DontCare);
+			Margins = new Insets(0);
+			Padding = new Insets(5, 0, 0, 0);
+			Borders = new Insets(0);
+
+			Clickthrough = false;
+			Events.Wheel += OnWheel;
+
+			Add(panel_, BorderLayout.Center);
+			Add(sb_, BorderLayout.Right);
+		}
+
+		public Panel ContentPanel
+		{
+			get { return panel_; }
+		}
+
+		public void Set(int rows, float rowSize)
+		{
+			top_ = 0;
+			rows_ = rows;
+			rowSize_ = rowSize;
+
+			if (panel_.ClientBounds.Height <= 0)
+			{
+				sb_.Range = 0;
+			}
+			else
+			{
+				if (rows_ <= 0)
+				{
+					sb_.Range = 0;
+					sb_.Enabled = false;
+				}
+				else
+				{
+					sb_.Range = (rows_) * rowSize_ - 1;
+					sb_.Enabled = true;
+				}
+			}
+
+			sb_.Value = 0;
+		}
+
+		private void OnWheel(WheelEvent e)
+		{
+			int newTop = Utilities.Clamp(top_ + (int)-e.Delta.Y, 0, rows_);
+			float v = newTop * rowSize_;
+
+			if (e.Delta.Y < 0)
+			{
+				// down
+				if (newTop == rows_)
+					v = sb_.Range;
+			}
+
+			sb_.Value = v;
+			GetRoot()?.Tooltips.Hide();
+
+			e.Bubble = false;
+		}
+
+		private void OnScrollbar(float v)
+		{
+			int y = Math.Max(0, (int)Math.Round(v / rowSize_));
+
+			if (top_ != y)
+			{
+				top_ = y;
+				Scrolled?.Invoke(top_);
+			}
+		}
+
+		private void OnScrollbarDragEnded()
+		{
+			if (top_ >= rows_)
+				sb_.Value = sb_.Range;
+			else
+				sb_.Value = top_ * rowSize_;
+		}
+	}
 }

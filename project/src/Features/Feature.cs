@@ -1,4 +1,5 @@
 ﻿using SimpleJSON;
+using System;
 using UnityEngine.UI;
 
 namespace AUI
@@ -23,6 +24,7 @@ namespace AUI
 		private readonly Logger log_;
 		private JSONStorableBool enabledParam_;
 		private bool enabled_;
+		private bool failed_ = false;
 
 		protected BasicFeature(string name, string displayName, bool defaultEnabled)
 		{
@@ -30,6 +32,9 @@ namespace AUI
 			displayName_ = displayName;
 			log_ = new Logger("aui." + name_);
 			enabled_ = defaultEnabled;
+
+			if (U.DevMode)
+				enabled_ = true;
 
 			enabledParam_ = new JSONStorableBool($"{name_}.enabled", enabled_, (bool b) =>
 			{
@@ -55,7 +60,7 @@ namespace AUI
 			{
 				new MorphUI.MorphUI(),
 				new ClothingUI.ClothingUI(),
-				new FileDialog.FileDialog(),
+				new FileDialog.FileDialogUI(),
 				new PluginsUI.PluginsUI(),
 				new LightUI.LightUI(),
 				new SelectUI.SelectUI(),
@@ -92,6 +97,11 @@ namespace AUI
 			get { return log_; }
 		}
 
+		private bool CanRun
+		{
+			get { return enabled_ && !failed_; }
+		}
+
 		public abstract string Description { get; }
 
 		public void LoadOptions(JSONClass o)
@@ -102,7 +112,19 @@ namespace AUI
 				enabledParam_.valNoCallback = enabled_;
 			}
 
-			DoLoadOptions(o);
+			if (U.DevMode)
+				enabled_ = true;
+
+			try
+			{
+				DoLoadOptions(o);
+			}
+			catch (Exception e)
+			{
+				failed_ = true;
+				Log.Error("exception in DoLoadOptions, disabling");
+				Log.Error(e.ToString());
+			}
 		}
 
 		public JSONClass SaveOptions()
@@ -110,7 +132,17 @@ namespace AUI
 			var o = new JSONClass();
 
 			o.Add("enabled", new JSONData(enabled_));
-			DoSaveOptions(o);
+
+			try
+			{
+				DoSaveOptions(o);
+			}
+			catch (Exception e)
+			{
+				failed_ = true;
+				Log.Error("exception in DoSaveOptions, disabling");
+				Log.Error(e.ToString());
+			}
 
 			return o;
 		}
@@ -118,15 +150,25 @@ namespace AUI
 		public void Init()
 		{
 			Log.Verbose($"init {Name}");
-			DoInit();
 
-			if (enabled_)
+			try
+			{
+				DoInit();
+			}
+			catch (Exception e)
+			{
+				failed_ = true;
+				Log.Error("exception in DoInit, disabling");
+				Log.Error(e.ToString());
+			}
+
+			if (CanRun)
 				Enable();
 		}
 
 		public void OnPluginState(bool b)
 		{
-			if (!enabled_)
+			if (!CanRun)
 				return;
 
 			if (b)
@@ -138,13 +180,33 @@ namespace AUI
 		private void Enable()
 		{
 			Log.Verbose($"enable {Name}");
-			DoEnable();
+
+			try
+			{
+				DoEnable();
+			}
+			catch (Exception e)
+			{
+				failed_ = true;
+				Log.Error("exception in DoEnable, disabling");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void Disable()
 		{
 			Log.Verbose($"disable {Name}");
-			DoDisable();
+
+			try
+			{
+				DoDisable();
+			}
+			catch (Exception e)
+			{
+				failed_ = true;
+				Log.Error("exception in DoDisable, disabling");
+				Log.Error(e.ToString());
+			}
 		}
 
 		public void CreateUI()
@@ -158,19 +220,23 @@ namespace AUI
 			var tt = a.CreateTextField(ts, true);
 			tt.GetComponent<LayoutElement>().minHeight = 150;
 			tt.height = 150;
-
-			DoCreateUI();
-		}
-
-		protected virtual void DoCreateUI()
-		{
-			// no-op
 		}
 
 		public void Update(float s)
 		{
-			if (enabled_)
-				DoUpdate(s);
+			if (CanRun)
+			{
+				try
+				{
+					DoUpdate(s);
+				}
+				catch (Exception e)
+				{
+					failed_ = true;
+					Log.Error("exception in DoCreateUI, disabling");
+					Log.Error(e.ToString());
+				}
+			}
 		}
 
 		protected virtual void DoLoadOptions(JSONClass o)
