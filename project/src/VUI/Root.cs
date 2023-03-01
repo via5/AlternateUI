@@ -309,12 +309,16 @@ namespace VUI
 				captured_ = null;
 				UpdateTracking(true);
 
+				var h = WidgetAt(MousePosition);
+
 				if (old != null)
 				{
-					var h = WidgetAt(MousePosition);
 					if (!h.HasParent(old))
 						old.OnPointerExitInternalSynth();
 				}
+
+				if (h != null)
+					h.OnPointerEnterInternalSynth();
 			}
 		}
 

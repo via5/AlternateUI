@@ -1,19 +1,13 @@
-﻿using MVR.FileManagementSecure;
-using SimpleJSON;
+﻿using SimpleJSON;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace AUI.FileDialog
 {
-	class FileDialog : BasicFeature
+	class FileDialog
 	{
-		class ReplacedButton
-		{
-			public Button b;
-			public Button.ButtonClickedEvent oldEvent;
-		}
-
 		class ExtensionItem
 		{
 			private readonly string text_;
@@ -34,10 +28,6 @@ namespace AUI.FileDialog
 			{
 				return text_;
 			}
-		}
-
-		class SortItem
-		{
 		}
 
 
@@ -64,25 +54,16 @@ namespace AUI.FileDialog
 		private FS.IFilesystemObject selected_ = null;
 		private VUI.Button action_ = null;
 		private VUI.ScrollBar sb_ = null;
-		private string cwd_;
 		private int top_ = 0;
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
 		private int sort_ = FS.Filter.SortFilename;
 		private int sortDir_ = FS.Filter.SortAscending;
-		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
 
 		public FileDialog()
-			: base("fileDialog", "File dialog", false)
 		{
-			cwd_ = null;
-		}
-
-		public override string Description
-		{
-			get { return "Replaces the file dialogs."; }
 		}
 
 		public int Columns
@@ -97,7 +78,15 @@ namespace AUI.FileDialog
 
 		public string CurrentDirectory
 		{
-			get { return cwd_; }
+			get
+			{
+				return tree_.Selected?.VirtualPath ?? "";
+			}
+
+			set
+			{
+				tree_.Select(value);
+			}
 		}
 
 		public bool FlattenDirectories
@@ -169,6 +158,15 @@ namespace AUI.FileDialog
 			return null;
 		}
 
+		public void Enable()
+		{
+		}
+
+		public void Disable()
+		{
+			root_.Visible = false;
+		}
+
 		public void Activate(FilePanel p)
 		{
 			Select(p.Object);
@@ -180,7 +178,7 @@ namespace AUI.FileDialog
 			if (!CanOpen())
 				return;
 
-			Log.Info($"open {selected_.VirtualPath}");
+			AlternateUI.Instance.Log.Info($"open {selected_.VirtualPath}");
 
 			Hide();
 			//SuperController.singleton.Load(selected_.File.Path);
@@ -192,7 +190,7 @@ namespace AUI.FileDialog
 			if (path == "")
 				return;
 
-			Log.Info($"saving {path}");
+			AlternateUI.Instance.Log.Info($"saving {path}");
 
 			Hide();
 			//SuperController.singleton.Save(path);
@@ -344,8 +342,6 @@ namespace AUI.FileDialog
 
 		public void Refresh()
 		{
-			Log.Info("refreshing");
-
 			FS.Filesystem.Instance.ClearCaches();
 			RefreshDirectories();
 			RefreshFiles();
@@ -371,47 +367,6 @@ namespace AUI.FileDialog
 		public void RefreshDirectories()
 		{
 			tree_.Refresh();
-		}
-
-		protected override void DoEnable()
-		{
-			ReplaceButton("ButtonOpenScene", OpenScene);
-			ReplaceButton("ButtonSaveScene", SaveScene);
-
-			Show(OpenScene);
-		}
-
-		protected override void DoDisable()
-		{
-			RestoreButtons();
-		}
-
-		private void ReplaceButton(string name, int type)
-		{
-			var rb = new ReplacedButton();
-
-			rb.b = VUI.Utilities.FindChildRecursive(
-				SuperController.singleton.transform, name)
-					?.GetComponent<Button>();
-
-			rb.oldEvent = rb.b.onClick;
-			rb.b.onClick = new Button.ButtonClickedEvent();
-			rb.b.onClick.AddListener(() => Show(type));
-
-			replacedButtons_.Add(rb);
-
-			Log.Verbose($"replacing button {name} for type {type}");
-		}
-
-		private void RestoreButtons()
-		{
-			foreach (var rb in replacedButtons_)
-			{
-				rb.b.onClick = rb.oldEvent;
-				Log.Verbose($"restored button {Name}");
-			}
-
-			replacedButtons_.Clear();
 		}
 
 		private void Create()
@@ -514,7 +469,7 @@ namespace AUI.FileDialog
 			gl.UniformWidth = true;
 
 			var files = new VUI.Panel(gl);
-			files.Padding = new VUI.Insets(0);
+			files.Padding = new VUI.Insets(0, 0, 5, 0);
 
 			panels_ = new FilePanel[Columns * Rows];
 
@@ -608,6 +563,7 @@ namespace AUI.FileDialog
 			}
 
 			sb_.Value = v;
+			root_.Tooltips.Hide();
 
 			e.Bubble = false;
 		}
@@ -702,7 +658,7 @@ namespace AUI.FileDialog
 			path_.Text = dir_.VirtualPath;
 		}
 
-		protected override void DoUpdate(float s)
+		public void Update(float s)
 		{
 			root_?.Update();
 		}
@@ -713,7 +669,7 @@ namespace AUI.FileDialog
 			SetContainer(dir_);
 		}
 
-		protected override void DoLoadOptions(JSONClass o)
+		public void LoadOptions(JSONClass o)
 		{
 			if (o.HasKey("flattenDirs"))
 				flattenDirs_ = o["flattenDirs"].AsBool;
@@ -722,7 +678,7 @@ namespace AUI.FileDialog
 				flattenPackages_ = o["flattenPackages"].AsBool;
 		}
 
-		protected override void DoSaveOptions(JSONClass o)
+		public void SaveOptions(JSONClass o)
 		{
 			o["flattenDirs"] = new JSONData(flattenDirs_);
 			o["flattenPackages"] = new JSONData(flattenPackages_);
@@ -788,60 +744,6 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private void OnSortFilename(bool b)
-		{
-			if (b)
-			{
-				sort_ = FS.Filter.SortFilename;
-				RefreshFiles();
-			}
-		}
-
-		private void OnSortType(bool b)
-		{
-			if (b)
-			{
-				sort_ = FS.Filter.SortType;
-				RefreshFiles();
-			}
-		}
-
-		private void OnSortModified(bool b)
-		{
-			if (b)
-			{
-				sort_ = FS.Filter.SortDateModified;
-				RefreshFiles();
-			}
-		}
-
-		private void OnSortCreated(bool b)
-		{
-			if (b)
-			{
-				sort_ = FS.Filter.SortDateCreated;
-				RefreshFiles();
-			}
-		}
-
-		private void OnSortAscending(bool b)
-		{
-			if (b)
-			{
-				sortDir_ = FS.Filter.SortAscending;
-				RefreshFiles();
-			}
-		}
-
-		private void OnSortDescending(bool b)
-		{
-			if (b)
-			{
-				sortDir_ = FS.Filter.SortDescending;
-				RefreshFiles();
-			}
-		}
-
 		private List<ExtensionItem> GetOpenSceneExtensions()
 		{
 			var list = new List<ExtensionItem>();
@@ -875,6 +777,198 @@ namespace AUI.FileDialog
 				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
 
 			return list;
+		}
+	}
+
+
+	class CUABrowsers : AtomUIModifier
+	{
+		class CUAAtomInfo : BasicAtomUIInfo
+		{
+			private readonly CUABrowsers b_;
+			private Button fileBrowse_ = null;
+
+			public CUAAtomInfo(CUABrowsers b, Atom a)
+				: base(a, "fd")
+			{
+				b_ = b;
+			}
+
+			public override bool Enable()
+			{
+				if (fileBrowse_ == null)
+				{
+					if (Atom.UITransform == null)
+						return false;
+
+					var c = Atom.UITransform.GetComponentInChildren<CustomUnityAssetLoaderUI>();
+					if (c == null)
+						return false;
+
+					if (c.fileBrowseButton == null)
+						return false;
+
+					fileBrowse_ = c.fileBrowseButton;
+				}
+
+				b_.FileDialogUI.ReplaceButton(fileBrowse_, FileDialog.OpenScene);
+
+				return true;
+			}
+
+			public override void Disable()
+			{
+				if (fileBrowse_ != null)
+					b_.FileDialogUI.RestoreButton(fileBrowse_);
+			}
+
+			public override bool IsLike(BasicAtomUIInfo other)
+			{
+				return true;
+			}
+		}
+
+
+		private readonly FileDialogUI ui_;
+
+		public CUABrowsers(FileDialogUI ui)
+			: base("fileDialog")
+		{
+			ui_ = ui;
+		}
+
+		public FileDialogUI FileDialogUI
+		{
+			get { return ui_; }
+		}
+
+		protected override BasicAtomUIInfo CreateAtomInfo(Atom a)
+		{
+			return new CUAAtomInfo(this, a);
+		}
+
+		protected override bool ValidAtom(Atom a)
+		{
+			return (a.type == "CustomUnityAsset");
+		}
+	}
+
+
+	class FileDialogUI : BasicFeature
+	{
+		class ReplacedButton
+		{
+			public Button b;
+			public Button.ButtonClickedEvent oldEvent;
+		}
+
+		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
+		private readonly CUABrowsers cua_;
+		private FileDialog fd_ = new FileDialog();
+
+		public FileDialogUI()
+			: base("fileDialog", "File dialog", false)
+		{
+			cua_ = new CUABrowsers(this);
+		}
+
+		public override string Description
+		{
+			get { return "Replaces the file dialogs."; }
+		}
+
+		protected override void DoEnable()
+		{
+			var root = SuperController.singleton.transform;
+
+			ReplaceButton(root, "ButtonOpenScene", FileDialog.OpenScene);
+			ReplaceButton(root, "ButtonSaveScene", FileDialog.SaveScene);
+
+			fd_.Enable();
+			cua_.Enable();
+
+			fd_.Show(FileDialog.OpenScene);
+			fd_.CurrentDirectory = "VaM/Saves/scene";
+		}
+
+		protected override void DoDisable()
+		{
+			fd_.Disable();
+			cua_.Disable();
+			RestoreButtons();
+		}
+
+		public void ReplaceButton(Transform parent, string name, int type)
+		{
+			var b = VUI.Utilities.FindChildRecursive(parent, name)
+				?.GetComponent<Button>();
+
+			if (b == null)
+			{
+				Log.Error($"ReplaceButton: no button '{name}' in {parent}");
+				return;
+			}
+
+			ReplaceButton(b, type);
+		}
+
+		public void ReplaceButton(Button b, int type)
+		{
+			var rb = new ReplacedButton();
+
+			rb.b = b;
+			rb.oldEvent = rb.b.onClick;
+			rb.b.onClick = new Button.ButtonClickedEvent();
+			rb.b.onClick.AddListener(() => fd_.Show(type));
+
+			replacedButtons_.Add(rb);
+
+			Log.Verbose($"replacing button {b} for type {type}");
+		}
+
+		public void RestoreButton(Button b)
+		{
+			for (int i = 0; i < replacedButtons_.Count; ++i)
+			{
+				if (replacedButtons_[i].b == b)
+				{
+					RestoreButton(replacedButtons_[i]);
+					replacedButtons_.RemoveAt(i);
+					return;
+				}
+			}
+
+			Log.Error($"RestoreButton: button {b.name} not found");
+		}
+
+		private void RestoreButtons()
+		{
+			foreach (var rb in replacedButtons_)
+				RestoreButton(rb);
+
+			replacedButtons_.Clear();
+		}
+
+		private void RestoreButton(ReplacedButton rb)
+		{
+			rb.b.onClick = rb.oldEvent;
+			Log.Verbose($"restored button {rb.b}");
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			cua_.Update(s);
+			fd_.Update(s);
+		}
+
+		protected override void DoLoadOptions(JSONClass o)
+		{
+			fd_.LoadOptions(o);
+		}
+
+		protected override void DoSaveOptions(JSONClass o)
+		{
+			fd_.SaveOptions(o);
 		}
 	}
 }

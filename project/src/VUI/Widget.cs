@@ -1009,13 +1009,30 @@ namespace VUI
 			events_.FireBlur(w);
 		}
 
-		public void OnPointerEnterInternal(PointerEventData d)
+		public void OnPointerEnterInternal(PointerEventData d, bool manualBubble = false)
 		{
+			bool bubble = true;
+
 			if (IsVisibleOnScreen())
 			{
-				GetRoot()?.WidgetEntered(this);
-				events_.FirePointerEnter(this, d);
+				var r = GetRoot();
+				var c = r?.Captured;
+
+				if (c == null || c == this)
+				{
+					GetRoot()?.WidgetEntered(this);
+					bubble = events_.FirePointerEnter(this, d, manualBubble);
+				}
 			}
+
+			if (manualBubble && bubble && parent_ != null)
+				parent_.OnPointerEnterInternal(d, manualBubble);
+		}
+
+		public void OnPointerEnterInternalSynth()
+		{
+			var d = new PointerEventData(EventSystem.current);
+			OnPointerEnterInternal(d, true);
 		}
 
 		public void OnPointerExitInternal(PointerEventData d)

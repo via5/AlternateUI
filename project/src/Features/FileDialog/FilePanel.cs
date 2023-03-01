@@ -13,6 +13,8 @@ namespace AUI.FileDialog
 		private readonly VUI.Image thumbnail_;
 		private readonly VUI.Label name_;
 		private VUI.Timer thumbnailTimer_ = null;
+		private bool hovered_ = false;
+		private bool selected_ = false;
 
 		public FilePanel(FileDialog fd, int fontSize)
 		{
@@ -29,6 +31,7 @@ namespace AUI.FileDialog
 
 			panel_.Borders = new VUI.Insets(1);
 			panel_.BorderColor = new Color(0, 0, 0, 0);
+			panel_.Clickthrough = false;
 
 			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
 			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
@@ -66,39 +69,47 @@ namespace AUI.FileDialog
 
 		private void OnPointerEnter(VUI.PointerEvent e)
 		{
-			if (fd_.Selected != Object)
-			{
-				panel_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
-				panel_.BorderColor = VUI.Style.Theme.BorderColor;
-			}
+			hovered_ = true;
+			UpdateBackground();
 		}
 
 		private void OnPointerExit(VUI.PointerEvent e)
 		{
-			if (fd_.Selected != Object)
-			{
-				panel_.BackgroundColor = new Color(0, 0, 0, 0);
-				panel_.BorderColor = new Color(0, 0, 0, 0);
-			}
-		}
-
-		public VUI.Panel Panel
-		{
-			get { return panel_; }
+			hovered_ = false;
+			UpdateBackground();
 		}
 
 		public void SetSelectedInternal(bool b)
 		{
-			if (b)
+			selected_ = b;
+			UpdateBackground();
+		}
+
+		private void UpdateBackground()
+		{
+			if (selected_)
 			{
 				panel_.BackgroundColor = VUI.Style.Theme.SelectionBackgroundColor;
 				panel_.BorderColor = VUI.Style.Theme.BorderColor;
 			}
 			else
 			{
-				panel_.BackgroundColor = new UnityEngine.Color(0, 0, 0, 0);
-				panel_.BorderColor = new Color(0, 0, 0, 0);
+				if (hovered_)
+				{
+					panel_.BackgroundColor = VUI.Style.Theme.HighlightBackgroundColor;
+					panel_.BorderColor = VUI.Style.Theme.BorderColor;
+				}
+				else
+				{
+					panel_.BackgroundColor = new Color(0, 0, 0, 0);
+					panel_.BorderColor = new Color(0, 0, 0, 0);
+				}
 			}
+		}
+
+		public VUI.Panel Panel
+		{
+			get { return panel_; }
 		}
 
 		public void Set(FS.IFilesystemObject o)
@@ -188,6 +199,8 @@ namespace AUI.FileDialog
 			name_.Text = "";
 			thumbnail_.Texture = null;
 			panel_.Render = false;
+			selected_ = false;
+			hovered_ = false;
 		}
 	}
 }

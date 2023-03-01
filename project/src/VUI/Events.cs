@@ -327,17 +327,20 @@ namespace VUI
 		public delegate void PointerHandler(PointerEvent e);
 		public event PointerHandler PointerEnter, PointerExit;
 
-		private void DoFirePointer(Widget w, PointerEventData d, PointerHandler h)
+		private bool DoFirePointer(Widget w, PointerEventData d, PointerHandler h, bool defBubble = false)
 		{
 			if (h != null)
 			{
-				var e = new PointerEvent(w, d, false);
+				var e = new PointerEvent(w, d, defBubble);
 				h.Invoke(e);
+				return e.Bubble;
 			}
+
+			return defBubble;
 		}
 
-		public void FirePointerEnter(Widget w, PointerEventData d) { DoFirePointer(w, d, PointerEnter); }
-		public void FirePointerExit(Widget w, PointerEventData d) { DoFirePointer(w, d, PointerExit); }
+		public bool FirePointerEnter(Widget w, PointerEventData d, bool defBubble = false) { return DoFirePointer(w, d, PointerEnter, defBubble); }
+		public bool FirePointerExit(Widget w, PointerEventData d) { return DoFirePointer(w, d, PointerExit); }
 
 
 		public delegate void BubblePointerHandler(PointerEvent e);
