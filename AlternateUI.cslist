@@ -1,5 +1,6 @@
 project\src\Main.cs
 project\src\Utilities.cs
+project\src\VamosAPI.cs
 project\src\Version.cs
 project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs

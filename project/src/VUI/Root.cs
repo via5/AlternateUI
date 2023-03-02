@@ -83,7 +83,7 @@ namespace VUI
 					DoLayout();
 					var t = Time.realtimeSinceStartup - start;
 
-					Glue.LogInfo($"layout {Name}: {t:0.000:}s");
+					Glue.LogVerbose($"layout {Name}: {t:0.000:}s");
 
 					dirty_ = false;
 				}

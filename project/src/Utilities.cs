@@ -496,9 +496,9 @@ namespace AUI
 			string p = LevelToShortString(level);
 
 			if (level == ErrorLevel)
-				SuperController.LogError($"{t} !![{p}] {s}");
+				SuperController.LogMessage($"{t} !![{p}] {s}");
 			else
-				SuperController.LogError($"{t}   [{p}] {s}");
+				SuperController.LogMessage($"{t}   [{p}] {s}");
 		}
 	}
 }

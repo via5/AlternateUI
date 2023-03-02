@@ -318,7 +318,6 @@ namespace AUI.Tweaks
 		protected override void DoEnable()
 		{
 			SuperController.singleton.onSceneLoadedHandlers += OnSceneLoaded;
-			OnSceneLoaded();
 		}
 
 		protected override void DoDisable()

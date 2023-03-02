@@ -130,6 +130,7 @@
     <Compile Include="src\Features\Tweaks.cs" />
     <Compile Include="src\Main.cs" />
     <Compile Include="src\Utilities.cs" />
+    <Compile Include="src\VamosAPI.cs" />
     <Compile Include="src\Version.cs" />
     <Compile Include="src\VUI\BorderLayout.cs" />
     <Compile Include="src\VUI\Button.cs" />

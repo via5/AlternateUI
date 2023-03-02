@@ -142,6 +142,31 @@ namespace AUI.FileDialog
 	}
 
 
+	static class Modes
+	{
+		public static IFileDialogMode OpenScene()
+		{
+			return new OpenMode(
+				"Open scene", FileDialogUI.GetSceneExtensions(true),
+				"VaM/Saves/scene");
+		}
+
+		public static IFileDialogMode SaveScene()
+		{
+			return new SaveMode(
+				"Save scene", FileDialogUI.GetSceneExtensions(false),
+				"VaM/Saves/scene");
+		}
+
+		public static IFileDialogMode OpenCUA()
+		{
+			return new OpenMode(
+				"Open asset bundle", FileDialogUI.GetCUAExtensions(true),
+				"VaM/Custom/Assets");
+		}
+	}
+
+
 	class FileDialog
 	{
 		public class ExtensionItem
@@ -194,6 +219,7 @@ namespace AUI.FileDialog
 		private int sortDir_ = FS.Filter.SortAscending;
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
+		private Action<string> callback_ = null;
 
 		public FileDialog()
 		{
@@ -297,7 +323,8 @@ namespace AUI.FileDialog
 
 		public void Disable()
 		{
-			root_.Visible = false;
+			if (root_ != null)
+				root_.Visible = false;
 		}
 
 		public void Activate(FilePanel p)
@@ -378,17 +405,44 @@ namespace AUI.FileDialog
 			return Path.Join(dir, file);
 		}
 
+		private string GetRealPath()
+		{
+			if (dir_ == null || dir_.Virtual)
+				return "";
+
+			var dir = dir_.MakeRealPath().Trim();
+			if (dir == "")
+				return "";
+
+			var file = filename_.Text.Trim();
+			if (file == "")
+				return "";
+
+			//if (file.IndexOf('.') == -1)
+			//{
+			//	var e = extensions_.Selected?.Extensions[0] ?? FileDialogUI.DefaultSceneExtension;
+			//	file += e;
+			//}
+
+			return Path.Join(dir, file);
+		}
+
 		private void ExecuteAction()
 		{
-			mode_.Execute(this);
+			//mode_.Execute(this);
+			callback_?.Invoke(GetRealPath());
+			callback_ = null;
+			Hide();
 		}
 
 		public void Cancel()
 		{
+			callback_?.Invoke("");
+			callback_ = null;
 			Hide();
 		}
 
-		public void Show(IFileDialogMode mode)
+		public void Show(IFileDialogMode mode, Action<string> callback)
 		{
 			if (root_ == null)
 			{
@@ -407,6 +461,7 @@ namespace AUI.FileDialog
 			}
 
 			mode_ = mode;
+			callback_ = callback;
 
 			root_.Visible = true;
 			ClearPanels();
@@ -809,91 +864,8 @@ namespace AUI.FileDialog
 	}
 
 
-	class CUABrowsers : AtomUIModifier
-	{
-		class CUAAtomInfo : BasicAtomUIInfo
-		{
-			private readonly CUABrowsers b_;
-			private Button fileBrowse_ = null;
-
-			public CUAAtomInfo(CUABrowsers b, Atom a)
-				: base(a, "fd")
-			{
-				b_ = b;
-			}
-
-			public override bool Enable()
-			{
-				if (fileBrowse_ == null)
-				{
-					if (Atom.UITransform == null)
-						return false;
-
-					var c = Atom.UITransform.GetComponentInChildren<CustomUnityAssetLoaderUI>();
-					if (c == null)
-						return false;
-
-					if (c.fileBrowseButton == null)
-						return false;
-
-					fileBrowse_ = c.fileBrowseButton;
-				}
-
-				b_.FileDialogUI.ReplaceButton(fileBrowse_, new OpenMode(
-					"Open asset bundle", FileDialogUI.GetCUAExtensions(true),
-					"VaM/Custom/Assets"));
-
-				return true;
-			}
-
-			public override void Disable()
-			{
-				if (fileBrowse_ != null)
-					b_.FileDialogUI.RestoreButton(fileBrowse_);
-			}
-
-			public override bool IsLike(BasicAtomUIInfo other)
-			{
-				return true;
-			}
-		}
-
-
-		private readonly FileDialogUI ui_;
-
-		public CUABrowsers(FileDialogUI ui)
-			: base("fileDialog")
-		{
-			ui_ = ui;
-		}
-
-		public FileDialogUI FileDialogUI
-		{
-			get { return ui_; }
-		}
-
-		protected override BasicAtomUIInfo CreateAtomInfo(Atom a)
-		{
-			return new CUAAtomInfo(this, a);
-		}
-
-		protected override bool ValidAtom(Atom a)
-		{
-			return (a.type == "CustomUnityAsset");
-		}
-	}
-
-
 	class FileDialogUI : BasicFeature
 	{
-		class ReplacedButton
-		{
-			public Button b;
-			public Button.ButtonClickedEvent oldEvent;
-		}
-
-		private readonly List<ReplacedButton> replacedButtons_ = new List<ReplacedButton>();
-		private readonly CUABrowsers cua_;
 		private FileDialog fd_ = new FileDialog();
 
 		public static string DefaultSceneExtension = ".json";
@@ -914,7 +886,6 @@ namespace AUI.FileDialog
 		public FileDialogUI()
 			: base("fileDialog", "File dialog", false)
 		{
-			cua_ = new CUABrowsers(this);
 		}
 
 		public static FileDialog.ExtensionItem[] GetSceneExtensions(bool includeAll)
@@ -970,87 +941,38 @@ namespace AUI.FileDialog
 		{
 			var root = SuperController.singleton.transform;
 
-			ReplaceButton(root, "ButtonOpenScene", new OpenMode(
-				"Open scene", GetSceneExtensions(true), "VaM/Saves/scene"));
-
-			ReplaceButton(root, "ButtonSaveScene", new SaveMode(
-				"Save scene", GetSceneExtensions(false), "VaM/Saves/scene"));
-
 			fd_.Enable();
-			cua_.Enable();
 
-			fd_.Show(new OpenMode(
-				"Open scene", GetSceneExtensions(true), "VaM/Saves/scene"));
+			//fd_.Show(Modes.OpenCUA());
 			//fd_.SetCurrentDirectory("VaM/Saves/scene", true);
+
+			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
+			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>
+			{
+				if (fb == SuperController.singleton.fileBrowserUI)
+				{
+					var t = fb.titleText?.text ?? "";
+
+					if (t == "Select Scene For Merge" ||
+						t == "Select Scene For Edit" ||
+						t == "Select Scene To Load")
+					{
+						fd_.Show(Modes.OpenScene(), (path) => cb?.Invoke(path));
+						return;
+					}
+				}
+
+				Log.Error($"unknown show filebrowser request");
+			};
 		}
 
 		protected override void DoDisable()
 		{
 			fd_.Disable();
-			cua_.Disable();
-			RestoreButtons();
-		}
-
-		public void ReplaceButton(Transform parent, string name, IFileDialogMode mode)
-		{
-			var b = VUI.Utilities.FindChildRecursive(parent, name)
-				?.GetComponent<Button>();
-
-			if (b == null)
-			{
-				Log.Error($"ReplaceButton: no button '{name}' in {parent}");
-				return;
-			}
-
-			ReplaceButton(b, mode);
-		}
-
-		public void ReplaceButton(Button b, IFileDialogMode mode)
-		{
-			var rb = new ReplacedButton();
-
-			rb.b = b;
-			rb.oldEvent = rb.b.onClick;
-			rb.b.onClick = new Button.ButtonClickedEvent();
-			rb.b.onClick.AddListener(() => fd_.Show(mode));
-
-			replacedButtons_.Add(rb);
-
-			Log.Verbose($"replacing button {b} for mode {mode}");
-		}
-
-		public void RestoreButton(Button b)
-		{
-			for (int i = 0; i < replacedButtons_.Count; ++i)
-			{
-				if (replacedButtons_[i].b == b)
-				{
-					RestoreButton(replacedButtons_[i]);
-					replacedButtons_.RemoveAt(i);
-					return;
-				}
-			}
-
-			Log.Error($"RestoreButton: button {b.name} not found");
-		}
-
-		private void RestoreButtons()
-		{
-			foreach (var rb in replacedButtons_)
-				RestoreButton(rb);
-
-			replacedButtons_.Clear();
-		}
-
-		private void RestoreButton(ReplacedButton rb)
-		{
-			rb.b.onClick = rb.oldEvent;
-			Log.Verbose($"restored button {rb.b}");
 		}
 
 		protected override void DoUpdate(float s)
 		{
-			cua_.Update(s);
 			fd_.Update(s);
 		}
 

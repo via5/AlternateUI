@@ -75,7 +75,8 @@ namespace VUI
 			{
 				if (widget_ != null)
 				{
-					if (d.clickCount == 1)
+					// vr has clickCount to 0
+					if (d.clickCount == 0 || d.clickCount == 1)
 						widget_.OnPointerClickInternal(d);
 					else if (d.clickCount == 2)
 						widget_.OnPointerDoubleClickInternal(d);

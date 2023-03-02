@@ -12,7 +12,6 @@ namespace VUI
 		private RawImage raw_ = null;
 		private Texture tex_ = null;
 		private static Material emptyMat_ = null;
-		private Size lastScaledSize_ = Size.Zero;
 
 		public Texture Texture
 		{
@@ -61,7 +60,6 @@ namespace VUI
 			if (raw_ != null)
 			{
 				raw_.texture = tex_;
-				lastScaledSize_ = Size.Zero;
 				UpdateAspect();
 			}
 		}
@@ -81,13 +79,8 @@ namespace VUI
 					ClientBounds.Width, ClientBounds.Height);
 			}
 
-			if ((int)lastScaledSize_.Width != (int)scaled.Width ||
-				(int)lastScaledSize_.Height != (int)scaled.Height)
-			{
-				lastScaledSize_ = scaled;
-				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
-				rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
-			}
+			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
+			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
 		}
 
 		private Size Aspect(float width, float height, float maxWidth, float maxHeight)

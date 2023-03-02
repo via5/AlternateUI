@@ -84,6 +84,8 @@ namespace AUI
 			tm_.TickTimers(Time.deltaTime);
 			tm_.CheckTimers();
 
+			Vamos.API.Instance?.Update(Time.deltaTime);
+
 			for (int i = 0; i < features_.Length; ++i)
 			{
 				try
@@ -245,6 +247,8 @@ namespace AUI
 		{
 			try
 			{
+				Vamos.API.Enable("AlternateUI");
+
 				if (features_ != null)
 				{
 					for (int i = 0; i < features_.Length; ++i)
@@ -286,6 +290,8 @@ namespace AUI
 						}
 					}
 				}
+
+				Vamos.API.Disable();
 			}
 			catch (Exception e)
 			{
