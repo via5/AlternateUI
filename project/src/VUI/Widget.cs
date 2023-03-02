@@ -653,12 +653,17 @@ namespace VUI
 			return null;
 		}
 
-		public void Focus()
+		public void Focus(int focusFlags = 0)
 		{
-			DoFocus();
+			GetRoot()?.SetFocus(this, focusFlags);
 		}
 
 		protected virtual void DoFocus()
+		{
+			// no-op
+		}
+
+		protected virtual void DoBlur()
 		{
 			// no-op
 		}
@@ -819,6 +824,9 @@ namespace VUI
 
 			if (created)
 				Created?.Invoke();
+
+			if (GetRoot()?.Focused == this)
+				DoFocus();
 		}
 
 		private void UpdateRenderState()
@@ -1008,11 +1016,17 @@ namespace VUI
 
 		public void OnFocusInternal(Widget w)
 		{
+			if (WidgetObject!=null)
+				DoFocus();
+
 			events_.FireFocus(w);
 		}
 
 		public void OnBlurInternal(Widget w)
 		{
+			if (WidgetObject != null)
+				DoBlur();
+
 			events_.FireBlur(w);
 		}
 
@@ -1074,7 +1088,7 @@ namespace VUI
 
 					if (WantsFocus)
 					{
-						GetRoot().SetFocus(this);
+						Focus();
 						setFocus = false;
 					}
 				}

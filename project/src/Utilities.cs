@@ -405,7 +405,15 @@ namespace AUI
 
 		public static string Join(string a, string b)
 		{
-			return a + "\\" + b;
+			a = a.Replace('\\', '/');
+			b = b.Replace('\\', '/');
+
+			if (a.EndsWith("/") && b.StartsWith("/"))
+				return a + b.Substring(1);
+			else if (a.EndsWith("/") || b.StartsWith("/"))
+				return a + b;
+			else
+				return a + "/" + b;
 		}
 	}
 

@@ -106,7 +106,7 @@ namespace VUI
 
 		public override void OnPointerDownInternal(PointerEventData d, bool source)
 		{
-			GetRoot().SetFocus(this);
+			Focus();
 			base.OnPointerDownInternal(d, source);
 		}
 

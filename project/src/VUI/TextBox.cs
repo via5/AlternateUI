@@ -618,7 +618,7 @@ namespace VUI
 
 		protected override void DoFocus()
 		{
-			input_.ActivateInputField();
+			input_?.ActivateInputField();
 		}
 
 		protected override GameObject CreateGameObject()
@@ -728,7 +728,7 @@ namespace VUI
 		{
 			try
 			{
-				GetRoot().SetFocus(this, focusflags_);
+				Focus(focusflags_);
 			}
 			catch (Exception e)
 			{

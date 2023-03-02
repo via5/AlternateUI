@@ -390,7 +390,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		public void ClearCaches()
+		public void ClearCache()
 		{
 			// no-op
 		}

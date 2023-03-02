@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using uFileBrowser;
 using UnityEngine;
@@ -47,6 +48,11 @@ namespace Vamos
 			API.Instance?.Pong(args[0] as string);
 		}
 
+		public void VamosInhibitReady(object[] args)
+		{
+			API.Instance?.InhibitReady(args[0] as string);
+		}
+
 		public override string ToString()
 		{
 			return "VamosAPIReceiver";
@@ -63,6 +69,7 @@ namespace Vamos
 		private bool connected_ = false;
 		private bool connecting_ = false;
 		private float connectingTime_ = 0;
+		private readonly HashSet<string> inhibitReady_ = new HashSet<string>();
 
 		public static API Instance
 		{
@@ -112,7 +119,7 @@ namespace Vamos
 			instance_.Connect();
 		}
 
-		public void Update(float s)
+		public void DoUpdate(float s)
 		{
 			if (connecting_)
 			{
@@ -143,6 +150,35 @@ namespace Vamos
 			enabledApis_.Remove(name);
 		}
 
+		public void InhibitNext(string name, Action f)
+		{
+			SuperController.singleton.StartCoroutine(CoInhibitNext(name, f));
+		}
+
+		private IEnumerator CoInhibitNext(string name, Action f)
+		{
+			name = WrapName(name);
+			Log($"inhibiting next {name}, waiting");
+
+			inhibitReady_.Remove(name);
+			SuperController.singleton.SendMessage("VamosInhibitNext", new object[] { name });
+
+			for (int i = 0; i < 100; ++i)
+			{
+				yield return new WaitForSeconds(0.01f);
+
+				if (inhibitReady_.Contains(name))
+				{
+					Log($"inhibit {name} is ready");
+					inhibitReady_.Remove(name);
+					f();
+					yield break;
+				}
+			}
+
+			Log($"timeout while waiting for inhibit {name}");
+		}
+
 		public void DisableAllAPIs()
 		{
 			foreach (var e in enabledApis_)
@@ -163,7 +199,7 @@ namespace Vamos
 
 			connecting_ = true;
 			connectingTime_ = 0;
-			SuperController.singleton.SendMessage("VamosPing", name_);
+			SuperController.singleton.SendMessage("VamosPing", new object[] { name_ });
 		}
 
 		public void Pong(string name)
@@ -179,16 +215,29 @@ namespace Vamos
 			}
 		}
 
+		public void InhibitReady(string name)
+		{
+			Log($"got inhibit ready for {name}");
+			inhibitReady_.Add(name);
+		}
+
 		private void DoEnableAPI(string name)
 		{
+			name = WrapName(name);
 			Log($"enabled api {name}");
-			SuperController.singleton.SendMessage("VamosEnableAPI", "Vamos_" + name);
+			SuperController.singleton.SendMessage("VamosEnableAPI", new object[] { name });
 		}
 
 		private void DoDisableAPI(string name)
 		{
+			name = WrapName(name);
 			Log($"disabled api {name}");
-			SuperController.singleton.SendMessage("VamosDisableAPI", "Vamos_" + name);
+			SuperController.singleton.SendMessage("VamosDisableAPI", new object[] { name });
+		}
+
+		private string WrapName(string name)
+		{
+			return "Vamos_" + name;
 		}
 
 		private void Log(string s)

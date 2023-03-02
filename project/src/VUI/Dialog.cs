@@ -1,15 +1,57 @@
 ﻿namespace VUI
 {
+	class TitleBar : Panel
+	{
+		private readonly Window w_;
+		private readonly Label title_;
+
+		public TitleBar(Window w, string title = "")
+		{
+			w_ = w;
+
+			title_ = new Label(title, Label.AlignCenter | Label.AlignVCenter);
+			title_.FontStyle = UnityEngine.FontStyle.Bold;
+
+			var buttons = new Panel(new HorizontalFlow(5));
+			buttons.Margins = new Insets(10);
+
+			var x = new ToolButton("X", OnClose);
+			buttons.Add(x);
+
+			Layout = new BorderLayout();
+			BackgroundColor = Style.Theme.DialogTitleBackgroundColor;
+			Padding = new Insets(10, 0, 0, 0);
+
+			Add(title_, BorderLayout.Center);
+			Add(buttons, BorderLayout.Right);
+		}
+
+		public string Text
+		{
+			get { return title_.Text; }
+			set { title_.Text = value; }
+		}
+
+		private void OnClose()
+		{
+			w_.Close();
+		}
+	}
+
+
 	class Window : Panel
 	{
+		public delegate void Handler();
+		public event Handler CloseRequest;
+
 		public override string TypeName { get { return "Window"; } }
 
-		private readonly Label title_;
+		private readonly TitleBar tb_;
 		private readonly Panel content_;
 
 		public Window(string title = "")
 		{
-			title_ = new Label(title, Label.AlignCenter | Label.AlignVCenter);
+			tb_ = new TitleBar(this, title);
 			content_ = new Panel();
 
 			BackgroundColor = Style.Theme.BackgroundColor;
@@ -17,23 +59,25 @@
 			Borders = new Insets(1);
 
 			content_.Margins = new Insets(10, 10, 10, 10);
-			title_.BackgroundColor = Style.Theme.DialogTitleBackgroundColor;
-			title_.Padding = new Insets(10, 7, 0, 10);
-			title_.FontStyle = UnityEngine.FontStyle.Bold;
 
-			Add(title_, BorderLayout.Top);
+			Add(tb_, BorderLayout.Top);
 			Add(content_, BorderLayout.Center);
 		}
 
 		public string Title
 		{
-			get { return title_.Text; }
-			set { title_.Text = value; }
+			get { return tb_.Text; }
+			set { tb_.Text = value; }
 		}
 
 		public virtual Widget ContentPanel
 		{
 			get { return content_; }
+		}
+
+		public void Close()
+		{
+			CloseRequest?.Invoke();
 		}
 	}
 
@@ -101,6 +145,17 @@
 	}
 
 
+	static class Buttons
+	{
+		public const int OK     = 0x01;
+		public const int Cancel = 0x02;
+		public const int Yes    = 0x04;
+		public const int No     = 0x08;
+		public const int Close  = 0x10;
+		public const int Apply  = 0x20;
+	}
+
+
 	class ButtonBox : Panel
 	{
 		public override string TypeName { get { return "ButtonBox"; } }
@@ -108,24 +163,16 @@
 		public delegate void ButtonCallback(int id);
 		public event ButtonCallback ButtonClicked;
 
-		// sync with MessageDialog
-		public const int OK     = 0x01;
-		public const int Cancel = 0x02;
-		public const int Yes    = 0x04;
-		public const int No     = 0x08;
-		public const int Close  = 0x10;
-		public const int Apply  = 0x20;
-
 		public ButtonBox(int buttons)
 		{
 			Layout = new HorizontalFlow(10, HorizontalFlow.AlignRight);
 
-			AddButton(buttons, OK, S("OK"));
-			AddButton(buttons, Cancel, S("Cancel"));
-			AddButton(buttons, Yes, S("Yes"));
-			AddButton(buttons, No, S("No"));
-			AddButton(buttons, Apply, S("Apply"));
-			AddButton(buttons, Close, S("Close"));
+			AddButton(buttons, Buttons.OK, S("OK"));
+			AddButton(buttons, Buttons.Cancel, S("Cancel"));
+			AddButton(buttons, Buttons.Yes, S("Yes"));
+			AddButton(buttons, Buttons.No, S("No"));
+			AddButton(buttons, Buttons.Apply, S("Apply"));
+			AddButton(buttons, Buttons.Close, S("Close"));
 
 			Borders = new Insets(0, 1, 0, 0);
 			Padding = new Insets(0, 20, 0, 0);
@@ -150,14 +197,6 @@
 	class DialogWithButtons : Dialog
 	{
 		public override string TypeName { get { return "DialogWithButtons"; } }
-
-		// sync with ButtonBox
-		public const int OK     = 0x01;
-		public const int Cancel = 0x02;
-		public const int Yes    = 0x04;
-		public const int No     = 0x08;
-		public const int Close  = 0x10;
-		public const int Apply  = 0x20;
 
 		private readonly ButtonBox buttons_;
 		private readonly Panel center_;
@@ -213,7 +252,7 @@
 
 		public InputDialog(
 			Root r, string title, string text, string initialValue)
-				: base(r, OK | Cancel, title)
+				: base(r, Buttons.OK | Buttons.Cancel, title)
 		{
 			textbox_ = new TextBox(initialValue);
 			textbox_.Submitted += OnSubmit;
@@ -245,7 +284,7 @@
 
 			d.RunDialog((button) =>
 			{
-				if (button != OK)
+				if (button != Buttons.OK)
 					return;
 
 				h(d.Text);
@@ -254,12 +293,12 @@
 
 		private void OnSubmit(string s)
 		{
-			CloseDialog(OK);
+			CloseDialog(Buttons.OK);
 		}
 
 		private void OnCancelled()
 		{
-			CloseDialog(Cancel);
+			CloseDialog(Buttons.Cancel);
 		}
 	}
 

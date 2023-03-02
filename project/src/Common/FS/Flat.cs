@@ -172,7 +172,7 @@ namespace AUI.FS
 		public PinnedFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Pinned flattened")
 		{
-			fs_.PinsChanged += ClearCaches;
+			fs_.PinsChanged += ClearCache;
 		}
 
 		public override string ToString()

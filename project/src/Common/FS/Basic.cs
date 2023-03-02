@@ -100,6 +100,11 @@ namespace AUI.FS
 
 		public abstract string MakeRealPath();
 
+		public virtual void ClearCache()
+		{
+			// no-op
+		}
+
 		protected virtual string GetDisplayName()
 		{
 			return Name;
@@ -213,7 +218,7 @@ namespace AUI.FS
 			get { return name_; }
 		}
 
-		public void ClearCaches()
+		public override void ClearCache()
 		{
 			c_.Clear();
 			rc_.Clear();

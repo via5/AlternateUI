@@ -1,21 +1,23 @@
-﻿using SimpleJSON;
+﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace AUI.FileDialog
 {
 	interface IFileDialogMode
 	{
-		string GetPath();
+		bool GetDefaultFlattenDirectories();
+		string GetCurrentDirectory();
 		string GetTitle();
 		FileDialog.ExtensionItem[] GetExtensions();
 		string GetActionText();
 		bool IsWritable();
 		bool CanExecute(FileDialog fd);
 		void Execute(FileDialog fd);
+		string GetPath(FileDialog fd);
 	}
 
 
@@ -24,15 +26,24 @@ namespace AUI.FileDialog
 		private readonly string title_;
 		private readonly FileDialog.ExtensionItem[] exts_;
 		private string lastPath_ = "";
+		private bool defaultFlatten_ = true;
 
-		protected BasicMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
+		protected BasicMode(
+			string title, FileDialog.ExtensionItem[] exts,
+			string defaultPath, bool defaultFlatten)
 		{
 			title_ = title;
 			exts_ = exts;
 			lastPath_ = defaultPath;
+			defaultFlatten_ = defaultFlatten;
 		}
 
-		public virtual string GetPath()
+		public virtual bool GetDefaultFlattenDirectories()
+		{
+			return defaultFlatten_;
+		}
+
+		public virtual string GetCurrentDirectory()
 		{
 			return lastPath_;
 		}
@@ -50,10 +61,11 @@ namespace AUI.FileDialog
 		public abstract string GetActionText();
 		public abstract bool IsWritable();
 		public abstract bool CanExecute(FileDialog fd);
+		public abstract string GetPath(FileDialog fd);
 
 		public virtual void Execute(FileDialog fd)
 		{
-			lastPath_ = fd.CurrentDirectory;
+			lastPath_ = fd.CurrentDirectory.VirtualPath;
 		}
 	}
 
@@ -61,7 +73,7 @@ namespace AUI.FileDialog
 	class NoMode : BasicMode
 	{
 		public NoMode()
-			: base("", new FileDialog.ExtensionItem[0], "")
+			: base("", new FileDialog.ExtensionItem[0], "", false)
 		{
 		}
 
@@ -79,13 +91,18 @@ namespace AUI.FileDialog
 		{
 			return false;
 		}
+
+		public override string GetPath(FileDialog fd)
+		{
+			return "";
+		}
 	}
 
 
 	class OpenMode : BasicMode
 	{
-		public OpenMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
-			: base(title, exts, defaultPath)
+		public OpenMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath, bool defaultFlatten)
+			: base(title, exts, defaultPath, defaultFlatten)
 		{
 		}
 
@@ -101,13 +118,43 @@ namespace AUI.FileDialog
 
 		public override bool CanExecute(FileDialog fd)
 		{
-			return fd.CanOpen();
+			return (fd.Selected != null || fd.Filename != "");
 		}
 
-		public override void Execute(FileDialog fd)
+		public override string GetPath(FileDialog fd)
 		{
-			base.Execute(fd);
-			fd.Open();
+			string path = "";
+
+			var s = fd.Selected;
+			if (s == null)
+			{
+				var cwd = fd.CurrentDirectory;
+
+				if (cwd != null)
+				{
+					var dir = cwd.MakeRealPath().Trim();
+					if (dir == "")
+						return "";
+
+					var file = fd.Filename?.Trim() ?? "";
+					if (file == "")
+						return "";
+
+					path = Path.Join(dir, file);
+				}
+			}
+			else
+			{
+				path = s.MakeRealPath();
+			}
+
+			if (path == "")
+				return "";
+
+			var npath = FileManagerSecure.GetFullPath(path);
+			AlternateUI.Instance.Log.Info($"path={path} npath={npath}");
+
+			return npath;
 		}
 	}
 
@@ -115,7 +162,7 @@ namespace AUI.FileDialog
 	class SaveMode : BasicMode
 	{
 		public SaveMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
-			: base(title, exts, defaultPath)
+			: base(title, exts, defaultPath, false)
 		{
 		}
 
@@ -131,13 +178,33 @@ namespace AUI.FileDialog
 
 		public override bool CanExecute(FileDialog fd)
 		{
-			return fd.CanSave();
+			return (GetPath(fd) != "");
 		}
 
 		public override void Execute(FileDialog fd)
 		{
 			base.Execute(fd);
-			fd.Save();
+			fd.CurrentDirectory?.ClearCache();
+		}
+
+		public override string GetPath(FileDialog fd)
+		{
+			var cwd = fd.CurrentDirectory;
+			if (cwd == null || cwd.Virtual)
+				return "";
+
+			var dir = cwd.MakeRealPath()?.Trim() ?? "";
+			if (dir == "")
+				return "";
+
+			var file = fd.Filename?.Trim() ?? "";
+			if (file == "")
+				return "";
+
+			if (file.IndexOf('.') == -1)
+				file += fd.GetDefaultExtension();
+
+			return Path.Join(dir, file);
 		}
 	}
 
@@ -148,7 +215,7 @@ namespace AUI.FileDialog
 		{
 			return new OpenMode(
 				"Open scene", FileDialogUI.GetSceneExtensions(true),
-				"VaM/Saves/scene");
+				"VaM/Saves/scene", true);
 		}
 
 		public static IFileDialogMode SaveScene()
@@ -162,7 +229,14 @@ namespace AUI.FileDialog
 		{
 			return new OpenMode(
 				"Open asset bundle", FileDialogUI.GetCUAExtensions(true),
-				"VaM/Custom/Assets");
+				"VaM/Custom/Assets", true);
+		}
+
+		public static IFileDialogMode OpenPlugin()
+		{
+			return new OpenMode(
+				"Open plugin", FileDialogUI.GetPluginExtensions(true),
+				"VaM/Custom/Scripts", false);
 		}
 	}
 
@@ -220,6 +294,7 @@ namespace AUI.FileDialog
 		private bool ignoreSearch_ = false;
 		private bool ignorePin_ = false;
 		private Action<string> callback_ = null;
+		private bool ignoreFlatten_ = false;
 
 		public FileDialog()
 		{
@@ -235,12 +310,9 @@ namespace AUI.FileDialog
 			get { return 4; }
 		}
 
-		public string CurrentDirectory
+		public FS.IFilesystemContainer CurrentDirectory
 		{
-			get
-			{
-				return tree_.Selected?.VirtualPath ?? "";
-			}
+			get { return dir_; }
 		}
 
 		public bool FlattenDirectories
@@ -282,6 +354,11 @@ namespace AUI.FileDialog
 		public FS.IFilesystemObject Selected
 		{
 			get { return selected_; }
+		}
+
+		public string Filename
+		{
+			get { return filename_.Text; }
 		}
 
 		public void Select(FS.IFilesystemObject o)
@@ -333,39 +410,6 @@ namespace AUI.FileDialog
 			ExecuteAction();
 		}
 
-		public void Open()
-		{
-			if (!CanOpen())
-				return;
-
-			AlternateUI.Instance.Log.Info($"open {selected_.VirtualPath}");
-
-			Hide();
-			//SuperController.singleton.Load(selected_.File.Path);
-		}
-
-		public void Save()
-		{
-			var path = GetSavePath();
-			if (path == "")
-				return;
-
-			AlternateUI.Instance.Log.Info($"saving {path}");
-
-			Hide();
-			//SuperController.singleton.Save(path);
-		}
-
-		public bool CanOpen()
-		{
-			return (selected_ != null);
-		}
-
-		public bool CanSave()
-		{
-			return (GetSavePath() != "");
-		}
-
 		public string Title
 		{
 			get { return window_.Title; }
@@ -383,56 +427,42 @@ namespace AUI.FileDialog
 			set { extensions_.SetItems(value); }
 		}
 
-		private string GetSavePath()
+		public string GetDefaultExtension()
 		{
-			if (dir_ == null || dir_.Virtual)
-				return "";
+			var e = extensions_.Selected?.Extensions[0];
+			if (!string.IsNullOrEmpty(e))
+				return e;
 
-			var dir = dir_.VirtualPath?.Trim() ?? "";
-			if (dir == "")
-				return "";
+			var exts = mode_.GetExtensions();
+			if (exts != null && exts.Length > 0 && exts[0].Extensions.Length > 0)
+				return exts[0].Extensions[0];
 
-			var file = filename_.Text.Trim();
-			if (file == "")
-				return "";
-
-			if (file.IndexOf('.') == -1)
-			{
-				var e = extensions_.Selected?.Extensions[0] ?? FileDialogUI.DefaultSceneExtension;
-				file += e;
-			}
-
-			return Path.Join(dir, file);
-		}
-
-		private string GetRealPath()
-		{
-			if (dir_ == null || dir_.Virtual)
-				return "";
-
-			var dir = dir_.MakeRealPath().Trim();
-			if (dir == "")
-				return "";
-
-			var file = filename_.Text.Trim();
-			if (file == "")
-				return "";
-
-			//if (file.IndexOf('.') == -1)
-			//{
-			//	var e = extensions_.Selected?.Extensions[0] ?? FileDialogUI.DefaultSceneExtension;
-			//	file += e;
-			//}
-
-			return Path.Join(dir, file);
+			return ".json";
 		}
 
 		private void ExecuteAction()
 		{
-			//mode_.Execute(this);
-			callback_?.Invoke(GetRealPath());
-			callback_ = null;
-			Hide();
+			if (Selected == null || Selected.Name != filename_.Text)
+			{
+				Select(null);
+
+				foreach (var f in files_)
+				{
+					if (f.Name == filename_.Text)
+					{
+						Select(f);
+						break;
+					}
+				}
+			}
+
+			if (mode_.CanExecute(this))
+			{
+				mode_.Execute(this);
+				callback_?.Invoke(mode_.GetPath(this));
+				callback_ = null;
+				Hide();
+			}
 		}
 
 		public void Cancel()
@@ -468,14 +498,31 @@ namespace AUI.FileDialog
 			flattenDirsButton_.Visible = !mode_.IsWritable();
 			flattenPackagesButton_.Visible = !mode_.IsWritable();
 
+			flattenDirs_ = mode_.GetDefaultFlattenDirectories();
+
+			try
+			{
+				ignoreFlatten_ = true;
+				flattenDirsButton_.Checked = flattenDirs_;
+			}
+			finally
+			{
+				ignoreFlatten_ = false;
+			}
+
 			tree_.Enable();
 			Title = mode_.GetTitle();
 			ActionText = mode_.GetActionText();
 			Extensions = mode_.GetExtensions();
-			SetCurrentDirectory(mode_.GetPath());
+			Select(null);
+			filename_.Text = selected_?.DisplayName ?? "";
+			SetCurrentDirectory(mode_.GetCurrentDirectory());
+			RefreshFiles();
 
-			UpdateActionButton();
+			//UpdateActionButton();
 			tree_.SetFlags(GetTreeFlags());
+
+			filename_.Focus();
 		}
 
 		private int GetTreeFlags()
@@ -559,6 +606,7 @@ namespace AUI.FileDialog
 		private void Create()
 		{
 			window_ = new VUI.Window();
+			window_.CloseRequest += Cancel;
 
 			window_.ContentPanel.Layout = new VUI.BorderLayout(10);
 
@@ -617,7 +665,12 @@ namespace AUI.FileDialog
 
 			optionsPanel_ = new VUI.Panel(new VUI.HorizontalFlow(10));
 			flattenDirsButton_ = optionsPanel_.Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b, flattenDirs_));
-			flattenPackagesButton_ = optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b, flattenPackages_));
+			flattenPackagesButton_ = optionsPanel_.Add(new VUI.CheckBox("Flatten package content", b =>
+			{
+				if (ignoreFlatten_) return;
+				FlattenPackages = b;
+			}, flattenPackages_));
+
 			optionsPanel_.Add(sortPanel_.Button);
 			optionsPanel_.Add(new VUI.Button("Refresh", Refresh));
 			top.Add(optionsPanel_, VUI.BorderLayout.Top);
@@ -882,6 +935,14 @@ namespace AUI.FileDialog
 			new FS.Filesystem.Extension("Asset bundles", ".assetbundle")
 		};
 
+		public static string DefaultPluginExtension = ".cslist";
+		public static FS.Filesystem.Extension[] PluginExtensions = new FS.Filesystem.Extension[]
+		{
+			new FS.Filesystem.Extension("cslist files", ".cslist"),
+			new FS.Filesystem.Extension("C# files", ".cs"),
+			new FS.Filesystem.Extension("DLL files", ".dll"),
+		};
+
 
 		public FileDialogUI()
 			: base("fileDialog", "File dialog", false)
@@ -896,6 +957,11 @@ namespace AUI.FileDialog
 		public static FileDialog.ExtensionItem[] GetCUAExtensions(bool includeAll)
 		{
 			return GetExtensions(CUAExtensions, "All CUA files", includeAll);
+		}
+
+		public static FileDialog.ExtensionItem[] GetPluginExtensions(bool includeAll)
+		{
+			return GetExtensions(PluginExtensions, "All plugin files", includeAll);
 		}
 
 		public static FileDialog.ExtensionItem[] GetExtensions(
@@ -960,9 +1026,51 @@ namespace AUI.FileDialog
 						fd_.Show(Modes.OpenScene(), (path) => cb?.Invoke(path));
 						return;
 					}
+					else if (t == "Select Save File")
+					{
+						fd_.Show(Modes.SaveScene(), (path) => cb?.Invoke(path));
+						return;
+					}
 				}
 
 				Log.Error($"unknown show filebrowser request");
+				Log.Error($"fb={fb} title={fb.titleText?.text} ff={fb.fileFormat}");
+
+				Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool", () =>
+				{
+					fb.Show(cb, cd);
+				});
+			};
+
+			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool");
+			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool += (fb, cb, cd) =>
+			{
+				if (fb == SuperController.singleton.mediaFileBrowserUI)
+				{
+					var t = fb.titleText?.text ?? "";
+
+					if (t == "Select File")
+					{
+						if (fb.fileFormat == "assetbundle|scene")
+						{
+							fd_.Show(Modes.OpenCUA(), (path) => cb?.Invoke(path, true));
+							return;
+						}
+						else if (fb.fileFormat == "cs|cslist|dll")
+						{
+							fd_.Show(Modes.OpenPlugin(), (path) => cb?.Invoke(path, true));
+							return;
+						}
+					}
+				}
+
+				Log.Error($"unknown show filebrowser request (full)");
+				Log.Error($"fb={fb} title={fb.titleText?.text} ff={fb.fileFormat}");
+
+				Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool", () =>
+				{
+					fb.Show(cb, cd);
+				});
 			};
 		}
 

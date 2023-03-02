@@ -84,7 +84,7 @@ namespace AUI
 			tm_.TickTimers(Time.deltaTime);
 			tm_.CheckTimers();
 
-			Vamos.API.Instance?.Update(Time.deltaTime);
+			Vamos.API.Instance?.DoUpdate(Time.deltaTime);
 
 			for (int i = 0; i < features_.Length; ++i)
 			{

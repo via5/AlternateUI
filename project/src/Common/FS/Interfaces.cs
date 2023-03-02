@@ -23,6 +23,7 @@ namespace AUI.FS
 
 		string MakeRealPath();
 		bool IsSameObject(IFilesystemObject o);
+		void ClearCache();
 	}
 
 

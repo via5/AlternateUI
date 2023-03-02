@@ -132,7 +132,7 @@ namespace AUI.FS
 		private void Changed()
 		{
 			Save();
-			ClearCaches();
+			ClearCache();
 			fs_.FirePinsChanged();
 			fs_.FireObjectChanged(this);
 		}
