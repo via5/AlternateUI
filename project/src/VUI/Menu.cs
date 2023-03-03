@@ -27,57 +27,14 @@ namespace VUI
 			button_.Alignment = Label.AlignLeft | Label.AlignVCenter;
 		}
 
-		public override Widget Widget
+		public Button Button
 		{
 			get { return button_; }
 		}
-	}
 
-
-	class RadioButton : CheckBox
-	{
-		private bool ignore_ = false;
-		private string group_ = "";
-
-		public RadioButton(string text, ChangedCallback changed, bool initial = false, string group = "")
-			: base(text, changed, initial)
+		public override Widget Widget
 		{
-			group_ = group;
-			Changed += OnChecked;
-		}
-
-		public void UncheckInternal()
-		{
-			try
-			{
-				ignore_ = true;
-				Checked = false;
-			}
-			finally
-			{
-				ignore_ = false;
-			}
-		}
-
-		private void OnChecked(bool b)
-		{
-			if (ignore_) return;
-
-			if (b)
-			{
-				var cs = Parent?.Children;
-
-				if (cs != null)
-				{
-					for (int i = 0; i < cs.Count; ++i)
-					{
-						var c = cs[i] as RadioButton;
-
-						if (c != null && c != this && c.group_ == group_)
-							c.UncheckInternal();
-					}
-				}
-			}
+			get { return button_; }
 		}
 	}
 
@@ -94,6 +51,11 @@ namespace VUI
 			radio_.Padding = new Insets(10, 5, 5, 5);
 			//checkbox_.BackgroundColor = new Color(0, 0, 0, 0);
 			//checkbox_.Alignment = Label.AlignLeft | Label.AlignVCenter;
+		}
+
+		public RadioButton RadioButton
+		{
+			get { return radio_; }
 		}
 
 		public override Widget Widget
@@ -113,15 +75,16 @@ namespace VUI
 			Padding = new Insets(5);
 		}
 
-		public void AddMenuItem(string text)
+		public ButtonMenuItem AddMenuItem(string text)
 		{
-			AddMenuItem(new ButtonMenuItem(text));
+			return AddMenuItem(new ButtonMenuItem(text));
 		}
 
-		public void AddMenuItem(IMenuItem item)
+		public T AddMenuItem<T>(T item) where T : IMenuItem
 		{
 			items_.Add(item);
 			Add(item.Widget);
+			return item;
 		}
 
 		public void AddSeparator()

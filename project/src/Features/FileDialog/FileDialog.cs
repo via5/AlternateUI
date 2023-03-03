@@ -99,8 +99,8 @@ namespace AUI.FileDialog
 
 		public void Set(IFileDialogMode mode)
 		{
-			action_.Text = mode.GetActionText();
-			extensions_.SetItems(mode.GetExtensions());
+			action_.Text = mode.ActionText;
+			extensions_.SetItems(mode.Extensions);
 			filename_.Text = "";
 		}
 
@@ -127,12 +127,18 @@ namespace AUI.FileDialog
 		public event Handler DirectoriesChanged, FilesChanged;
 
 		private readonly FileDialog fd_;
+		private IFileDialogMode mode_ = null;
+
 		private readonly VUI.CheckBox flattenDirs_;
 		private readonly VUI.CheckBox flattenPackages_;
 		private readonly VUI.MenuButton sortPanel_;
 
-		private int sort_ = FS.Filter.NoSort;
-		private int sortDir_ = FS.Filter.NoSortDirection;
+		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
+			new Dictionary<int, VUI.RadioMenuItem>();
+
+		private readonly Dictionary<int, VUI.RadioMenuItem> sortDirItems_ =
+			new Dictionary<int, VUI.RadioMenuItem>();
+
 		private bool ignore_ = false;
 
 
@@ -142,47 +148,34 @@ namespace AUI.FileDialog
 
 			var sortMenu = new VUI.Menu();
 
-			sortMenu.AddMenuItem(MakeSortItem("Filename", FS.Filter.SortFilename));
-			sortMenu.AddMenuItem(MakeSortItem("Type", FS.Filter.SortType));
-			sortMenu.AddMenuItem(MakeSortItem("Date modified", FS.Filter.SortDateModified));
-			sortMenu.AddMenuItem(MakeSortItem("Date created", FS.Filter.SortDateCreated));
+			AddSortItem(sortMenu, "Filename", FS.Filter.SortFilename);
+			AddSortItem(sortMenu, "Type", FS.Filter.SortType);
+			AddSortItem(sortMenu, "Date modified", FS.Filter.SortDateModified);
+			AddSortItem(sortMenu, "Date created", FS.Filter.SortDateCreated);
 			sortMenu.AddSeparator();
-			sortMenu.AddMenuItem(MakeSortDirItem("Ascending", FS.Filter.SortAscending));
-			sortMenu.AddMenuItem(MakeSortDirItem("Descending", FS.Filter.SortDescending));
+			AddSortDirItem(sortMenu, "Ascending", FS.Filter.SortAscending);
+			AddSortDirItem(sortMenu, "Descending", FS.Filter.SortDescending);
 
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
 			Layout = new VUI.HorizontalFlow(10);
 
-			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", b => FlattenDirectories = b));
-			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", b => FlattenPackages = b));
+			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
+			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
 			Add(sortPanel_.Button);
 			Add(new VUI.Button("Refresh", () => fd_.Refresh()));
-
-			flattenDirs_.Changed += (b) => OnDirectoriesChanged();
-			flattenPackages_.Changed += (b) => OnDirectoriesChanged();
 		}
 
-		public bool FlattenDirectories
+		private void AddSortItem(VUI.Menu menu, string text, int sort)
 		{
-			get { return flattenDirs_.Checked; }
-			set { flattenDirs_.Checked = value; }
+			var item = menu.AddMenuItem(MakeSortItem(text, sort));
+			sortItems_.Add(sort, item);
 		}
 
-		public bool FlattenPackages
+		private void AddSortDirItem(VUI.Menu menu, string text, int sort)
 		{
-			get { return flattenPackages_.Checked; }
-			set { flattenPackages_.Checked = value; }
-		}
-
-		public int Sort
-		{
-			get { return sort_; }
-		}
-
-		public int SortDirection
-		{
-			get { return sortDir_; }
+			var item = menu.AddMenuItem(MakeSortDirItem(text, sort));
+			sortDirItems_.Add(sort, item);
 		}
 
 		public void Set(IFileDialogMode mode)
@@ -191,9 +184,21 @@ namespace AUI.FileDialog
 			{
 				ignore_ = true;
 
-				flattenDirs_.Visible = !mode.IsWritable();
-				flattenPackages_.Visible = !mode.IsWritable();
-				//flattenDirs_.Checked = o.flattenDirectories;
+				mode_ = mode;
+
+				flattenDirs_.Visible = !mode_.IsWritable;
+				flattenPackages_.Visible = !mode_.IsWritable;
+
+				flattenDirs_.Checked = mode_.FlattenDirectories;
+				flattenPackages_.Checked = mode_.FlattenPackages;
+
+				VUI.RadioMenuItem item;
+
+				if (sortItems_.TryGetValue(mode_.Sort, out item))
+					item.RadioButton.Checked = true;
+
+				if (sortDirItems_.TryGetValue(mode_.SortDirection, out item))
+					item.RadioButton.Checked = true;
 			}
 			finally
 			{
@@ -206,13 +211,10 @@ namespace AUI.FileDialog
 			VUI.RadioButton.ChangedCallback cb = (bool b) =>
 			{
 				if (b)
-				{
-					sort_ = sort;
-					OnFilesChanged();
-				}
+					SetSort(sort);
 			};
 
-			return new VUI.RadioMenuItem(text, cb, (sort_ == sort), "sort");
+			return new VUI.RadioMenuItem(text, cb, false, "sort");
 		}
 
 		private VUI.RadioMenuItem MakeSortDirItem(string text, int sortDir)
@@ -220,24 +222,41 @@ namespace AUI.FileDialog
 			VUI.RadioButton.ChangedCallback cb = (bool b) =>
 			{
 				if (b)
-				{
-					sortDir_ = sortDir;
-					OnFilesChanged();
-				}
+					SetSortDirection(sortDir);
 			};
 
-			return new VUI.RadioMenuItem(text, cb, (sortDir_ == sortDir), "sortDir");
+			return new VUI.RadioMenuItem(text, cb, false, "sortDir");
 		}
 
-		private void OnDirectoriesChanged()
+		private void SetFlattenDirectories(bool b)
 		{
 			if (ignore_) return;
+
+			mode_.FlattenDirectories = b;
 			DirectoriesChanged?.Invoke();
 		}
 
-		private void OnFilesChanged()
+		private void SetFlattenPackages(bool b)
 		{
 			if (ignore_) return;
+
+			mode_.FlattenPackages = b;
+			DirectoriesChanged?.Invoke();
+		}
+
+		private void SetSort(int s)
+		{
+			if (ignore_) return;
+
+			mode_.Sort = s;
+			FilesChanged?.Invoke();
+		}
+
+		private void SetSortDirection(int s)
+		{
+			if (ignore_) return;
+
+			mode_.SortDirection = s;
 			FilesChanged?.Invoke();
 		}
 	}
@@ -475,6 +494,8 @@ namespace AUI.FileDialog
 	{
 		private const int FontSize = 24;
 
+		private readonly Logger log_;
+
 		private VUI.Root root_ = null;
 		private VUI.Window window_ = null;
 
@@ -493,6 +514,7 @@ namespace AUI.FileDialog
 
 		public FileDialog()
 		{
+			log_ = new Logger("filedialog");
 		}
 
 
@@ -512,6 +534,11 @@ namespace AUI.FileDialog
 		}
 
 
+		public Logger Log
+		{
+			get { return log_; }
+		}
+
 		public int Columns
 		{
 			get { return 5; }
@@ -522,17 +549,6 @@ namespace AUI.FileDialog
 			get { return 4; }
 		}
 
-		public bool FlattenDirectories
-		{
-			get { return optionsPanel_.FlattenDirectories; }
-			set { optionsPanel_.FlattenDirectories = value; }
-		}
-
-		public bool FlattenPackages
-		{
-			get { return optionsPanel_.FlattenPackages; }
-			set { optionsPanel_.FlattenPackages = value; }
-		}
 
 		public FS.IFilesystemContainer SelectedDirectory
 		{
@@ -558,19 +574,42 @@ namespace AUI.FileDialog
 			mode_ = mode;
 			callback_ = callback;
 
-			SelectFile(null);
-			SelectDirectory(mode_.GetCurrentDirectory());
-
 			root_.Visible = true;
-			window_.Title = mode_.GetTitle();
+			window_.Title = mode_.Title;
 
+			dir_ = null;
 			filesPanel_.Clear();
+
+			if (!SelectDirectory(mode_.CurrentDirectory))
+			{
+				Log.Error($"bad directory {mode_.CurrentDirectory}");
+
+				if (SelectDirectory(mode_.DefaultDirectory))
+				{
+					mode_.CurrentDirectory = mode_.DefaultDirectory;
+				}
+				else
+				{
+					Log.Error($"bad directory {mode_.DefaultDirectory}");
+					mode_.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
+					SelectDirectory(mode_.CurrentDirectory);
+				}
+			}
+
+			if (dir_ == null)
+			{
+				// SelectDirectory() above won't fire the selected event if the
+				// node was already selected, so call it manually to make sure
+				SetCurrentDirectory(tree_.Selected as FS.IFilesystemContainer);
+			}
+
+			SelectFile(null);
+
 			optionsPanel_.Set(mode_);
 			buttonsPanel_.Set(mode_);
 			tree_.Enable();
 			tree_.SetFlags(GetTreeFlags());
 
-			RefreshFiles();
 			buttonsPanel_.FocusFilename();
 		}
 
@@ -604,10 +643,15 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void SelectDirectory(string vpath, bool expand = true)
+		public bool SelectDirectory(string vpath, bool expand = true)
 		{
 			if (!tree_.Select(vpath, expand))
+			{
 				SetPath();
+				return false;
+			}
+
+			return true;
 		}
 
 		public void Activate(FilePanel p)
@@ -636,7 +680,7 @@ namespace AUI.FileDialog
 			if (!string.IsNullOrEmpty(e))
 				return e;
 
-			var exts = mode_.GetExtensions();
+			var exts = mode_.Extensions;
 			if (exts != null && exts.Length > 0 && exts[0].Extensions.Length > 0)
 				return exts[0].Extensions[0];
 
@@ -654,16 +698,16 @@ namespace AUI.FileDialog
 		{
 			int f = FileTree.NoFlags;
 
-			if (FlattenDirectories)
+			if (mode_.FlattenDirectories)
 				f |= FileTree.FlattenDirectories;
 
-			if (mode_.IsWritable())
+			if (mode_.IsWritable)
 				f |= FileTree.Writeable;
 
 			return f;
 		}
 
-		public void SetCurrentDirectory(FS.IFilesystemContainer o)
+		private void SetCurrentDirectory(FS.IFilesystemContainer o)
 		{
 			dir_ = o;
 			addressBar_.ClearSearch();
@@ -675,8 +719,8 @@ namespace AUI.FileDialog
 			return new FS.Filter(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
-				optionsPanel_.Sort,
-				optionsPanel_.SortDirection);
+				mode_.Sort,
+				mode_.SortDirection);
 		}
 
 		public void Refresh()
@@ -692,22 +736,22 @@ namespace AUI.FileDialog
 
 			if (dir_.ParentPackage == null)
 			{
-				if (FlattenDirectories && !mode_.IsWritable())
+				if (mode_.FlattenDirectories && !mode_.IsWritable)
 					files = dir_.GetFilesRecursive(CreateFilter());
 				else
 					files = dir_.GetFiles(CreateFilter());
 			}
 			else
 			{
-				if (FlattenPackages)
+				if (mode_.FlattenPackages)
 					files = dir_.GetFilesRecursive(CreateFilter());
 				else
 					files = dir_.GetFiles(CreateFilter());
 			}
 
-			SetFiles(files);
+			files_ = files;
+			filesPanel_.SetFiles(files);
 			SetPath();
-			filesPanel_.ScrollToTop();
 			UpdateActionButton();
 		}
 
@@ -783,12 +827,6 @@ namespace AUI.FileDialog
 			buttonsPanel_.FilenameChanged += UpdateActionButton;
 
 			return buttonsPanel_;
-		}
-
-		private void SetFiles(List<FS.IFilesystemObject> list)
-		{
-			files_ = list;
-			filesPanel_.SetFiles(list);
 		}
 
 		private void UpdateActionButton()

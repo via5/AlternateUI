@@ -8,6 +8,8 @@ namespace AUI.FS
 	class FSFile : BasicFilesystemObject, IFile
 	{
 		private readonly string name_;
+		private DateTime dateCreated_ = DateTime.MaxValue;
+		private DateTime dateModified_ = DateTime.MaxValue;
 
 		public FSFile(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent)
@@ -27,12 +29,24 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return FMS.FileCreationTime(MakeRealPath()); }
+			get
+			{
+				if (dateCreated_ == DateTime.MaxValue)
+					dateCreated_ = FMS.FileCreationTime(MakeRealPath());
+
+				return dateCreated_;
+			}
 		}
 
 		public override DateTime DateModified
 		{
-			get { return FMS.FileLastWriteTime(MakeRealPath()); }
+			get
+			{
+				if (dateModified_ == DateTime.MaxValue)
+					dateModified_ = FMS.FileLastWriteTime(MakeRealPath());
+
+				return dateModified_;
+			}
 		}
 
 		public override bool CanPin
@@ -68,6 +82,13 @@ namespace AUI.FS
 				s = Parent.MakeRealPath() + s;
 
 			return s;
+		}
+
+		public override void ClearCache()
+		{
+			base.ClearCache();
+			dateCreated_ = DateTime.MaxValue;
+			dateModified_ = DateTime.MaxValue;
 		}
 	}
 }

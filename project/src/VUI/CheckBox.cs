@@ -136,4 +136,52 @@ namespace VUI
 			}
 		}
 	}
+
+
+	class RadioButton : CheckBox
+	{
+		private bool ignore_ = false;
+		private string group_ = "";
+
+		public RadioButton(string text, ChangedCallback changed, bool initial = false, string group = "")
+			: base(text, changed, initial)
+		{
+			group_ = group;
+			Changed += OnChecked;
+		}
+
+		public void UncheckInternal()
+		{
+			try
+			{
+				ignore_ = true;
+				Checked = false;
+			}
+			finally
+			{
+				ignore_ = false;
+			}
+		}
+
+		private void OnChecked(bool b)
+		{
+			if (ignore_) return;
+
+			if (b)
+			{
+				var cs = Parent?.Children;
+
+				if (cs != null)
+				{
+					for (int i = 0; i < cs.Count; ++i)
+					{
+						var c = cs[i] as RadioButton;
+
+						if (c != null && c != this && c.group_ == group_)
+							c.UncheckInternal();
+					}
+				}
+			}
+		}
+	}
 }
