@@ -8,25 +8,25 @@ namespace AUI.FileDialog
 		private FileDialog fd_ = new FileDialog();
 
 		public static string DefaultSceneExtension = ".json";
-		public static FS.Filesystem.Extension[] SceneExtensions = new FS.Filesystem.Extension[]
+		public static FS.Extension[] SceneExtensions = new FS.Extension[]
 		{
-			new FS.Filesystem.Extension("Scenes", ".json"),
-			new FS.Filesystem.Extension("VAC files", ".vac"),
-			new FS.Filesystem.Extension("Zip files", ".zip"),
+			new FS.Extension("Scenes", ".json"),
+			new FS.Extension("VAC files", ".vac"),
+			new FS.Extension("Zip files", ".zip"),
 		};
 
 		public static string DefaultCUAExtension = ".assetbundle";
-		public static FS.Filesystem.Extension[] CUAExtensions = new FS.Filesystem.Extension[]
+		public static FS.Extension[] CUAExtensions = new FS.Extension[]
 		{
-			new FS.Filesystem.Extension("Asset bundles", ".assetbundle")
+			new FS.Extension("Asset bundles", ".assetbundle")
 		};
 
 		public static string DefaultPluginExtension = ".cslist";
-		public static FS.Filesystem.Extension[] PluginExtensions = new FS.Filesystem.Extension[]
+		public static FS.Extension[] PluginExtensions = new FS.Extension[]
 		{
-			new FS.Filesystem.Extension("cslist files", ".cslist"),
-			new FS.Filesystem.Extension("C# files", ".cs"),
-			new FS.Filesystem.Extension("DLL files", ".dll"),
+			new FS.Extension("cslist files", ".cslist"),
+			new FS.Extension("C# files", ".cs"),
+			new FS.Extension("DLL files", ".dll"),
 		};
 
 
@@ -35,25 +35,25 @@ namespace AUI.FileDialog
 		{
 		}
 
-		public static FileDialog.ExtensionItem[] GetSceneExtensions(bool includeAll)
+		public static ExtensionItem[] GetSceneExtensions(bool includeAll)
 		{
 			return GetExtensions(SceneExtensions, "All scene files", includeAll);
 		}
 
-		public static FileDialog.ExtensionItem[] GetCUAExtensions(bool includeAll)
+		public static ExtensionItem[] GetCUAExtensions(bool includeAll)
 		{
 			return GetExtensions(CUAExtensions, "All CUA files", includeAll);
 		}
 
-		public static FileDialog.ExtensionItem[] GetPluginExtensions(bool includeAll)
+		public static ExtensionItem[] GetPluginExtensions(bool includeAll)
 		{
 			return GetExtensions(PluginExtensions, "All plugin files", includeAll);
 		}
 
-		public static FileDialog.ExtensionItem[] GetExtensions(
-			FS.Filesystem.Extension[] exts, string allText, bool includeAll)
+		public static ExtensionItem[] GetExtensions(
+			FS.Extension[] exts, string allText, bool includeAll)
 		{
-			var list = new List<FileDialog.ExtensionItem>();
+			var list = new List<ExtensionItem>();
 
 			if (includeAll && exts.Length > 1)
 			{
@@ -70,15 +70,15 @@ namespace AUI.FileDialog
 				}
 
 				all = $"{allText} ({all})";
-				list.Add(new FileDialog.ExtensionItem(all, allExts.ToArray()));
+				list.Add(new ExtensionItem(all, allExts.ToArray()));
 			}
 
 			foreach (var e in exts)
-				list.Add(new FileDialog.ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
+				list.Add(new ExtensionItem(e.name + " (*" + e.ext + ")", new string[] { e.ext }));
 
 			if (includeAll)
 			{
-				list.Add(new FileDialog.ExtensionItem("All files (*.*)", new string[] { "*.*" }));
+				list.Add(new ExtensionItem("All files (*.*)", new string[] { "*.*" }));
 			}
 
 			return list.ToArray();

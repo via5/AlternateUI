@@ -6,6 +6,19 @@ namespace AUI.FS
 {
 	using FMS = FileManagerSecure;
 
+	public struct Extension
+	{
+		public string name;
+		public string ext;
+
+		public Extension(string name, string ext)
+		{
+			this.name = name;
+			this.ext = ext;
+		}
+	}
+
+
 	class Filesystem
 	{
 		public delegate void ObjectHandler(IFilesystemObject o);
@@ -13,19 +26,6 @@ namespace AUI.FS
 
 		public delegate void Handler();
 		public event Handler PinsChanged;
-
-		public struct Extension
-		{
-			public string name;
-			public string ext;
-
-			public Extension(string name, string ext)
-			{
-				this.name = name;
-				this.ext = ext;
-			}
-		}
-
 
 		public static string SavesRoot = "Saves";
 

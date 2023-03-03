@@ -18,9 +18,9 @@ namespace Vamos
 		{
 			try
 			{
-				SuperController.LogMessage($"VamosAPIReceiver: got uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool {args.Length}");
+				//SuperController.LogMessage($"VamosAPIReceiver: got uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool {args.Length}");
 				uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool?.Invoke(args[0] as FileBrowser, args[1] as FileBrowserCallback, (bool)args[2]);
-				SuperController.LogMessage($"ok");
+				//SuperController.LogMessage($"ok");
 			}
 			catch (Exception e)
 			{
@@ -33,7 +33,7 @@ namespace Vamos
 		{
 			try
 			{
-				SuperController.LogMessage($"VamosAPIReceiver: got uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool {args.Length}");
+				//SuperController.LogMessage($"VamosAPIReceiver: got uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool {args.Length}");
 				uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool?.Invoke(args[0] as FileBrowser, args[1] as FileBrowserFullCallback, (bool)args[2]);
 			}
 			catch (Exception e)
@@ -242,7 +242,7 @@ namespace Vamos
 
 		private void Log(string s)
 		{
-			SuperController.LogMessage($"VamosAPIReceiver.{name}: {s}");
+			//SuperController.LogMessage($"VamosAPIReceiver.{name}: {s}");
 		}
 	}
 }

@@ -7,7 +7,7 @@ namespace AUI.FileDialog
 		bool GetDefaultFlattenDirectories();
 		string GetCurrentDirectory();
 		string GetTitle();
-		FileDialog.ExtensionItem[] GetExtensions();
+		ExtensionItem[] GetExtensions();
 		string GetActionText();
 		bool IsWritable();
 		bool CanExecute(FileDialog fd);
@@ -19,12 +19,12 @@ namespace AUI.FileDialog
 	abstract class BasicMode : IFileDialogMode
 	{
 		private readonly string title_;
-		private readonly FileDialog.ExtensionItem[] exts_;
+		private readonly ExtensionItem[] exts_;
 		private string lastPath_ = "";
 		private bool defaultFlatten_ = true;
 
 		protected BasicMode(
-			string title, FileDialog.ExtensionItem[] exts,
+			string title, ExtensionItem[] exts,
 			string defaultPath, bool defaultFlatten)
 		{
 			title_ = title;
@@ -48,7 +48,7 @@ namespace AUI.FileDialog
 			return title_;
 		}
 
-		public virtual FileDialog.ExtensionItem[] GetExtensions()
+		public virtual ExtensionItem[] GetExtensions()
 		{
 			return exts_;
 		}
@@ -60,7 +60,7 @@ namespace AUI.FileDialog
 
 		public virtual void Execute(FileDialog fd)
 		{
-			lastPath_ = fd.CurrentDirectory.VirtualPath;
+			lastPath_ = fd.SelectedDirectory.VirtualPath;
 		}
 	}
 
@@ -68,7 +68,7 @@ namespace AUI.FileDialog
 	class NoMode : BasicMode
 	{
 		public NoMode()
-			: base("", new FileDialog.ExtensionItem[0], "", false)
+			: base("", new ExtensionItem[0], "", false)
 		{
 		}
 
@@ -96,7 +96,7 @@ namespace AUI.FileDialog
 
 	class OpenMode : BasicMode
 	{
-		public OpenMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath, bool defaultFlatten)
+		public OpenMode(string title, ExtensionItem[] exts, string defaultPath, bool defaultFlatten)
 			: base(title, exts, defaultPath, defaultFlatten)
 		{
 		}
@@ -113,17 +113,17 @@ namespace AUI.FileDialog
 
 		public override bool CanExecute(FileDialog fd)
 		{
-			return (fd.Selected != null || fd.Filename != "");
+			return (fd.SelectedFile != null || fd.Filename != "");
 		}
 
 		public override string GetPath(FileDialog fd)
 		{
 			string path = "";
 
-			var s = fd.Selected;
+			var s = fd.SelectedFile;
 			if (s == null)
 			{
-				var cwd = fd.CurrentDirectory;
+				var cwd = fd.SelectedDirectory;
 
 				if (cwd != null)
 				{
@@ -156,7 +156,7 @@ namespace AUI.FileDialog
 
 	class SaveMode : BasicMode
 	{
-		public SaveMode(string title, FileDialog.ExtensionItem[] exts, string defaultPath)
+		public SaveMode(string title, ExtensionItem[] exts, string defaultPath)
 			: base(title, exts, defaultPath, false)
 		{
 		}
@@ -179,12 +179,12 @@ namespace AUI.FileDialog
 		public override void Execute(FileDialog fd)
 		{
 			base.Execute(fd);
-			fd.CurrentDirectory?.ClearCache();
+			fd.SelectedDirectory?.ClearCache();
 		}
 
 		public override string GetPath(FileDialog fd)
 		{
-			var cwd = fd.CurrentDirectory;
+			var cwd = fd.SelectedDirectory;
 			if (cwd == null || cwd.Virtual)
 				return "";
 

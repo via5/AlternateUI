@@ -54,7 +54,7 @@ namespace AUI.FileDialog
 		private void OnClick(VUI.PointerEvent e)
 		{
 			if (e.Button == VUI.PointerEvent.LeftButton)
-				fd_.Select(Object);
+				fd_.SelectFile(Object);
 
 			e.Bubble = false;
 		}
