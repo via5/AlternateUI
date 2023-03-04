@@ -32,6 +32,8 @@ namespace AUI
 		public const int Drop = 8;
 		public const int ResizeWE = 9;
 		public const int Directory = 10;
+		public const int Reload = 11;
+		public const int OpenExternal = 12;
 
 		private static Dictionary<int, VUI.Icon> icons_ = new Dictionary<int, VUI.Icon>();
 		private static Dictionary<string, VUI.Icon> exts_ = new Dictionary<string, VUI.Icon>();
@@ -55,6 +57,8 @@ namespace AUI
 				{ Drop, new VUI.Icon(pp + "/res/icons/drop.png") },
 				{ ResizeWE, new VUI.Icon(pp + "/res/cursors/resize_w_e.png", 40, 40) },
 				{ Directory, new VUI.Icon(sc.fileBrowserUI.folderIcon.texture) },
+				{ Reload, new VUI.Icon(pp + "/res/icons/reload.png") },
+				{ OpenExternal, new VUI.Icon(pp + "/res/icons/open-external.png") },
 			};
 		}
 

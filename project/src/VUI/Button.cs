@@ -377,7 +377,7 @@ namespace VUI
 			if (image_ == null || (IconSize.Width == DontCare && IconSize.Height == DontCare))
 				return new Size(40, DontCare);
 			else
-				return new Size(20, DontCare);
+				return new Size(IconSize.Width, IconSize.Height);
 		}
 	}
 

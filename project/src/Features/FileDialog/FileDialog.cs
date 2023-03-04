@@ -195,7 +195,6 @@ namespace AUI.FileDialog
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
 			Add(sortPanel_.Button);
-			Add(new VUI.Button("Refresh", () => fd_.Refresh()));
 		}
 
 		private void AddSortItem(VUI.Menu menu, string text, int sort)
@@ -298,9 +297,9 @@ namespace AUI.FileDialog
 	{
 		private readonly FileDialog fd_;
 
-		private readonly VUI.ToolButton back_, next_, up_;
+		private readonly VUI.ToolButton back_, next_, up_, refresh_;
 		private readonly VUI.MenuButton drop_;
-		private readonly VUI.ToolButton pin_;
+		private readonly VUI.ToolButton pin_, openInExplorer_;
 		private readonly VUI.TextBox path_;
 		private readonly SearchBox search_;
 		private readonly VUI.Menu dropMenu_;
@@ -320,11 +319,13 @@ namespace AUI.FileDialog
 			drop_.CloseOnMenuActivated = true;
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter, true));
-			back_ = buttons.Add(new VUI.ToolButton("\x2190", () => fd_.Back()));
-			next_ = buttons.Add(new VUI.ToolButton("\x2192", () => fd_.Next()));
+			back_ = buttons.Add(new VUI.ToolButton("\x2190", () => fd_.Back(), "Back"));
+			next_ = buttons.Add(new VUI.ToolButton("\x2192", () => fd_.Next(), "Next"));
 			buttons.Add(drop_.Button);
-			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up()));
-			pin_ = buttons.Add(new VUI.ToolButton("Pin", () => OnTogglePin()));
+			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up(), "Up"));
+			refresh_ = buttons.Add(new VUI.ToolButton("Refresh", () => fd_.Refresh(), "Refresh"));
+			pin_ = buttons.Add(new VUI.ToolButton("Pin", OnTogglePin));
+			openInExplorer_ = buttons.Add(new VUI.ToolButton("Explorer", OpenInExplorer, "Open in Explorer"));
 
 			back_.Icon = Icons.Get(Icons.Back);
 			back_.SetBorderless();
@@ -333,11 +334,18 @@ namespace AUI.FileDialog
 			next_.SetBorderless();
 
 			drop_.Button.Icon = Icons.Get(Icons.Drop);
-			drop_.Button.IconSize = new VUI.Size(20, 20);
+			drop_.Button.IconSize = new VUI.Size(16, 20);
 			drop_.Button.SetBorderless();
+			drop_.Button.Tooltip.Text = "Recent locations";
 
 			up_.Icon = Icons.Get(Icons.Up);
 			up_.SetBorderless();
+
+			refresh_.Icon = Icons.Get(Icons.Reload);
+			refresh_.SetBorderless();
+
+			openInExplorer_.Icon = Icons.Get(Icons.OpenExternal);
+			openInExplorer_.SetBorderless();
 
 			pin_.Icon = Icons.Get(Icons.Unpinned);
 			pin_.SetBorderless();
@@ -378,6 +386,7 @@ namespace AUI.FileDialog
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
 				drop_.Button.Enabled = (fd_.CanGoBack() || fd_.CanGoNext());
+				openInExplorer_.Enabled = !dir.Virtual;
 
 				UpdatePin();
 			}
@@ -425,31 +434,34 @@ namespace AUI.FileDialog
 			}
 		}
 
+		public void OpenInExplorer()
+		{
+			var dir = fd_.SelectedDirectory;
+
+			if (dir != null && !dir.Virtual)
+				SuperController.singleton.OpenFolderInExplorer(dir.MakeRealPath());
+		}
+
 		private void UpdatePin()
 		{
 			var dir = fd_.SelectedDirectory;
 
-			if (dir != null)
-			{
-				pin_.Enabled = dir.CanPin;
+			bool enabled = (dir?.CanPin ?? false);
+			bool pinned = (dir != null && FS.Filesystem.Instance.IsPinned(dir));
 
-				if (FS.Filesystem.Instance.IsPinned(dir))
-				{
-					pin_.Text = "Unpin";
-					pin_.Icon = Icons.Get(Icons.Pinned);
-					pin_.BorderColor = VUI.Style.Theme.BorderColor;
-				}
-				else
-				{
-					pin_.Text = "Pin";
-					pin_.Icon = Icons.Get(Icons.Unpinned);
-					pin_.BorderColor = new Color(0, 0, 0, 0);
-				}
+			pin_.Enabled = enabled;
+
+			if (pinned)
+			{
+				pin_.Text = "Unpin";
+				pin_.Tooltip.Text = "Unpin";
+				pin_.Icon = Icons.Get(Icons.Pinned);
+				pin_.BorderColor = VUI.Style.Theme.BorderColor;
 			}
 			else
 			{
-				pin_.Enabled = false;
 				pin_.Text = "Pin";
+				pin_.Tooltip.Text = "Pin";
 				pin_.Icon = Icons.Get(Icons.Unpinned);
 				pin_.BorderColor = new Color(0, 0, 0, 0);
 			}
