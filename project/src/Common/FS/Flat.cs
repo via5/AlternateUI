@@ -27,9 +27,9 @@ namespace AUI.FS
 			get { return DateTime.MaxValue; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
-			get { return Icons.Directory; }
+			get { return Icons.Get(Icons.Directory); }
 		}
 
 		public override bool CanPin
@@ -109,9 +109,9 @@ namespace AUI.FS
 			get { return DateTime.MaxValue; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
-			get { return Icons.Package; }
+			get { return Icons.Get(Icons.Package); }
 		}
 
 		public override bool CanPin
@@ -190,9 +190,9 @@ namespace AUI.FS
 			get { return DateTime.MaxValue; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
-			get { return Icons.Directory; }
+			get { return Icons.Get(Icons.Directory); }
 		}
 
 		public override bool CanPin

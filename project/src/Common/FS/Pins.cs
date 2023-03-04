@@ -167,9 +167,9 @@ namespace AUI.FS
 			get { return false; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
-			get { return Icons.Pinned; }
+			get { return Icons.Get(Icons.Pinned); }
 		}
 
 		public override string MakeRealPath()
@@ -212,7 +212,7 @@ namespace AUI.FS
 		public override string VirtualPath { get { return c_.VirtualPath; } }
 		public override DateTime DateCreated { get { return c_.DateCreated; } }
 		public override DateTime DateModified { get { return c_.DateModified; } }
-		public override Icon Icon { get { return c_.Icon; } }
+		public override VUI.Icon Icon { get { return c_.Icon; } }
 		public override bool CanPin { get { return false; } }
 		public override bool Virtual { get { return c_.Virtual; } }
 		public override bool ChildrenVirtual { get { return c_.ChildrenVirtual; } }

@@ -188,6 +188,7 @@ namespace VUI
 
 		protected override void AfterUpdateBounds()
 		{
+			base.AfterUpdateBounds();
 			textObject_.alignment = ToTextAnchor(align_);
 			UpdateClip();
 		}
@@ -252,6 +253,9 @@ namespace VUI
 					}
 					else
 					{
+						hasEllipsis_ = false;
+						textObject_.text = text_;
+
 						ClearClip();
 
 						if (autoTooltip_)

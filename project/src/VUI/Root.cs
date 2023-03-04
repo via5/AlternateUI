@@ -228,7 +228,7 @@ namespace VUI
 			if (string.IsNullOrEmpty(prefix))
 				prefix = script.name;
 
-			Init(prefix , () => script.manager, null, null, null, null, null);
+			Init(prefix , () => script.manager, null, null, null, null, null, null);
 		}
 
 		public static void Init(
@@ -238,11 +238,12 @@ namespace VUI
 			Glue.LogDelegate logVerbose = null,
 			Glue.LogDelegate logInfo = null,
 			Glue.LogDelegate logWarning = null,
-			Glue.LogDelegate logError = null)
+			Glue.LogDelegate logError = null,
+			Glue.IconProviderDelegate icons = null)
 		{
 			Glue.InitInternal(
 				prefix, getPluginManager, getString,
-				logVerbose, logInfo, logWarning, logError);
+				logVerbose, logInfo, logWarning, logError, icons);
 
 			BasicRootSupport.Cleanup();
 		}
@@ -969,8 +970,10 @@ namespace VUI
 
 					if (lastLineWidth + ellipsisWidth < maxSize.Width)
 						s = ss.TrimEnd() + "...";
-					else
+					else if (ss.Length >= 3)
 						s = ss.Substring(0, ss.Length - 3).TrimEnd() + "...";
+					else
+						s = "...";
 				}
 			}
 

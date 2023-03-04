@@ -190,7 +190,7 @@ namespace AUI.FileDialog
 
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
-			Layout = new VUI.HorizontalFlow(10);
+			Layout = new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
 
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
@@ -297,9 +297,13 @@ namespace AUI.FileDialog
 	class AddressBar : VUI.Panel
 	{
 		private readonly FileDialog fd_;
+
+		private readonly VUI.ToolButton back_, next_, up_;
+		private readonly VUI.MenuButton drop_;
 		private readonly VUI.CheckBox pin_;
 		private readonly VUI.TextBox path_;
 		private readonly SearchBox search_;
+		private readonly VUI.Menu dropMenu_;
 		private bool ignore_ = false;
 
 		public AddressBar(FileDialog fd)
@@ -310,7 +314,32 @@ namespace AUI.FileDialog
 
 			var left = new VUI.Panel(new VUI.BorderLayout(10));
 
-			pin_ = left.Add(new VUI.CheckBox("Pin", OnPin), VUI.BorderLayout.Left);
+			dropMenu_ = new VUI.Menu();
+			drop_ = new VUI.MenuButton("v", true, true, dropMenu_);
+			drop_.AboutToOpen += UpdateHistoryMenu;
+			drop_.CloseOnMenuActivated = true;
+
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter, true));
+			back_ = buttons.Add(new VUI.ToolButton("\x2190", () => fd_.Back()));
+			next_ = buttons.Add(new VUI.ToolButton("\x2192", () => fd_.Next()));
+			buttons.Add(drop_.Button);
+			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up()));
+			pin_ = buttons.Add(new VUI.CheckBox("Pin", OnPin));
+
+			back_.Icon = Icons.Get(Icons.Back);
+			back_.SetBorderless();
+
+			next_.Icon = Icons.Get(Icons.Next);
+			next_.SetBorderless();
+
+			drop_.Button.Icon = Icons.Get(Icons.Drop);
+			drop_.Button.IconSize = new VUI.Size(20, 20);
+			drop_.Button.SetBorderless();
+
+			up_.Icon = Icons.Get(Icons.Up);
+			up_.SetBorderless();
+
+			left.Add(buttons, VUI.BorderLayout.Left);
 			path_ = left.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
 
@@ -340,6 +369,10 @@ namespace AUI.FileDialog
 			{
 				ignore_ = true;
 
+				back_.Enabled = fd_.CanGoBack();
+				next_.Enabled = fd_.CanGoNext();
+				up_.Enabled = fd_.CanGoUp();
+
 				if (dir != null)
 				{
 					pin_.Enabled = dir.CanPin;
@@ -368,6 +401,36 @@ namespace AUI.FileDialog
 			{
 				ignore_ = false;
 			}
+		}
+
+		public void DropHistory()
+		{
+			drop_.Show();
+		}
+
+		public void UpdateHistoryMenu()
+		{
+			dropMenu_.Clear();
+
+			var entries = fd_.History.Entries;
+			for (int ri=0; ri<entries.Length; ++ri)
+			{
+				int i = entries.Length - ri - 1;
+				bool check = (i == fd_.History.CurrentIndex);
+
+				var mi = dropMenu_.AddMenuItem(new VUI.RadioMenuItem(entries[i], (b) =>
+				{
+					if (b)
+						OnHistoryEntry(i);
+				}, check, "history"));
+
+				mi.RadioButton.FontSize = FileDialog.FontSize;
+			}
+		}
+
+		private void OnHistoryEntry(int i)
+		{
+			fd_.GoHistory(i);
 		}
 
 		private void OnPin(bool b)
@@ -426,7 +489,7 @@ namespace AUI.FileDialog
 
 			for (int j = 0; j < cols * rows; ++j)
 			{
-				panels_[j] = new FilePanel(fd, FontSize);
+				panels_[j] = new FilePanel(fd, FileDialog.FontSize);
 				p.Add(panels_[j].Panel);
 			}
 
@@ -542,6 +605,7 @@ namespace AUI.FileDialog
 		private List<FS.IFilesystemObject> files_ = null;
 		private FS.IFilesystemObject selected_ = null;
 		private Action<string> callback_ = null;
+		private bool ignoreHistory_ = false;
 
 
 		public FileDialog()
@@ -597,6 +661,11 @@ namespace AUI.FileDialog
 			get { return buttonsPanel_.Filename; }
 		}
 
+		public History History
+		{
+			get { return mode_.History; }
+		}
+
 
 		public void Show(IFileDialogMode mode, Action<string> callback)
 		{
@@ -614,11 +683,13 @@ namespace AUI.FileDialog
 			optionsPanel_.Set(mode_);
 			buttonsPanel_.Set(mode_);
 
-			if (!SelectDirectory(mode_.CurrentDirectory))
+			var scrollTo = VUI.TreeView.ScrollToCenter;
+
+			if (!SelectDirectory(mode_.CurrentDirectory, false, scrollTo))
 			{
 				Log.Error($"bad directory {mode_.CurrentDirectory}");
 
-				if (SelectDirectory(mode_.DefaultDirectory))
+				if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
 				{
 					mode_.CurrentDirectory = mode_.DefaultDirectory;
 				}
@@ -626,7 +697,7 @@ namespace AUI.FileDialog
 				{
 					Log.Error($"bad directory {mode_.DefaultDirectory}");
 					mode_.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
-					SelectDirectory(mode_.CurrentDirectory);
+					SelectDirectory(mode_.CurrentDirectory, false, scrollTo);
 				}
 			}
 
@@ -675,15 +746,77 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public bool SelectDirectory(string vpath, bool expand = true)
+		public bool SelectDirectory(
+			string vpath, bool expand = true,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
-			if (!tree_.Select(vpath, expand))
+			if (!tree_.Select(vpath, expand, scrollTo))
 			{
 				SetPath();
 				return false;
 			}
 
 			return true;
+		}
+
+		public bool CanGoBack()
+		{
+			return mode_.History.CanGoBack();
+		}
+
+		public bool CanGoNext()
+		{
+			return mode_.History.CanGoNext();
+		}
+
+		public bool CanGoUp()
+		{
+			return tree_.CanGoUp();
+		}
+
+		public void Back()
+		{
+			try
+			{
+				ignoreHistory_ = true;
+				SelectDirectory(mode_.History.Back(), false);
+			}
+			finally
+			{
+				ignoreHistory_ = false;
+			}
+		}
+
+		public void Next()
+		{
+			try
+			{
+				ignoreHistory_ = true;
+				SelectDirectory(mode_.History.Next(), false);
+			}
+			finally
+			{
+				ignoreHistory_ = false;
+			}
+		}
+
+		public void GoHistory(int i)
+		{
+			try
+			{
+				ignoreHistory_ = true;
+				if (mode_.History.SetIndex(i))
+					SelectDirectory(mode_.History.Current, false);
+			}
+			finally
+			{
+				ignoreHistory_ = false;
+			}
+		}
+
+		public void Up()
+		{
+			tree_.Up();
 		}
 
 		public void Activate(FilePanel p)
@@ -741,6 +874,9 @@ namespace AUI.FileDialog
 
 		private void SetCurrentDirectory(FS.IFilesystemContainer o)
 		{
+			if (!ignoreHistory_)
+				mode_.History.Push(o.VirtualPath);
+
 			dir_ = o;
 			addressBar_.ClearSearch();
 			RefreshFiles();

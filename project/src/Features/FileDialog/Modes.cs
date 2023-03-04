@@ -1,10 +1,89 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
+using System.Collections.Generic;
 
 namespace AUI.FileDialog
 {
+	class History
+	{
+		private const int Max = 30;
+
+		private readonly List<string> paths_ = new List<string>();
+		private int index_ = -1;
+
+		public string Current
+		{
+			get
+			{
+				if (index_ < 0 || index_ >= paths_.Count)
+					return "";
+
+				return paths_[index_];
+			}
+		}
+
+		public int CurrentIndex
+		{
+			get { return index_; }
+		}
+
+		public string[] Entries
+		{
+			get { return paths_.ToArray(); }
+		}
+
+		public bool CanGoBack()
+		{
+			return (paths_.Count > 0 && index_ >= 1);
+		}
+
+		public bool CanGoNext()
+		{
+			return paths_.Count > 0 && ((index_ + 1) < paths_.Count);
+		}
+
+		public string Back()
+		{
+			if (CanGoBack())
+				--index_;
+
+			return Current;
+		}
+
+		public string Next()
+		{
+			if (CanGoNext())
+				++index_;
+
+			return Current;
+		}
+
+		public bool SetIndex(int i)
+		{
+			if (i < 0 || i >= paths_.Count)
+				return false;
+
+			index_ = i;
+			return true;
+		}
+
+		public void Push(string s)
+		{
+			if (index_ >= 0 && (index_ + 1) < paths_.Count)
+				paths_.RemoveRange(index_ + 1, paths_.Count - (index_ + 1));
+
+			while (paths_.Count > Max)
+				paths_.RemoveAt(0);
+
+			paths_.Add(s);
+			++index_;
+		}
+	}
+
+
 	interface IFileDialogMode
 	{
+		History History { get; }
 		bool FlattenDirectories { get; set; }
 		bool FlattenPackages { get; set; }
 		int Sort { get; set; }
@@ -33,6 +112,7 @@ namespace AUI.FileDialog
 		private bool flattenDirs_ = true;
 		private bool flattenPackages_ = true;
 		private int sort_, sortDir_;
+		private readonly History history_ = new History();
 
 		protected BasicMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
@@ -50,6 +130,11 @@ namespace AUI.FileDialog
 
 			if (!string.IsNullOrEmpty(name_))
 				Load();
+		}
+
+		public History History
+		{
+			get { return history_; }
 		}
 
 		public bool FlattenDirectories

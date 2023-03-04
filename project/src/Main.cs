@@ -111,7 +111,8 @@ namespace AUI
 				(s) => Log.Verbose(s),
 				(s) => Log.Info(s),
 				(s) => Log.Warning(s),
-				(s) => Log.Error(s));
+				(s) => Log.Error(s),
+				() => IconProvider.Instance);
 
 			tm_ = new VUI.TimerManager();
 			features_ = BasicFeature.CreateAllFeatures();

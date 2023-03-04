@@ -33,7 +33,7 @@ namespace VUI
 		{
 			on_ = true;
 
-			AUI.Icons.ResizeWE.GetTexture((t) =>
+			Glue.IconProvider.ResizeWE?.GetTexture((t) =>
 			{
 				if (on_)
 				{

@@ -755,6 +755,12 @@ namespace VUI
 		}
 
 
+		public const int ScrollToNone = 0;
+		public const int ScrollToTop = 1;
+		public const int ScrollToCenter = 2;
+		public const int ScrollToBottom = 3;
+		public const int ScrollToNearest = 4;
+
 		public delegate void ItemCallback(Item i);
 		public event ItemCallback SelectionChanged;
 		public event ItemCallback ItemClicked;
@@ -1033,7 +1039,7 @@ namespace VUI
 			return f;
 		}
 
-		public void Select(Item item, bool expandParents = true, bool scrollTo = false)
+		public void Select(Item item, bool expandParents = true, int scrollTo = ScrollToNone)
 		{
 			SetSelectedInternal(item, true);
 
@@ -1046,12 +1052,12 @@ namespace VUI
 					parent = parent.Parent;
 				}
 
-				if (scrollTo)
-					ScrollTo(item);
+				if (scrollTo != ScrollToNone)
+					ScrollTo(item, scrollTo);
 			}
 		}
 
-		public void ScrollTo(Item item)
+		public void ScrollTo(Item item, int where)
 		{
 			int i = 0;
 			if (!AbsoluteItemIndex(root_, item, ref i) || i < 0)
@@ -1061,19 +1067,61 @@ namespace VUI
 			}
 
 			if (i >= 0)
-				Glue.PluginManager.StartCoroutine(CoScrollTo(i));
+				Glue.PluginManager.StartCoroutine(CoScrollTo(i, where));
 		}
 
-		private IEnumerator CoScrollTo(int index)
+		private IEnumerator CoScrollTo(int index, int where)
 		{
 			yield return new WaitForEndOfFrame();
-			DoScrollTo(index);
+			DoScrollTo(index, where);
 		}
 
-		private void DoScrollTo(int i)
+		private void DoScrollTo(int i, int where)
 		{
-			i = Math.Max(i - nodes_.Count / 2, 0);
-			SetTopItem(i, true, true);
+			switch (where)
+			{
+				case ScrollToCenter:
+				{
+					i = Math.Max(i - nodes_.Count / 2, 0);
+					break;
+				}
+
+				case ScrollToBottom:
+				{
+					i = Math.Max(i - nodes_.Count + 1, 0);
+					break;
+				}
+
+				case ScrollToNearest:
+				{
+					if (i > (topItemIndex_ + nodes_.Count))
+					{
+						// scroll to bottom
+						i = Math.Max(i - nodes_.Count + 1, 0);
+					}
+					else if (i >= topItemIndex_)
+					{
+						// already visible, don't scroll
+						i = -1;
+					}
+					else
+					{
+						// scroll to top, no-op
+					}
+
+					break;
+				}
+
+				case ScrollToTop:  // fall-through
+				default:
+				{
+					// nothing
+					break;
+				}
+			}
+
+			if (i != -1)
+				SetTopItem(i, true, true);
 		}
 
 		private bool AbsoluteItemIndex(Item parent, Item item, ref int index)

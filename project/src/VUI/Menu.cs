@@ -1,5 +1,4 @@
-﻿using AUI;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,11 +7,19 @@ namespace VUI
 	interface IMenuItem
 	{
 		Widget Widget { get; }
+		Menu Parent { get; set; }
 	}
 
 	abstract class BasicMenuItem : IMenuItem
 	{
+		private Menu parent_ = null;
 		public abstract Widget Widget { get; }
+
+		public Menu Parent
+		{
+			get { return parent_; }
+			set { parent_ = value; }
+		}
 	}
 
 	class ButtonMenuItem : BasicMenuItem
@@ -25,6 +32,8 @@ namespace VUI
 			button_.BackgroundColor = new Color(0, 0, 0, 0);
 			button_.Padding = new Insets(10, 5, 5, 5);
 			button_.Alignment = Label.AlignLeft | Label.AlignVCenter;
+
+			button_.Clicked += () => Parent?.ItemActivatedInternal(this);
 		}
 
 		public Button Button
@@ -51,6 +60,8 @@ namespace VUI
 			radio_.Padding = new Insets(10, 5, 5, 5);
 			//checkbox_.BackgroundColor = new Color(0, 0, 0, 0);
 			//checkbox_.Alignment = Label.AlignLeft | Label.AlignVCenter;
+
+			radio_.Changed += (b) => Parent?.ItemActivatedInternal(this);
 		}
 
 		public RadioButton RadioButton
@@ -67,6 +78,9 @@ namespace VUI
 
 	class Menu : Panel
 	{
+		public delegate void Handler(IMenuItem item);
+		public event Handler Activated;
+
 		private readonly List<IMenuItem> items_ = new List<IMenuItem>();
 
 		public Menu()
@@ -82,6 +96,7 @@ namespace VUI
 
 		public T AddMenuItem<T>(T item) where T : IMenuItem
 		{
+			item.Parent = this;
 			items_.Add(item);
 			Add(item.Widget);
 			return item;
@@ -92,6 +107,19 @@ namespace VUI
 			var p = Add(new Panel());
 			p.Margins = new Insets(5, 0, 5, 0);
 			p.Borders = new Insets(0, 1, 0, 0);
+		}
+
+		public void Clear()
+		{
+			foreach (var i in items_)
+				i.Parent = null;
+
+			RemoveAllChildren();
+		}
+
+		public void ItemActivatedInternal(IMenuItem item)
+		{
+			Activated?.Invoke(item);
 		}
 	}
 
@@ -111,6 +139,7 @@ namespace VUI
 		private bool firstShow_ = true;
 		private bool autoSize_ = false;
 		private bool disableOverlay_ = true;
+		private Color oldBackground_ = new Color(0, 0, 0, 0);
 
 		public ToggledPanel(string buttonText, bool toolButton = false, bool autoSize = false)
 		{
@@ -122,6 +151,7 @@ namespace VUI
 			autoSize_ = autoSize;
 
 			button_.Events.PointerClick += ToggleClick;
+			button_.Events.PointerDown += OnPointerDown;
 
 			panel_ = new Panel();
 			panel_.Layout = new BorderLayout();
@@ -167,7 +197,7 @@ namespace VUI
 
 				var root = button_.GetRoot();
 				root.FloatingPanel.Add(panel_);
-				AlternateUI.Instance.StartCoroutine(CoDoShow());
+				Glue.PluginManager.StartCoroutine(CoDoShow());
 			}
 			else
 			{
@@ -232,6 +262,7 @@ namespace VUI
 
 			panel_.DoLayout();
 
+			oldBackground_ = button_.BackgroundColor;
 			button_.BackgroundColor = Style.Theme.HighlightBackgroundColor;
 		}
 
@@ -249,7 +280,7 @@ namespace VUI
 
 			panel_.GetRoot().FloatingPanel.Clickthrough = true;
 
-			button_.BackgroundColor = Style.Theme.ButtonBackgroundColor;
+			button_.BackgroundColor = oldBackground_;
 			Toggled?.Invoke(panel_.Visible);
 		}
 
@@ -266,21 +297,40 @@ namespace VUI
 
 			e.Bubble = false;
 		}
+
+		private void OnPointerDown(PointerEvent e)
+		{
+		}
 	}
 
 
 	class MenuButton : ToggledPanel
 	{
-		private Menu menu_;
+		public new delegate void Handler();
+		public event Handler AboutToOpen;
 
-		public MenuButton(string buttonText, Menu menu = null)
-			: base(buttonText, false, true)
+		private Menu menu_;
+		private bool closeOnActivated_ = false;
+
+		public MenuButton(string buttonText, Menu menu)
+			: this(buttonText, false, true, menu)
+		{
+		}
+
+		public MenuButton(string buttonText, bool toolButton = false, bool autoSize = true, Menu menu = null)
+			: base(buttonText, toolButton, autoSize)
 		{
 			DisableOverlay = false;
 			Panel.Layout = new BorderLayout();
 
 			if (menu != null)
 				Menu = menu;
+
+			Toggled += (b) =>
+			{
+				if (b)
+					AboutToOpen?.Invoke();
+			};
 		}
 
 		public Menu Menu
@@ -292,11 +342,29 @@ namespace VUI
 
 			set
 			{
+				if (menu_ != null)
+					menu_.Activated -= OnItemActivated;
+
 				menu_ = value;
+
+				if (menu_ != null)
+					menu_.Activated += OnItemActivated;
 
 				Panel.RemoveAllChildren();
 				Panel.Add(menu_, BorderLayout.Center);
 			}
+		}
+
+		public bool CloseOnMenuActivated
+		{
+			get { return closeOnActivated_; }
+			set { closeOnActivated_ = value; }
+		}
+
+		private void OnItemActivated(IMenuItem item)
+		{
+			if (closeOnActivated_)
+				Hide();
 		}
 	}
 }

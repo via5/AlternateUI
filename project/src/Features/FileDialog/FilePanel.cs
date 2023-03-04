@@ -28,7 +28,6 @@ namespace AUI.FileDialog
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.Alignment = VUI.Label.AlignCenter | VUI.Label.AlignTop;
 			name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 60);
-			name_.FontSize = FileDialog.FontSize;
 
 			panel_.Borders = new VUI.Insets(1);
 			panel_.BorderColor = new Color(0, 0, 0, 0);

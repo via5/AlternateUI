@@ -86,7 +86,7 @@ namespace AUI.FS
 		public abstract string Name { get; }
 		public abstract DateTime DateCreated { get; }
 		public abstract DateTime DateModified { get; }
-		public abstract Icon Icon { get; }
+		public abstract VUI.Icon Icon { get; }
 		public abstract bool CanPin { get; }
 		public abstract bool Virtual { get; }
 		public abstract bool ChildrenVirtual { get; }

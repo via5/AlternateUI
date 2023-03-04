@@ -55,6 +55,18 @@ namespace AUI.FileDialog
 			get { return tree_; }
 		}
 
+		public bool CanGoUp()
+		{
+			return (tree_.Selected != root_);
+		}
+
+		public void Up()
+		{
+			var p = tree_.Selected?.Parent;
+			if (p != null && p != tree_.RootItem)
+				tree_.Select(p, true, VUI.TreeView.ScrollToTop);
+		}
+
 		public FS.IFilesystemObject Selected
 		{
 			get
@@ -130,7 +142,9 @@ namespace AUI.FileDialog
 			return null;
 		}
 
-		public bool Select(string path, bool expand = false)
+		public bool Select(
+			string path, bool expand = false,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
 			path = path.Replace('\\', '/');
 			path = path.Trim();
@@ -139,10 +153,11 @@ namespace AUI.FileDialog
 			if (cs.Count == 0)
 				return false;
 
-			return Select(tree_.RootItem, cs, expand);
+			return Select(tree_.RootItem, cs, expand, scrollTo);
 		}
 
-		private bool Select(VUI.TreeView.Item parent, List<string> cs, bool expand)
+		private bool Select(
+			VUI.TreeView.Item parent, List<string> cs, bool expand, int scrollTo)
 		{
 			if (parent.Children == null)
 				return false;
@@ -156,7 +171,7 @@ namespace AUI.FileDialog
 					{
 						if (cs.Count == 1)
 						{
-							tree_.Select(fi, true, true);
+							tree_.Select(fi, true, scrollTo);
 
 							if (expand && tree_.Selected != null)
 								tree_.Selected.Expanded = true;
@@ -166,7 +181,7 @@ namespace AUI.FileDialog
 						else
 						{
 							cs.RemoveAt(0);
-							if (Select(fi, cs, expand))
+							if (Select(fi, cs, expand, scrollTo))
 								return true;
 						}
 					}

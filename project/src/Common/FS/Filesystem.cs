@@ -226,9 +226,9 @@ namespace AUI.FS
 			get { return DateTime.MaxValue; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
-			get { return Icons.Directory; }
+			get { return Icons.Get(Icons.Directory); }
 		}
 
 		public override bool CanPin
@@ -370,9 +370,9 @@ namespace AUI.FS
 			// no-op
 		}
 
-		public Icon Icon
+		public VUI.Icon Icon
 		{
-			get { return Icons.Null; }
+			get { return Icons.Get(Icons.Null); }
 		}
 
 		public List<IFilesystemContainer> GetSubDirectories(Filter filter)

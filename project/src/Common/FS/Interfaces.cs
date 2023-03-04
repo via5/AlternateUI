@@ -13,7 +13,7 @@ namespace AUI.FS
 		bool HasCustomDisplayName { get; }
 		DateTime DateCreated { get; }
 		DateTime DateModified { get; }
-		Icon Icon { get; }
+		VUI.Icon Icon { get; }
 
 		bool CanPin { get; }
 		bool Virtual { get; }

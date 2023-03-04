@@ -69,7 +69,7 @@ namespace AUI.FS
 			get { return false; }
 		}
 
-		public override Icon Icon
+		public override VUI.Icon Icon
 		{
 			get { return Icons.File(MakeRealPath()); }
 		}
