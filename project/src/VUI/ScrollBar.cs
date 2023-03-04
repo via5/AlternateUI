@@ -201,9 +201,8 @@ namespace VUI
 
 			handle_.SetBounds(cb);
 			DoLayoutImpl();
-			base.UpdateBounds();
-
 			OnHandleMoved();
+			base.UpdateBounds();
 
 			var d = e.EventData as PointerEventData;
 			SuperController.singleton.StartCoroutine(StartDrag(d));

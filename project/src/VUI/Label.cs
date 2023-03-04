@@ -23,11 +23,7 @@ namespace VUI
 		private string text_;
 		private int align_;
 		private Text textObject_ = null;
-		private Transform ellipsis_ = null;
-		private RectTransform ellipsisRT_ = null;
-		private Text ellipsisText_ = null;
 		private Rectangle lastClip_ = Rectangle.Zero;
-		private UnityEngine.UI.Image ellipsisBackground_ = null;
 		private int wrap_ = Overflow;
 		private bool autoTooltip_ = false;
 		private bool hasEllipsis_ = false;
@@ -111,16 +107,11 @@ namespace VUI
 			}
 
 			// text already too long
-			if (wrap_ == ClipEllipsis && EllipsisVisible())
+			if (wrap_ == ClipEllipsis && hasEllipsis_)
 				return false;
 
 			// check if text is longer than current bounds
 			return TextTooLong();
-		}
-
-		private bool EllipsisVisible()
-		{
-			return (ellipsis_?.gameObject?.activeInHierarchy ?? false);
 		}
 
 		public int Alignment
@@ -249,38 +240,22 @@ namespace VUI
 				{
 					if (TextTooLong())
 					{
-						var ellipsisSize = TextSize("...");
-						ellipsisSize.Width += 8;
+						var ss = Root.ClipTextEllipsis(
+							Font, FontSize, FontStyle, ToTextAnchor(align_),
+							text_, ClientBounds.Size, false);
 
-						if (ellipsis_ == null)
-							CreateEllipsis();
-
-						var r = Rectangle.FromSize(
-							ClientBounds.Left + ClientBounds.Width - ellipsisSize.Width,
-							ClientBounds.Top + ClientBounds.Height - ellipsisSize.Height - 5,
-							ellipsisSize.Width,
-							ellipsisSize.Height);
-
-						ellipsis_.gameObject.SetActive(true);
-						hasEllipsis_ = true;
-
-						if (BackgroundColor.a == 0)
-							ellipsisBackground_.color = Style.Theme.BackgroundColor;
-						else
-							ellipsisBackground_.color = BackgroundColor;
-
-						Utilities.SetRectTransform(ellipsisRT_, r);
+						hasEllipsis_ = (ss != text_);
+						textObject_.text = ss;
 
 						if (autoTooltip_)
 							Tooltip.Text = text_;
 					}
 					else
 					{
+						ClearClip();
+
 						if (autoTooltip_)
 							Tooltip.Text = "";
-
-						if (ellipsis_ != null)
-							ellipsis_.gameObject.SetActive(false);
 					}
 
 					break;
@@ -306,56 +281,6 @@ namespace VUI
 			}
 		}
 
-		private void CreateEllipsis()
-		{
-			var go = new GameObject("ellipsisParent");
-			ellipsisRT_ = go.AddComponent<RectTransform>();
-			go.AddComponent<LayoutElement>();
-
-			{
-				var b = new GameObject("background");
-				ellipsisBackground_ = b.AddComponent<UnityEngine.UI.Image>();
-
-				var rt = b.GetComponent<RectTransform>();
-				if (rt == null)
-					rt = b.AddComponent<RectTransform>();
-
-				rt.offsetMin = new Vector2(0, 0);
-				rt.offsetMax = new Vector2(0, 0);
-				rt.anchorMin = new Vector2(0, 0);
-				rt.anchorMax = new Vector2(1, 1);
-
-				b.transform.SetParent(go.transform, false);
-			}
-
-			{
-				var e = new GameObject("ellipsis");
-
-				var rt = e.GetComponent<RectTransform>();
-				if (rt == null)
-					rt = e.AddComponent<RectTransform>();
-
-				rt.offsetMin = new Vector2(0, 0);
-				rt.offsetMax = new Vector2(0, 0);
-				rt.anchorMin = new Vector2(0, 0);
-				rt.anchorMax = new Vector2(1, 1);
-
-				ellipsisText_ = e.AddComponent<Text>();
-				ellipsisText_.text = "...";
-				ellipsisText_.raycastTarget = false;
-				ellipsisText_.alignment = TextAnchor.MiddleCenter;
-
-				e.transform.SetParent(go.transform, false);
-			}
-
-			go.SetActive(true);
-			go.transform.SetParent(MainObject.transform, false);
-
-			ellipsis_ = go.transform;
-
-			Polish();
-		}
-
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
@@ -378,9 +303,6 @@ namespace VUI
 
 			if (textObject_ != null)
 				textObject_.gameObject.SetActive(b);
-
-			if (ellipsis_ != null)
-				ellipsis_.gameObject.SetActive(b && hasEllipsis_);
 		}
 
 		protected override void UpdateActiveState()
@@ -391,7 +313,7 @@ namespace VUI
 
 		private bool TextTooLong()
 		{
-			var tl = Root.FitText(Font, FontSize, FontStyle, text_, ClientBounds.Size, true);
+			var tl = TextSize(text_, ClientBounds.Size, true);
 			return (tl.Width > ClientBounds.Width) || (tl.Height > ClientBounds.Height);
 		}
 

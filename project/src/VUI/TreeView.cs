@@ -1073,7 +1073,7 @@ namespace VUI
 		private void DoScrollTo(int i)
 		{
 			i = Math.Max(i - nodes_.Count / 2, 0);
-			SetTopItem(i, true, false);
+			SetTopItem(i, true, true);
 		}
 
 		private bool AbsoluteItemIndex(Item parent, Item item, ref int index)

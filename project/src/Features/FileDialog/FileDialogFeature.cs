@@ -95,7 +95,7 @@ namespace AUI.FileDialog
 
 			fd_.Enable();
 
-			//fd_.Show(Modes.OpenCUA());
+			fd_.Show(Modes.OpenScene(), null);
 			//fd_.SetCurrentDirectory("VaM/Saves/scene", true);
 
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
@@ -168,16 +168,6 @@ namespace AUI.FileDialog
 		protected override void DoUpdate(float s)
 		{
 			fd_.Update(s);
-		}
-
-		protected override void DoLoadOptions(JSONClass o)
-		{
-			fd_.LoadOptions(o);
-		}
-
-		protected override void DoSaveOptions(JSONClass o)
-		{
-			fd_.SaveOptions(o);
 		}
 	}
 }

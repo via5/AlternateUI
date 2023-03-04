@@ -978,9 +978,16 @@ namespace VUI
 			return Root.TextSize(Font, FontSize, FontStyle, s);
 		}
 
-		public Size FitText(string s, Size maxSize)
+		public Size TextSize(string s, Size maxSize, bool vertOverflow = false)
 		{
-			return Root.FitText(Font, FontSize, FontStyle, s, maxSize);
+			return Root.TextSize(Font, FontSize, FontStyle, s, maxSize, vertOverflow);
+		}
+
+		public Size FitText(string s, Size maxSize, bool vertOverflow = false)
+		{
+			return Root.FitText(
+				Font, FontSize, FontStyle, TextAnchor.UpperLeft,
+				s, maxSize, vertOverflow);
 		}
 
 

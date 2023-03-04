@@ -53,6 +53,8 @@ namespace AUI.FileDialog
 		private readonly VUI.TextBox filename_;
 		private readonly VUI.ComboBox<ExtensionItem> extensions_;
 
+		private bool ignore_ = false;
+
 		public ButtonsPanel(FileDialog fd)
 		{
 			fd_ = fd;
@@ -73,7 +75,7 @@ namespace AUI.FileDialog
 			extensions_.MinimumSize = new VUI.Size(500, VUI.Widget.DontCare);
 			extensions_.MaximumSize = new VUI.Size(500, VUI.Widget.DontCare);
 			extensions_.PopupWidth = 500;
-			extensions_.SelectionChanged += (e) => fd_.RefreshFiles();
+			extensions_.SelectionChanged += OnExtensionChanged;
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
 			action_ = buttons.Add(new VUI.Button("", () => fd_.ExecuteAction()));
@@ -85,8 +87,23 @@ namespace AUI.FileDialog
 
 		public string Filename
 		{
-			get { return filename_.Text; }
-			set { filename_.Text = value; }
+			get
+			{
+				return filename_.Text;
+			}
+
+			set
+			{
+				try
+				{
+					ignore_ = true;
+					filename_.Text = value;
+				}
+				finally
+				{
+					ignore_ = false;
+				}
+			}
 		}
 
 		public ExtensionItem SelectedExtension
@@ -99,9 +116,17 @@ namespace AUI.FileDialog
 
 		public void Set(IFileDialogMode mode)
 		{
-			action_.Text = mode.ActionText;
-			extensions_.SetItems(mode.Extensions);
-			filename_.Text = "";
+			try
+			{
+				ignore_ = true;
+				action_.Text = mode.ActionText;
+				extensions_.SetItems(mode.Extensions);
+				filename_.Text = "";
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 
 		public void FocusFilename()
@@ -114,8 +139,15 @@ namespace AUI.FileDialog
 			action_.Enabled = enabled;
 		}
 
+		private void OnExtensionChanged(ExtensionItem e)
+		{
+			if (ignore_) return;
+			fd_.RefreshFiles();
+		}
+
 		private void OnFilenameChanged(string s)
 		{
+			if (ignore_) return;
 			FilenameChanged?.Invoke();
 		}
 	}
@@ -492,7 +524,7 @@ namespace AUI.FileDialog
 
 	class FileDialog
 	{
-		private const int FontSize = 24;
+		public const int FontSize = 24;
 
 		private readonly Logger log_;
 
@@ -579,6 +611,8 @@ namespace AUI.FileDialog
 
 			dir_ = null;
 			filesPanel_.Clear();
+			optionsPanel_.Set(mode_);
+			buttonsPanel_.Set(mode_);
 
 			if (!SelectDirectory(mode_.CurrentDirectory))
 			{
@@ -605,8 +639,6 @@ namespace AUI.FileDialog
 
 			SelectFile(null);
 
-			optionsPanel_.Set(mode_);
-			buttonsPanel_.Set(mode_);
 			tree_.Enable();
 			tree_.SetFlags(GetTreeFlags());
 
@@ -866,21 +898,6 @@ namespace AUI.FileDialog
 		private void OnFileOptionsChanged()
 		{
 			RefreshFiles();
-		}
-
-		public void LoadOptions(JSONClass o)
-		{
-			//if (o.HasKey("flattenDirs"))
-			//	flattenDirs_ = o["flattenDirs"].AsBool;
-			//
-			//if (o.HasKey("flattenPackages"))
-			//	flattenPackages_ = o["flattenPackages"].AsBool;
-		}
-
-		public void SaveOptions(JSONClass o)
-		{
-			//o["flattenDirs"] = new JSONData(flattenDirs_);
-			//o["flattenPackages"] = new JSONData(flattenPackages_);
 		}
 
 		private void OnTreeSelection(IFileTreeItem item)
