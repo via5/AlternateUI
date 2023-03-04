@@ -24,12 +24,14 @@ namespace AUI
 		public const int Null = 0;
 		public const int Package = 1;
 		public const int Pinned = 2;
-		public const int Back = 3;
-		public const int Next = 4;
-		public const int Up = 5;
-		public const int Drop = 6;
-		public const int ResizeWE = 7;
-		public const int Directory = 8;
+		public const int Unpinned = 3;
+		public const int UnpinnedDark = 4;
+		public const int Back = 5;
+		public const int Next = 6;
+		public const int Up = 7;
+		public const int Drop = 8;
+		public const int ResizeWE = 9;
+		public const int Directory = 10;
 
 		private static Dictionary<int, VUI.Icon> icons_ = new Dictionary<int, VUI.Icon>();
 		private static Dictionary<string, VUI.Icon> exts_ = new Dictionary<string, VUI.Icon>();
@@ -45,6 +47,8 @@ namespace AUI
 				{ Null, new VUI.Icon(Texture2D.blackTexture) },
 				{ Package, new VUI.Icon(pp + "/res/icons/package.png") },
 				{ Pinned, new VUI.Icon(pp + "/res/icons/pinned.png") },
+				{ Unpinned, new VUI.Icon(pp + "/res/icons/unpinned.png") },
+				{ UnpinnedDark, new VUI.Icon(pp + "/res/icons/unpinned-dark.png") },
 				{ Back, new VUI.Icon(pp + "/res/icons/back.png") },
 				{ Next, new VUI.Icon(pp + "/res/icons/next.png") },
 				{ Up, new VUI.Icon(pp + "/res/icons/up.png") },

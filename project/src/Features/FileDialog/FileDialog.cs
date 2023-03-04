@@ -300,7 +300,7 @@ namespace AUI.FileDialog
 
 		private readonly VUI.ToolButton back_, next_, up_;
 		private readonly VUI.MenuButton drop_;
-		private readonly VUI.CheckBox pin_;
+		private readonly VUI.ToolButton pin_;
 		private readonly VUI.TextBox path_;
 		private readonly SearchBox search_;
 		private readonly VUI.Menu dropMenu_;
@@ -324,7 +324,7 @@ namespace AUI.FileDialog
 			next_ = buttons.Add(new VUI.ToolButton("\x2192", () => fd_.Next()));
 			buttons.Add(drop_.Button);
 			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up()));
-			pin_ = buttons.Add(new VUI.CheckBox("Pin", OnPin));
+			pin_ = buttons.Add(new VUI.ToolButton("Pin", () => OnTogglePin()));
 
 			back_.Icon = Icons.Get(Icons.Back);
 			back_.SetBorderless();
@@ -338,6 +338,11 @@ namespace AUI.FileDialog
 
 			up_.Icon = Icons.Get(Icons.Up);
 			up_.SetBorderless();
+
+			pin_.Icon = Icons.Get(Icons.Unpinned);
+			pin_.SetBorderless();
+			pin_.Borders = new VUI.Insets(1);
+			pin_.BorderColor = new Color(0, 0, 0, 0);
 
 			left.Add(buttons, VUI.BorderLayout.Left);
 			path_ = left.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
@@ -372,17 +377,9 @@ namespace AUI.FileDialog
 				back_.Enabled = fd_.CanGoBack();
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
+				drop_.Button.Enabled = (fd_.CanGoBack() || fd_.CanGoNext());
 
-				if (dir != null)
-				{
-					pin_.Enabled = dir.CanPin;
-					pin_.Checked = FS.Filesystem.Instance.IsPinned(dir);
-				}
-				else
-				{
-					pin_.Enabled = false;
-					pin_.Checked = false;
-				}
+				UpdatePin();
 			}
 			finally
 			{
@@ -428,22 +425,54 @@ namespace AUI.FileDialog
 			}
 		}
 
+		private void UpdatePin()
+		{
+			var dir = fd_.SelectedDirectory;
+
+			if (dir != null)
+			{
+				pin_.Enabled = dir.CanPin;
+
+				if (FS.Filesystem.Instance.IsPinned(dir))
+				{
+					pin_.Text = "Unpin";
+					pin_.Icon = Icons.Get(Icons.Pinned);
+					pin_.BorderColor = VUI.Style.Theme.BorderColor;
+				}
+				else
+				{
+					pin_.Text = "Pin";
+					pin_.Icon = Icons.Get(Icons.Unpinned);
+					pin_.BorderColor = new Color(0, 0, 0, 0);
+				}
+			}
+			else
+			{
+				pin_.Enabled = false;
+				pin_.Text = "Pin";
+				pin_.Icon = Icons.Get(Icons.Unpinned);
+				pin_.BorderColor = new Color(0, 0, 0, 0);
+			}
+		}
+
 		private void OnHistoryEntry(int i)
 		{
 			fd_.GoHistory(i);
 		}
 
-		private void OnPin(bool b)
+		private void OnTogglePin()
 		{
 			if (ignore_) return;
 
 			var s = fd_.SelectedDirectory;
 			if (s != null && s.CanPin)
 			{
-				if (b)
-					FS.Filesystem.Instance.Pin(s);
-				else
+				if (FS.Filesystem.Instance.IsPinned(s))
 					FS.Filesystem.Instance.Unpin(s);
+				else
+					FS.Filesystem.Instance.Pin(s);
+
+				UpdatePin();
 			}
 		}
 

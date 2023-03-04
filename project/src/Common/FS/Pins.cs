@@ -169,7 +169,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Pinned); }
+			get { return Icons.Get(Icons.UnpinnedDark); }
 		}
 
 		public override string MakeRealPath()
