@@ -288,6 +288,9 @@ namespace VUI
 
 		private void SetTextOrIcon()
 		{
+			if (button_?.button == null)
+				return;
+
 			if (tex_ == null)
 				button_.buttonText.text = text_;
 			else

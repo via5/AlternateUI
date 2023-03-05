@@ -81,55 +81,47 @@ namespace AUI.FileDialog
 	}
 
 
-	interface IFileDialogMode
+	class Options
 	{
-		History History { get; }
-		bool FlattenDirectories { get; set; }
-		bool FlattenPackages { get; set; }
-		int Sort { get; set; }
-		int SortDirection { get; set; }
-		string CurrentDirectory { get; set; }
-		string DefaultDirectory { get; }
-
-		string Title { get; }
-		ExtensionItem[] Extensions { get; }
-		string ActionText { get; }
-		bool IsWritable { get; }
-
-		bool CanExecute(FileDialog fd);
-		void Execute(FileDialog fd);
-		string GetPath(FileDialog fd);
-	}
-
-
-	abstract class BasicMode : IFileDialogMode
-	{
-		private readonly string name_;
-		private readonly string title_;
-		private readonly ExtensionItem[] exts_;
-		private readonly string defaultPath_;
+		private string name_;
 		private string lastPath_;
-		private bool flattenDirs_ = true;
-		private bool flattenPackages_ = true;
+		private bool flattenDirs_;
+		private bool flattenPackages_;
+		private bool mergePackages_;
 		private int sort_, sortDir_;
 		private readonly History history_ = new History();
 
-		protected BasicMode(
-			string name, string title, ExtensionItem[] exts, string defaultPath,
-			bool flattenDirs, bool flattenPackages, int sort, int sortDir)
+		private static readonly Dictionary<string, Options> map_ =
+			new Dictionary<string, Options>();
+
+		public Options(
+			string name, string lastPath,
+			bool flattenDirs, bool flattenPackages, bool mergePackages,
+			int	sort, int sortDir)
 		{
 			name_ = name;
-			title_ = title;
-			exts_ = exts;
-			defaultPath_ = defaultPath;
-			lastPath_ = defaultPath;
+			lastPath_ = lastPath;
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
+			mergePackages_ = mergePackages;
 			sort_ = sort;
 			sortDir_ = sortDir;
+		}
 
-			if (!string.IsNullOrEmpty(name_))
-				Load();
+		public static Options Get(string name)
+		{
+			if (string.IsNullOrEmpty(name))
+				return null;
+
+			Options o = null;
+			map_.TryGetValue(name, out o);
+			return o;
+		}
+
+		public static void Set(string name, Options o)
+		{
+			if (!string.IsNullOrEmpty(name))
+				map_.Add(name, o);
 		}
 
 		public History History
@@ -149,6 +141,12 @@ namespace AUI.FileDialog
 			set { flattenPackages_ = value; Changed(); }
 		}
 
+		public bool MergePackages
+		{
+			get { return mergePackages_; }
+			set { mergePackages_ = value; Changed(); }
+		}
+
 		public int Sort
 		{
 			get { return sort_; }
@@ -161,17 +159,127 @@ namespace AUI.FileDialog
 			set { sortDir_ = value; Changed(); }
 		}
 
-		public string DefaultDirectory
-		{
-			get { return defaultPath_; }
-		}
-
 		public string CurrentDirectory
 		{
 			get { return lastPath_; }
 			set { lastPath_ = value; Changed(); }
 		}
 
+		public void Load()
+		{
+			var path = GetOptionsFile();
+			if (string.IsNullOrEmpty(path) || !FileManagerSecure.FileExists(path))
+				return;
+
+			var j = SuperController.singleton.LoadJSON(path)?.AsObject;
+			if (j == null)
+				return;
+
+			if (j.HasKey("lastPath"))
+				lastPath_ = j["lastPath"].Value;
+
+			if (j.HasKey("flattenDirectories"))
+				flattenDirs_ = j["flattenDirectories"].AsBool;
+
+			if (j.HasKey("flattenPackages"))
+				flattenPackages_ = j["flattenPackages"].AsBool;
+
+			if (j.HasKey("mergePackages"))
+				mergePackages_ = j["mergePackages"].AsBool;
+
+			if (j.HasKey("sort"))
+				sort_ = j["sort"].AsInt;
+
+			if (j.HasKey("sortDirection"))
+				sortDir_ = j["sortDirection"].AsInt;
+		}
+
+		public void Save()
+		{
+			var path = GetOptionsFile();
+			if (string.IsNullOrEmpty(path))
+				return;
+
+			var j = new JSONClass();
+
+			j["lastPath"] = new JSONData(lastPath_);
+			j["flattenDirectories"] = new JSONData(flattenDirs_);
+			j["flattenPackages"] = new JSONData(flattenPackages_);
+			j["mergePackages"] = new JSONData(mergePackages_);
+			j["sort"] = new JSONData(sort_);
+			j["sortDirection"] = new JSONData(sortDir_);
+
+			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+		}
+
+		private string GetOptionsFile()
+		{
+			if (string.IsNullOrEmpty(name_))
+				return null;
+
+			return AlternateUI.Instance.GetConfigFilePath(
+				$"aui.filedialog.modes.{name_}.json");
+		}
+
+		protected void Changed()
+		{
+			Save();
+		}
+	}
+
+	public delegate void ExecuteHandler();
+
+	interface IFileDialogMode
+	{
+		Options Options { get; }
+
+		string Title { get; }
+		ExtensionItem[] Extensions { get; }
+		string DefaultDirectory { get; }
+		string ActionText { get; }
+		bool IsWritable { get; }
+
+		bool CanExecute(FileDialog fd);
+		void Execute(FileDialog fd, ExecuteHandler h);
+		string GetPath(FileDialog fd);
+	}
+
+
+	abstract class BasicMode : IFileDialogMode
+	{
+		private readonly string name_;
+		private readonly string title_;
+		private readonly ExtensionItem[] exts_;
+		private readonly string defaultPath_;
+		private readonly Options opts_;
+
+		protected BasicMode(
+			string name, string title, ExtensionItem[] exts, string defaultPath,
+			bool flattenDirs, bool flattenPackages, bool mergePackages,
+			int sort, int sortDir)
+		{
+			name_ = name;
+			title_ = title;
+			exts_ = exts;
+			defaultPath_ = defaultPath;
+
+			opts_ = Options.Get(name_);
+			if (opts_ == null)
+			{
+				opts_ = new Options(
+					name_, defaultPath, flattenDirs, flattenPackages,
+					mergePackages, sort, sortDir);
+
+				opts_.Load();
+
+				Options.Set(name_, opts_);
+			}
+		}
+
+		public Options Options
+		{
+			get { return opts_; }
+		}
 
 		public string Title
 		{
@@ -183,71 +291,26 @@ namespace AUI.FileDialog
 			get { return exts_; }
 		}
 
+		public string DefaultDirectory
+		{
+			get { return defaultPath_; }
+		}
+
 		public abstract string ActionText { get; }
 		public abstract bool IsWritable { get; }
 
 		public abstract bool CanExecute(FileDialog fd);
 		public abstract string GetPath(FileDialog fd);
 
-		public void Execute(FileDialog fd)
+		public void Execute(FileDialog fd, ExecuteHandler h)
 		{
-			lastPath_ = fd.SelectedDirectory.VirtualPath;
-			Changed();
+			opts_.CurrentDirectory = fd.SelectedDirectory.VirtualPath;
+			DoExecute(fd, h);
 		}
 
-		protected virtual void DoExecute(FileDialog fd)
+		protected virtual void DoExecute(FileDialog fd, ExecuteHandler h)
 		{
-			// no-op
-		}
-
-		protected void Changed()
-		{
-			Save();
-		}
-
-		private string GetOptionsFile()
-		{
-			return AlternateUI.Instance.GetConfigFilePath(
-				$"aui.filedialog.modes.{name_}.json");
-		}
-
-		private void Load()
-		{
-			var f = GetOptionsFile();
-			if (!FileManagerSecure.FileExists(f))
-				return;
-
-			var j = SuperController.singleton.LoadJSON(f)?.AsObject;
-			if (j == null)
-				return;
-
-			if (j.HasKey("flattenDirectories"))
-				flattenDirs_ = j["flattenDirectories"].AsBool;
-
-			if (j.HasKey("flattenPackages"))
-				flattenPackages_ = j["flattenPackages"].AsBool;
-
-			if (j.HasKey("sort"))
-				sort_ = j["sort"].AsInt;
-
-			if (j.HasKey("sortDirection"))
-				sort_ = j["sortDirection"].AsInt;
-
-			if (j.HasKey("path"))
-				lastPath_ = j["path"].Value;
-		}
-
-		private void Save()
-		{
-			var j = new JSONClass();
-
-			j["flattenDirectories"] = new JSONData(flattenDirs_);
-			j["flattenPackages"] = new JSONData(flattenPackages_);
-			j["sort"] = new JSONData(sort_);
-			j["sortDirection"] = new JSONData(sortDir_);
-			j["path"] = new JSONData(lastPath_);
-
-			SuperController.singleton.SaveJSON(j, GetOptionsFile());
+			h();
 		}
 	}
 
@@ -256,7 +319,7 @@ namespace AUI.FileDialog
 	{
 		public NoMode()
 			: base(
-				  null, "", new ExtensionItem[0], "", false, false,
+				  null, "", new ExtensionItem[0], "", false, false, false,
 				  FS.Filter.NoSort, FS.Filter.NoSortDirection)
 		{
 		}
@@ -287,8 +350,12 @@ namespace AUI.FileDialog
 	{
 		public OpenMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
-			bool flattenDirs, bool flattenPackages, int sort, int sortDir)
-				: base(name, title, exts, defaultPath, flattenDirs, flattenPackages, sort, sortDir)
+			bool flattenDirs, bool flattenPackages, bool mergePackages,
+			int sort, int sortDir)
+				: base(
+					  name, title, exts, defaultPath,
+					  flattenDirs, flattenPackages, mergePackages,
+					  sort, sortDir)
 		{
 		}
 
@@ -349,8 +416,12 @@ namespace AUI.FileDialog
 	{
 		public SaveMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
-			bool flattenDirs, bool flattenPackages, int sort, int sortDir)
-				: base(name, title, exts, defaultPath, flattenDirs, flattenPackages, sort, sortDir)
+			bool flattenDirs, bool flattenPackages, bool mergePackages,
+			int sort, int sortDir)
+				: base(
+					  name, title, exts, defaultPath,
+					  flattenDirs, flattenPackages, mergePackages,
+					  sort, sortDir)
 		{
 		}
 
@@ -369,10 +440,33 @@ namespace AUI.FileDialog
 			return (GetPath(fd) != "");
 		}
 
-		protected override void DoExecute(FileDialog fd)
+		protected override void DoExecute(FileDialog fd, ExecuteHandler h)
 		{
+			var path = GetPath(fd);
+
+			//if (FileManagerSecure.FileExists(path))
+			//{
+			//	var d = new VUI.TaskDialog(
+			//		fd.Root, "File already exists",
+			//		"The file already exists. Replace?",
+			//		path);
+			//
+			//	d.AddButton(VUI.Buttons.OK, "Replace");
+			//	d.AddButton(VUI.Buttons.Cancel, "Cancel");
+			//
+			//	d.RunDialog((r) =>
+			//	{
+			//		if (r == VUI.Buttons.OK)
+			//		{
+			//			h();
+			//		}
+			//	});
+			//}
+
 			fd.SelectedDirectory?.ClearCache();
 			fd.SelectedFile?.ClearCache();
+
+			h();
 		}
 
 		public override string GetPath(FileDialog fd)
@@ -409,9 +503,9 @@ namespace AUI.FileDialog
 			if (openScene_ == null)
 			{
 				openScene_ = new OpenMode(
-					"openScene", "Open scene",
+					"scene", "Open scene",
 					FileDialogFeature.GetSceneExtensions(true),
-					"VaM/Saves/scene", true, true,
+					"VaM/Saves/scene", true, true, true,
 					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
 			}
 
@@ -423,9 +517,9 @@ namespace AUI.FileDialog
 			if (saveScene_ == null)
 			{
 				saveScene_ = new SaveMode(
-					"saveScene", "Save scene",
+					"scene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
-					"VaM/Saves/scene", true, true,
+					"VaM/Saves/scene", false, false, false,
 					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
 			}
 
@@ -439,7 +533,7 @@ namespace AUI.FileDialog
 				openCUA_ = new OpenMode(
 					"openCUA", "Open asset bundle",
 					FileDialogFeature.GetCUAExtensions(true),
-					"VaM/Custom/Assets", true, true,
+					"VaM/Custom/Assets", true, true, true,
 					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
 			}
 
@@ -453,7 +547,7 @@ namespace AUI.FileDialog
 				openPlugin_ = new OpenMode(
 					"openPlugin", "Open plugin",
 					FileDialogFeature.GetPluginExtensions(true),
-					"VaM/Custom/Scripts", false, true,
+					"VaM/Custom/Scripts", false, true, true,
 					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
 			}
 

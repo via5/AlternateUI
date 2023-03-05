@@ -45,51 +45,70 @@ namespace VUI
 			}
 			else
 			{
-				if (!loading_)
+				if (GetFromCache())
 				{
-					loading_ = true;
-					Load();
+					f(texture_);
 				}
+				else
+				{
+					callbacks_.Add(f);
 
-				callbacks_.Add(f);
+					if (!loading_)
+					{
+						loading_ = true;
+						Load();
+					}
+				}
 			}
 		}
 
-		private void Load()
+		private bool GetFromCache()
 		{
 			if (path_ == null)
 			{
 				texture_ = def_;
-				RunCallbacks();
+				return true;
 			}
 			else
 			{
-				ImageLoaderThreaded.QueuedImage q = new ImageLoaderThreaded.QueuedImage();
-				q.imgPath = path_;
-
-				q.callback = (tt) =>
+				var tex = ImageLoaderThreaded.singleton.GetCachedThumbnail(path_);
+				if (tex != null)
 				{
-					Texture tex = tt.tex;
-					if (tex == null)
-					{
-						texture_ = def_;
-					}
-					else
-					{
-						texture_ = tex;
-
-						if (w_ != 0 && h_ != 0)
-							texture_ = ScaleTexture(texture_, w_, h_);
-
-						texture_.wrapMode = TextureWrapMode.Clamp;
-					}
-
-					RunCallbacks();
-				};
-
-				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(q.imgPath);
-				ImageLoaderThreaded.singleton.QueueThumbnail(q);
+					texture_ = tex;
+					return true;
+				}
 			}
+
+			return false;
+		}
+
+		private void Load()
+		{
+			ImageLoaderThreaded.QueuedImage q = new ImageLoaderThreaded.QueuedImage();
+			q.imgPath = path_;
+
+			q.callback = (tt) =>
+			{
+				Texture tex = tt.tex;
+				if (tex == null)
+				{
+					texture_ = def_;
+				}
+				else
+				{
+					texture_ = tex;
+
+					if (w_ != 0 && h_ != 0)
+						texture_ = ScaleTexture(texture_, w_, h_);
+
+					texture_.wrapMode = TextureWrapMode.Clamp;
+				}
+
+				RunCallbacks();
+			};
+
+			//ImageLoaderThreaded.singleton.ClearCacheThumbnail(q.imgPath);
+			ImageLoaderThreaded.singleton.QueueThumbnail(q);
 		}
 
 		private void RunCallbacks()
@@ -195,11 +214,11 @@ namespace VUI
 			UpdateTexture();
 		}
 
-		public Size GetPreferredSize(float maxWidth, float maxHeight)
+		public static Size SGetPreferredSize(Texture t, float maxWidth, float maxHeight)
 		{
 			Size s;
 
-			if (tex_ == null)
+			if (t == null)
 			{
 				s = new Size(
 					Math.Max(maxWidth, maxHeight),
@@ -207,7 +226,7 @@ namespace VUI
 			}
 			else
 			{
-				s = new Size(tex_.width, tex_.height);
+				s = new Size(t.width, t.height);
 
 				if (maxWidth != Widget.DontCare)
 					s.Width = Math.Min(maxWidth, s.Width);
@@ -220,6 +239,11 @@ namespace VUI
 			s.Height = Math.Min(s.Width, s.Height);
 
 			return s;
+		}
+
+		public Size GetPreferredSize(float maxWidth, float maxHeight)
+		{
+			return SGetPreferredSize(tex_, maxWidth, maxHeight);
 		}
 
 		public void UpdateAspect()
@@ -363,10 +387,7 @@ namespace VUI
 		protected override Size DoGetPreferredSize(
 			float maxWidth, float maxHeight)
 		{
-			if (image_ == null)
-				return Size.Zero;
-
-			return image_.GetPreferredSize(maxWidth, maxHeight);
+			return ImageObject.SGetPreferredSize(tex_, maxWidth, maxHeight);
 		}
 
 		private void UpdateTexture()

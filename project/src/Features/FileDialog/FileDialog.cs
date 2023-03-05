@@ -6,20 +6,6 @@ using UnityEngine;
 
 namespace AUI.FileDialog
 {
-	//class Options
-	//{
-	//	public bool flattenDirectories = true;
-	//	public bool flattenPackages = true;
-	//	public int sort = FS.Filter.SortFilename;
-	//	public int sortDir = FS.Filter.SortAscending;
-	//
-	//	public void Set(IFileDialogMode mode)
-	//	{
-	//		flattenDirectories = mode.GetDefaultFlattenDirectories();
-	//	}
-	//}
-
-
 	public class ExtensionItem
 	{
 		private readonly string text_;
@@ -163,6 +149,7 @@ namespace AUI.FileDialog
 
 		private readonly VUI.CheckBox flattenDirs_;
 		private readonly VUI.CheckBox flattenPackages_;
+		private readonly VUI.CheckBox mergePackages_;
 		private readonly VUI.MenuButton sortPanel_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
@@ -194,6 +181,7 @@ namespace AUI.FileDialog
 
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
+			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
 			Add(sortPanel_.Button);
 		}
 
@@ -220,15 +208,15 @@ namespace AUI.FileDialog
 				flattenDirs_.Visible = !mode_.IsWritable;
 				flattenPackages_.Visible = !mode_.IsWritable;
 
-				flattenDirs_.Checked = mode_.FlattenDirectories;
-				flattenPackages_.Checked = mode_.FlattenPackages;
+				flattenDirs_.Checked = mode_.Options.FlattenDirectories;
+				flattenPackages_.Checked = mode_.Options.FlattenPackages;
 
 				VUI.RadioMenuItem item;
 
-				if (sortItems_.TryGetValue(mode_.Sort, out item))
+				if (sortItems_.TryGetValue(mode_.Options.Sort, out item))
 					item.RadioButton.Checked = true;
 
-				if (sortDirItems_.TryGetValue(mode_.SortDirection, out item))
+				if (sortDirItems_.TryGetValue(mode_.Options.SortDirection, out item))
 					item.RadioButton.Checked = true;
 			}
 			finally
@@ -263,7 +251,7 @@ namespace AUI.FileDialog
 		{
 			if (ignore_) return;
 
-			mode_.FlattenDirectories = b;
+			mode_.Options.FlattenDirectories = b;
 			DirectoriesChanged?.Invoke();
 		}
 
@@ -271,15 +259,24 @@ namespace AUI.FileDialog
 		{
 			if (ignore_) return;
 
-			mode_.FlattenPackages = b;
+			mode_.Options.FlattenPackages = b;
 			DirectoriesChanged?.Invoke();
+		}
+
+		private void SetMergePackages(bool b)
+		{
+			if (ignore_) return;
+
+			mode_.Options.MergePackages = b;
+			DirectoriesChanged?.Invoke();
+			FilesChanged?.Invoke();
 		}
 
 		private void SetSort(int s)
 		{
 			if (ignore_) return;
 
-			mode_.Sort = s;
+			mode_.Options.Sort = s;
 			FilesChanged?.Invoke();
 		}
 
@@ -287,7 +284,7 @@ namespace AUI.FileDialog
 		{
 			if (ignore_) return;
 
-			mode_.SortDirection = s;
+			mode_.Options.SortDirection = s;
 			FilesChanged?.Invoke();
 		}
 	}
@@ -686,6 +683,11 @@ namespace AUI.FileDialog
 			get { return 4; }
 		}
 
+		public VUI.Root Root
+		{
+			get { return root_; }
+		}
+
 
 		public FS.IFilesystemContainer SelectedDirectory
 		{
@@ -704,11 +706,11 @@ namespace AUI.FileDialog
 
 		public History History
 		{
-			get { return mode_.History; }
+			get { return mode_.Options.History; }
 		}
 
 
-		public void Show(IFileDialogMode mode, Action<string> callback)
+		public void Show(IFileDialogMode mode, Action<string> callback, string cwd = null)
 		{
 			if (root_ == null)
 				CreateUI();
@@ -724,27 +726,11 @@ namespace AUI.FileDialog
 			optionsPanel_.Set(mode_);
 			buttonsPanel_.Set(mode_);
 
-			var scrollTo = VUI.TreeView.ScrollToCenter;
-
-			if (!SelectDirectory(mode_.CurrentDirectory, false, scrollTo))
-			{
-				Log.Error($"bad directory {mode_.CurrentDirectory}");
-
-				if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
-				{
-					mode_.CurrentDirectory = mode_.DefaultDirectory;
-				}
-				else
-				{
-					Log.Error($"bad directory {mode_.DefaultDirectory}");
-					mode_.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
-					SelectDirectory(mode_.CurrentDirectory, false, scrollTo);
-				}
-			}
+			SelectInitialDirectory(cwd);
 
 			if (dir_ == null)
 			{
-				// SelectDirectory() above won't fire the selected event if the
+				// SelectInitialDirectory() won't fire the selected event if the
 				// node was already selected, so call it manually to make sure
 				SetCurrentDirectory(tree_.Selected as FS.IFilesystemContainer);
 			}
@@ -757,20 +743,54 @@ namespace AUI.FileDialog
 			buttonsPanel_.FocusFilename();
 		}
 
+		private void SelectInitialDirectory(string cwd)
+		{
+			var scrollTo = VUI.TreeView.ScrollToCenter;
+			var opts = mode_.Options;
+
+			if (cwd != null)
+			{
+				if (SelectDirectory(cwd, false, scrollTo))
+				{
+					opts.CurrentDirectory = cwd;
+					return;
+				}
+
+				Log.Error($"bad directory {cwd}");
+			}
+
+			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
+				return;
+
+			Log.Error($"bad directory {opts.CurrentDirectory}");
+
+			if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
+			{
+				opts.CurrentDirectory = mode_.DefaultDirectory;
+				return;
+			}
+
+			Log.Error($"bad directory {mode_.DefaultDirectory}");
+			opts.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
+
+			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
+				return;
+
+			Log.Error($"can't select any initial directory");
+		}
+
 		public void Hide()
 		{
 			tree_.Disable();
 			root_.Visible = false;
 		}
 
-		public void SelectFile(FS.IFilesystemObject o)
+		public void SelectFile(FS.IFilesystemObject o, bool replaceFilename = true)
 		{
-			if (o == null)
-				o = new FS.NullDirectory();
-
 			if (selected_ == o)
 			{
-				buttonsPanel_.Filename = selected_?.DisplayName ?? "";
+				if (replaceFilename)
+					UpdateFilename();
 			}
 			else
 			{
@@ -778,13 +798,21 @@ namespace AUI.FileDialog
 					filesPanel_.SetSelected(selected_, false);
 
 				selected_ = o;
-				buttonsPanel_.Filename = selected_?.DisplayName ?? "";
+
+				if (replaceFilename)
+					UpdateFilename();
 
 				if (selected_ != null)
 					filesPanel_.SetSelected(selected_, true);
 
 				UpdateActionButton();
 			}
+		}
+
+		private void UpdateFilename()
+		{
+			if (selected_ != null)
+				buttonsPanel_.Filename = selected_.DisplayName;
 		}
 
 		public bool SelectDirectory(
@@ -802,12 +830,12 @@ namespace AUI.FileDialog
 
 		public bool CanGoBack()
 		{
-			return mode_.History.CanGoBack();
+			return History.CanGoBack();
 		}
 
 		public bool CanGoNext()
 		{
-			return mode_.History.CanGoNext();
+			return History.CanGoNext();
 		}
 
 		public bool CanGoUp()
@@ -820,7 +848,7 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreHistory_ = true;
-				SelectDirectory(mode_.History.Back(), false);
+				SelectDirectory(History.Back(), false);
 			}
 			finally
 			{
@@ -833,7 +861,7 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreHistory_ = true;
-				SelectDirectory(mode_.History.Next(), false);
+				SelectDirectory(History.Next(), false);
 			}
 			finally
 			{
@@ -846,8 +874,8 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreHistory_ = true;
-				if (mode_.History.SetIndex(i))
-					SelectDirectory(mode_.History.Current, false);
+				if (History.SetIndex(i))
+					SelectDirectory(History.Current, false);
 			}
 			finally
 			{
@@ -873,11 +901,22 @@ namespace AUI.FileDialog
 
 			if (mode_.CanExecute(this))
 			{
-				mode_.Execute(this);
-				callback_?.Invoke(mode_.GetPath(this));
-				callback_ = null;
-				Hide();
+				mode_.Execute(this, () =>
+				{
+					AlternateUI.Instance.StartCoroutine(
+						CoRunCallback(callback_, mode_.GetPath(this)));
+
+					callback_ = null;
+					Hide();
+				});
 			}
+		}
+
+		private IEnumerator CoRunCallback(Action<string> f, string path)
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			f?.Invoke(path);
 		}
 
 		public string GetDefaultExtension()
@@ -904,7 +943,7 @@ namespace AUI.FileDialog
 		{
 			int f = FileTree.NoFlags;
 
-			if (mode_.FlattenDirectories)
+			if (mode_.Options.FlattenDirectories)
 				f |= FileTree.FlattenDirectories;
 
 			if (mode_.IsWritable)
@@ -916,7 +955,7 @@ namespace AUI.FileDialog
 		private void SetCurrentDirectory(FS.IFilesystemContainer o)
 		{
 			if (!ignoreHistory_)
-				mode_.History.Push(o.VirtualPath);
+				History.Push(o.VirtualPath);
 
 			dir_ = o;
 			addressBar_.ClearSearch();
@@ -928,8 +967,8 @@ namespace AUI.FileDialog
 			return new FS.Filter(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
-				mode_.Sort,
-				mode_.SortDirection);
+				mode_.Options.Sort,
+				mode_.Options.SortDirection);
 		}
 
 		public void Refresh()
@@ -945,14 +984,14 @@ namespace AUI.FileDialog
 
 			if (dir_.ParentPackage == null)
 			{
-				if (mode_.FlattenDirectories && !mode_.IsWritable)
+				if (mode_.Options.FlattenDirectories && !mode_.IsWritable)
 					files = dir_.GetFilesRecursive(CreateFilter());
 				else
 					files = dir_.GetFiles(CreateFilter());
 			}
 			else
 			{
-				if (mode_.FlattenPackages)
+				if (mode_.Options.FlattenPackages)
 					files = dir_.GetFilesRecursive(CreateFilter());
 				else
 					files = dir_.GetFiles(CreateFilter());
@@ -998,9 +1037,9 @@ namespace AUI.FileDialog
 
 			addressBar_ = new AddressBar(this);
 
-			var p = new VUI.Panel(new VUI.BorderLayout(10));
-			p.Add(optionsPanel_, VUI.BorderLayout.Top);
-			p.Add(addressBar_, VUI.BorderLayout.Center);
+			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+			p.Add(addressBar_);
+			p.Add(optionsPanel_);
 
 			return p;
 		}
@@ -1052,8 +1091,6 @@ namespace AUI.FileDialog
 		{
 			if (SelectedFile == null || SelectedFile.Name != buttonsPanel_.Filename)
 			{
-				SelectFile(null);
-
 				foreach (var f in files_)
 				{
 					if (f.Name == buttonsPanel_.Filename)
@@ -1062,6 +1099,11 @@ namespace AUI.FileDialog
 						break;
 					}
 				}
+
+				// filename not found, make selected file null, but don't
+				// replace the filename, it'd be set to an empty string and
+				// would be lost
+				SelectFile(null, false);
 			}
 		}
 

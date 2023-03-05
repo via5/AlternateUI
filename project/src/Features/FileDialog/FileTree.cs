@@ -64,7 +64,7 @@ namespace AUI.FileDialog
 		{
 			var p = tree_.Selected?.Parent;
 			if (p != null && p != tree_.RootItem)
-				tree_.Select(p, true, VUI.TreeView.ScrollToTop);
+				tree_.Select(p, true, VUI.TreeView.ScrollToNearest);
 		}
 
 		public FS.IFilesystemObject Selected
