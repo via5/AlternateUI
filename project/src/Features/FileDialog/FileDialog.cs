@@ -1049,8 +1049,6 @@ namespace AUI.FileDialog
 				var cx = CreateFileContext(
 					mode_.Options.FlattenDirectories && !mode_.IsWritable);
 
-				AlternateUI.Instance.Log.Info($"GetFiles cx={cx}");
-
 				files = dir_.GetFiles(cx);
 			}
 			else

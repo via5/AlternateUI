@@ -235,9 +235,13 @@ namespace AUI.FS
 		protected virtual List<IFilesystemContainer> GetDirectories()
 		{
 			var list = new List<IFilesystemContainer>();
+			var path = MakeRealPath();
 
-			foreach (var dirPath in GetDirectoriesFromFMS(MakeRealPath()))
-				list.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
+			if (!string.IsNullOrEmpty(path))
+			{
+				foreach (var dirPath in GetDirectoriesFromFMS(path))
+					list.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
+			}
 
 			return list;
 		}
@@ -245,9 +249,13 @@ namespace AUI.FS
 		protected virtual List<IFilesystemObject> GetFiles()
 		{
 			var list = new List<IFilesystemObject>();
+			var path = MakeRealPath();
 
-			foreach (var filePath in GetFilesFromFMS(MakeRealPath()))
-				list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
+			if (!string.IsNullOrEmpty(path))
+			{
+				foreach (var filePath in GetFilesFromFMS(path))
+					list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
+			}
 
 			return list;
 		}
@@ -428,7 +436,7 @@ namespace AUI.FS
 			}
 			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}': {e.Message}");
+				AlternateUI.Instance.Log.ErrorST($"{this}: bad directory '{path}': {e.Message}");
 				return new string[0];
 			}
 		}
@@ -441,7 +449,7 @@ namespace AUI.FS
 			}
 			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"bad directory '{path}': {e.Message}");
+				AlternateUI.Instance.Log.ErrorST($"{this}: bad directory '{path}': {e.Message}");
 				return new string[0];
 			}
 		}

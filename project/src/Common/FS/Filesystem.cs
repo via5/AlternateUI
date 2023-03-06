@@ -263,6 +263,16 @@ namespace AUI.FS
 			return "";
 		}
 
+		public List<IFilesystemContainer> GetDirectoriesForFlatten()
+		{
+			return new List<IFilesystemContainer>
+			{
+				saves_,
+				custom_,
+				fs_.GetPackagesRootDirectory()
+			};
+		}
+
 		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
 			return (o != custom_);
@@ -270,23 +280,16 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> GetDirectories()
 		{
-			var list = new List<IFilesystemContainer>();
-
-			list.Add(allFlat_);
-			list.Add(packagesFlat_);
-			list.Add(pinnedFlat_);
-			list.Add(pinned_);
-			list.Add(saves_);
-			list.Add(custom_);
-			list.Add(fs_.GetPackagesRootDirectory());
-
-			return list;
-		}
-
-		protected override List<IFilesystemObject> GetFiles()
-		{
-			// no-op
-			return null;
+			return new List<IFilesystemContainer>()
+			{
+				allFlat_,
+				packagesFlat_,
+				pinnedFlat_,
+				pinned_,
+				saves_,
+				custom_,
+				fs_.GetPackagesRootDirectory()
+			};
 		}
 	}
 

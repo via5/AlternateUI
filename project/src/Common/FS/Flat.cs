@@ -54,6 +54,11 @@ namespace AUI.FS
 		{
 			return "";
 		}
+
+		protected override List<IFilesystemContainer> GetDirectories()
+		{
+			return fs_.GetRootDirectory().GetDirectoriesForFlatten();
+		}
 	}
 
 
