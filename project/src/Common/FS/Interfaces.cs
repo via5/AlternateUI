@@ -3,6 +3,100 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
+	class Listing<EntriesType>
+		where EntriesType : class, IFilesystemObject
+	{
+		private List<EntriesType> raw_ = null;
+		private string currentExtensions_ = "";
+		private List<EntriesType> perExtension_ = null;
+		public string currentSearch_ = "";
+		private List<EntriesType> searched_ = null;
+		public int currentSort_ = Context.NoSort;
+		public int currentSortDir_ = Context.NoSortDirection;
+		private List<EntriesType> sorted_ = null;
+
+		public void SetRaw(List<EntriesType> list)
+		{
+			raw_ = list;
+		}
+
+		public void AddRaw(List<EntriesType> list)
+		{
+			if (raw_ == null)
+				raw_ = new List<EntriesType>();
+
+			raw_.AddRange(list);
+		}
+
+		public List<EntriesType> Raw
+		{
+			get { return raw_; }
+		}
+
+		public List<EntriesType> PerExtension
+		{
+			get { return perExtension_; }
+		}
+
+		public List<EntriesType> Searched
+		{
+			get { return searched_; }
+		}
+
+		public List<EntriesType> Sorted
+		{
+			get { return sorted_; }
+		}
+
+		public List<EntriesType> Last
+		{
+			get { return sorted_ ?? searched_ ?? perExtension_ ?? raw_ ?? new List<EntriesType>(); }
+		}
+
+
+		public bool ExtensionsStale(Context cx)
+		{
+			return (currentExtensions_ != cx.ExtensionsString);
+		}
+
+		public void SetExtensions(Context cx, List<EntriesType> list)
+		{
+			currentExtensions_ = cx.ExtensionsString;
+			currentSearch_ = null;
+			currentSort_ = Context.NoSort;
+			currentSortDir_ = Context.NoSortDirection;
+			perExtension_ = list;
+		}
+
+
+		public bool SearchStale(Context cx)
+		{
+			return (currentSearch_ != cx.Search);
+		}
+
+		public void SetSearched(Context cx, List<EntriesType> list)
+		{
+			currentSearch_ = cx.Search;
+			currentSort_ = Context.NoSort;
+			currentSortDir_ = Context.NoSortDirection;
+			searched_ = list;
+		}
+
+
+		public bool SortStale(Context cx)
+		{
+			return (currentSort_ != cx.Sort || currentSortDir_ != cx.SortDirection);
+		}
+
+		public void SetSorted(Context cx, List<EntriesType> list)
+		{
+			currentSort_ = cx.Sort;
+			currentSortDir_ = cx.SortDirection;
+			sorted_ = list;
+		}
+	}
+
+
 	interface IFilesystemObject
 	{
 		IFilesystemContainer Parent { get; }
@@ -10,6 +104,7 @@ namespace AUI.FS
 		string Name { get; }
 		string VirtualPath { get; }
 		string DisplayName { get; set; }
+		string Tooltip { get; }
 		bool HasCustomDisplayName { get; }
 		DateTime DateCreated { get; }
 		DateTime DateModified { get; }
@@ -19,6 +114,7 @@ namespace AUI.FS
 		bool Virtual { get; }
 		bool ChildrenVirtual { get; }
 		bool IsFlattened { get; }
+		bool IsRedundant { get; }
 		IPackage ParentPackage { get; }
 
 		string MakeRealPath();
@@ -29,11 +125,13 @@ namespace AUI.FS
 
 	interface IFilesystemContainer : IFilesystemObject
 	{
-		bool HasSubDirectories(Filter filter);
-		List<IFilesystemContainer> GetSubDirectories(Filter filter);
-		List<IFilesystemObject> GetFiles(Filter filter);
-		List<IFilesystemObject> GetFilesRecursive(Filter filter);
-		void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list);
+		bool AlreadySorted { get; }
+		bool HasDirectories(Context cx);
+		List<IFilesystemContainer> GetDirectories(Context cx);
+		List<IFilesystemObject> GetFiles(Context cx);
+
+		void GetFilesRecursiveInternal(
+			Context cx, Listing<IFilesystemObject> listing);
 	}
 
 

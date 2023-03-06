@@ -117,32 +117,10 @@ namespace AUI.FileDialog
 			o_ = o;
 
 			name_.Text = o_.DisplayName;
-			panel_.Tooltip.Text = MakeTooltip();
+			panel_.Tooltip.Text = o_.Tooltip;
 			panel_.Tooltip.FontSize = name_.FontSize;
 			panel_.Render = true;
 			SetIcon();
-		}
-
-		private string MakeTooltip()
-		{
-			string tt =
-				$"Path: {o_.VirtualPath}\n" +
-				$"Real: {o_.MakeRealPath()}\n";
-
-			var p = o_.ParentPackage;
-
-			if (p != null)
-				tt += $"\nPackage: {p.DisplayName}";
-
-			tt += $"\nCreated: {FormatDT(o_.DateCreated)}";
-			tt += $"\nLast modified: {FormatDT(o_.DateModified)}";
-
-			return tt;
-		}
-
-		private string FormatDT(DateTime dt)
-		{
-			return dt.ToString(CultureInfo.CurrentCulture);
 		}
 
 		private void SetIcon()
@@ -162,11 +140,10 @@ namespace AUI.FileDialog
 				}
 
 				SetTexture(null);
+				var forObject = o_;
 
 				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
 				{
-					var forObject = Object;
-
 					i.GetTexture(t =>
 					{
 						if (o_ == forObject)

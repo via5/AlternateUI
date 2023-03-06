@@ -88,6 +88,8 @@ namespace AUI.FileDialog
 		private bool flattenDirs_;
 		private bool flattenPackages_;
 		private bool mergePackages_;
+		private bool showHiddenFolders_;
+		private bool showHiddenFiles_;
 		private int sort_, sortDir_;
 		private readonly History history_ = new History();
 
@@ -97,13 +99,15 @@ namespace AUI.FileDialog
 		public Options(
 			string name, string lastPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			int	sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 		{
 			name_ = name;
 			lastPath_ = lastPath;
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
 			mergePackages_ = mergePackages;
+			showHiddenFolders_ = showHiddenFolders;
+			showHiddenFiles_ = showHiddenFiles;
 			sort_ = sort;
 			sortDir_ = sortDir;
 		}
@@ -147,6 +151,18 @@ namespace AUI.FileDialog
 			set { mergePackages_ = value; Changed(); }
 		}
 
+		public bool ShowHiddenFolders
+		{
+			get { return showHiddenFolders_; }
+			set { showHiddenFolders_ = value; Changed(); }
+		}
+
+		public bool ShowHiddenFiles
+		{
+			get { return showHiddenFiles_; }
+			set { showHiddenFiles_ = value; Changed(); }
+		}
+
 		public int Sort
 		{
 			get { return sort_; }
@@ -187,6 +203,12 @@ namespace AUI.FileDialog
 			if (j.HasKey("mergePackages"))
 				mergePackages_ = j["mergePackages"].AsBool;
 
+			if (j.HasKey("showHiddenFolders"))
+				showHiddenFolders_ = j["showHiddenFolders"].AsBool;
+
+			if (j.HasKey("showHiddenFiles"))
+				showHiddenFiles_ = j["showHiddenFiles"].AsBool;
+
 			if (j.HasKey("sort"))
 				sort_ = j["sort"].AsInt;
 
@@ -206,6 +228,8 @@ namespace AUI.FileDialog
 			j["flattenDirectories"] = new JSONData(flattenDirs_);
 			j["flattenPackages"] = new JSONData(flattenPackages_);
 			j["mergePackages"] = new JSONData(mergePackages_);
+			j["showHiddenFolders"] = new JSONData(showHiddenFolders_);
+			j["showHiddenFiles"] = new JSONData(showHiddenFiles_);
 			j["sort"] = new JSONData(sort_);
 			j["sortDirection"] = new JSONData(sortDir_);
 
@@ -256,7 +280,7 @@ namespace AUI.FileDialog
 		protected BasicMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 		{
 			name_ = name;
 			title_ = title;
@@ -268,7 +292,8 @@ namespace AUI.FileDialog
 			{
 				opts_ = new Options(
 					name_, defaultPath, flattenDirs, flattenPackages,
-					mergePackages, sort, sortDir);
+					mergePackages, showHiddenFolders, showHiddenFiles,
+					sort, sortDir);
 
 				opts_.Load();
 
@@ -320,7 +345,7 @@ namespace AUI.FileDialog
 		public NoMode()
 			: base(
 				  null, "", new ExtensionItem[0], "", false, false, false,
-				  FS.Filter.NoSort, FS.Filter.NoSortDirection)
+				  false, false, FS.Context.NoSort, FS.Context.NoSortDirection)
 		{
 		}
 
@@ -351,11 +376,11 @@ namespace AUI.FileDialog
 		public OpenMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 				: base(
 					  name, title, exts, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
-					  sort, sortDir)
+					  showHiddenFolders, showHiddenFiles, sort, sortDir)
 		{
 		}
 
@@ -417,11 +442,11 @@ namespace AUI.FileDialog
 		public SaveMode(
 			string name, string title, ExtensionItem[] exts, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 				: base(
 					  name, title, exts, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
-					  sort, sortDir)
+					  showHiddenFolders, showHiddenFiles, sort, sortDir)
 		{
 		}
 
@@ -444,6 +469,9 @@ namespace AUI.FileDialog
 		{
 			var path = GetPath(fd);
 
+			// useless, can't force vam to overwrite, so the warning is
+			// shown twice
+			//
 			//if (FileManagerSecure.FileExists(path))
 			//{
 			//	var d = new VUI.TaskDialog(
@@ -505,8 +533,8 @@ namespace AUI.FileDialog
 				openScene_ = new OpenMode(
 					"scene", "Open scene",
 					FileDialogFeature.GetSceneExtensions(true),
-					"VaM/Saves/scene", true, true, true,
-					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
+					"VaM/Saves/scene", true, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
 			return openScene_;
@@ -519,8 +547,8 @@ namespace AUI.FileDialog
 				saveScene_ = new SaveMode(
 					"scene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
-					"VaM/Saves/scene", false, false, false,
-					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
+					"VaM/Saves/scene", false, false, false, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
 			return saveScene_;
@@ -533,8 +561,8 @@ namespace AUI.FileDialog
 				openCUA_ = new OpenMode(
 					"openCUA", "Open asset bundle",
 					FileDialogFeature.GetCUAExtensions(true),
-					"VaM/Custom/Assets", true, true, true,
-					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
+					"VaM/Custom/Assets", true, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
 			return openCUA_;
@@ -547,8 +575,8 @@ namespace AUI.FileDialog
 				openPlugin_ = new OpenMode(
 					"openPlugin", "Open plugin",
 					FileDialogFeature.GetPluginExtensions(true),
-					"VaM/Custom/Scripts", false, true, true,
-					FS.Filter.SortDateCreated, FS.Filter.SortDescending);
+					"VaM/Custom/Scripts", false, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
 			return openPlugin_;

@@ -95,7 +95,7 @@ namespace AUI.FileDialog
 
 			fd_.Enable();
 
-			//fd_.Show(Modes.SaveScene(), null, "VaM/Saves/scene/labeltest");
+			fd_.Show(Modes.OpenScene(), null, "VaM");
 
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>

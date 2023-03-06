@@ -8,7 +8,7 @@ namespace AUI.FS
 
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
-		private List<ShortCut> shortCuts_ = null;
+		private List<IFilesystemContainer> packages_ = null;
 
 		public PackageRootDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Packages")
@@ -60,55 +60,38 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		public List<IFilesystemContainer> GetPackages()
 		{
-			if (c_.Directories.entries == null)
+			RefreshPackages();
+			return packages_;
+		}
+
+		protected override List<IFilesystemContainer> GetDirectories()
+		{
+			RefreshPackages();
+			return packages_;
+		}
+
+		private void RefreshPackages()
+		{
+			if (packages_ != null)
+				return;
+
+			packages_ = new List<IFilesystemContainer>();
+
+			foreach (var sc in FMS.GetShortCutsForDirectory("Saves/scene"))
 			{
-				c_.Directories.entries = new List<IFilesystemContainer>();
+				if (string.IsNullOrEmpty(sc.package))
+					continue;
 
-				foreach (var s in GetShortCuts())
-					c_.Directories.entries.Add(new Package(fs_, fs_.GetPackagesRootDirectory(), s));
+				if (!string.IsNullOrEmpty(sc.packageFilter))
+					continue;
+
+				if (sc.path == "AddonPackages")
+					continue;
+
+				packages_.Add(new Package(fs_, this, sc));
 			}
-
-			// todo filter
-
-			return c_.Directories.entries;
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			// no-op
-			if (c.Files.entries == null)
-				c.Files.entries = new List<IFilesystemObject>();
-
-			return c.Files.entries;
-		}
-
-		protected override void GetFilesRecursiveImpl(Filter filter)
-		{
-			foreach (var d in GetSubDirectories(filter))
-				(d as BasicFilesystemContainer).DoGetFilesRecursive(rc_.Files.entries);
-		}
-
-		private List<ShortCut> GetShortCuts()
-		{
-			if (shortCuts_ == null)
-			{
-				shortCuts_ = new List<ShortCut>();
-
-				foreach (var sc in FMS.GetShortCutsForDirectory("Saves/scene"))
-				{
-					if (string.IsNullOrEmpty(sc.package))
-						continue;
-
-					if (!string.IsNullOrEmpty(sc.packageFilter))
-						continue;
-
-					shortCuts_.Add(sc);
-				}
-			}
-
-			return shortCuts_;
 		}
 	}
 
@@ -131,6 +114,23 @@ namespace AUI.FS
 		public ShortCut ShortCut
 		{
 			get { return sc_; }
+		}
+
+		public override string Tooltip
+		{
+			get
+			{
+				var tt = base.Tooltip;
+
+				tt +=
+					$"\npackage={sc_.package}" +
+					$"\nfilter={sc_.packageFilter}" +
+					$"\nflatten={sc_.flatten}" +
+					$"\nhidden={sc_.isHidden}" +
+					$"\npath={sc_.path}";
+
+				return tt;
+			}
 		}
 
 		protected override string GetDisplayName()
@@ -178,14 +178,9 @@ namespace AUI.FS
 			return sc_.path + "/";
 		}
 
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		protected override bool IncludeFile(Context cx, IFilesystemObject o)
 		{
-			return DoGetSubDirectories(c_, filter);
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			return DoGetFiles(c, filter);
+			return (o.Name != "meta.json");
 		}
 	}
 }

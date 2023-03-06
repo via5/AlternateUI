@@ -32,17 +32,54 @@ namespace AUI.FileDialog
 			tree_.RootItem.Add(root_);
 
 			tree_.SelectionChanged += OnSelection;
+		}
+
+		public void Init()
+		{
+			var fsRoot = FS.Filesystem.Instance.GetRootDirectory();
 
 			root_.Expanded = true;
 			Expand(fsRoot.PinnedRoot);
 			Expand(fsRoot.Saves);
 		}
 
-		private void Expand(FS.IFilesystemContainer o, bool b = true)
+		private void Expand(FS.IFilesystemContainer o)
 		{
-			var i = FindItem(o);
-			if (i != null)
-				i.Expanded = b;
+			var list = new List<FS.IFilesystemContainer>();
+
+			var p = o;
+			while (p != null)
+			{
+				list.Add(p);
+				p = p.Parent;
+			}
+
+			list.Reverse();
+
+			Expand(root_, list, 0);
+		}
+
+		private bool Expand(FileTreeItem parent, List<FS.IFilesystemContainer> list, int index)
+		{
+			if (index >= list.Count || parent.Object != list[index])
+				return false;
+
+			parent.Expanded = true;
+
+			if (index + 1 == list.Count)
+				return true;
+
+			var cs = parent.GetInternalChildren();
+			if (cs != null)
+			{
+				foreach (var c in cs)
+				{
+					if (Expand(c as FileTreeItem, list, index + 1))
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		public FileDialog FileDialog
@@ -53,6 +90,11 @@ namespace AUI.FileDialog
 		public VUI.Widget Widget
 		{
 			get { return tree_; }
+		}
+
+		public FS.Context CreateContext(bool recursive)
+		{
+			return fd_.CreateFileContext(recursive);
 		}
 
 		public bool CanGoUp()
@@ -88,11 +130,7 @@ namespace AUI.FileDialog
 
 		public void Refresh()
 		{
-			if (root_.Children != null)
-			{
-				foreach (FileTreeItem item in root_.Children)
-					item.Refresh(true);
-			}
+			root_.Refresh(true);
 		}
 
 		public void SetFlags(int f)
@@ -116,7 +154,7 @@ namespace AUI.FileDialog
 			item.Refresh(false);
 		}
 
-		public FileTreeItem FindItem(FS.IFilesystemObject o)
+		private FileTreeItem FindItem(FS.IFilesystemObject o)
 		{
 			return FindItem(tree_.RootItem, o);
 		}

@@ -5,8 +5,6 @@ namespace AUI.FS
 {
 	class AllFlatDirectory : BasicFilesystemContainer
 	{
-		private List<IFilesystemContainer> dirs_ = null;
-
 		public AllFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "All flattened")
 		{
@@ -56,33 +54,10 @@ namespace AUI.FS
 		{
 			return "";
 		}
-
-		public override List<IFilesystemObject> GetFiles(Filter filter)
-		{
-			// always recursive
-			return GetFilesRecursive(filter);
-		}
-
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
-		{
-			if (dirs_ == null)
-				dirs_ = fs_.GetRootDirectory().GetRealDirectories();
-
-			return dirs_;
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			// no-op
-			if (c.Files.entries == null)
-				c.Files.entries = new List<IFilesystemObject>();
-
-			return c.Files.entries;
-		}
 	}
 
 
-	class PackagesFlatDirectory : BasicFilesystemObject, IFilesystemContainer
+	class PackagesFlatDirectory : BasicFilesystemContainer
 	{
 		public PackagesFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Packages flattened")
@@ -139,30 +114,9 @@ namespace AUI.FS
 			return "";
 		}
 
-		public List<IFilesystemObject> GetFiles(Filter filter)
+		protected override List<IFilesystemContainer> GetDirectories()
 		{
-			// always recursive
-			return GetFilesRecursive(filter);
-		}
-
-		public List<IFilesystemObject> GetFilesRecursive(Filter filter)
-		{
-			return fs_.GetPackagesRootDirectory().GetFilesRecursive(filter);
-		}
-
-		public void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
-		{
-			fs_.GetPackagesRootDirectory().GetFilesRecursiveUnfiltered(list);
-		}
-
-		public List<IFilesystemContainer> GetSubDirectories(Filter filter)
-		{
-			return fs_.GetPackagesRootDirectory().GetSubDirectories(filter);
-		}
-
-		public bool HasSubDirectories(Filter filter)
-		{
-			return fs_.GetPackagesRootDirectory().HasSubDirectories(filter);
+			return fs_.GetPackagesRootDirectory().GetPackages();
 		}
 	}
 
@@ -220,24 +174,9 @@ namespace AUI.FS
 			return "";
 		}
 
-		public override List<IFilesystemObject> GetFiles(Filter filter)
-		{
-			// always recursive
-			return GetFilesRecursive(filter);
-		}
-
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		protected override List<IFilesystemContainer> GetDirectories()
 		{
 			return fs_.GetRootDirectory().PinnedRoot.Pinned;
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			// no-op
-			if (c.Files.entries == null)
-				c.Files.entries = new List<IFilesystemObject>();
-
-			return c.Files.entries;
 		}
 	}
 }

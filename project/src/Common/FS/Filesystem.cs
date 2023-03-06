@@ -80,7 +80,7 @@ namespace AUI.FS
 
 		public IPackage GetPackage(string name)
 		{
-			foreach (var f in packagesRoot_.GetSubDirectories(null))
+			foreach (var f in packagesRoot_.GetDirectories(Context.None))
 			{
 				if (f.Name == name)
 					return f as IPackage;
@@ -125,13 +125,24 @@ namespace AUI.FS
 			return (pa == pb);
 		}
 
-		public IFilesystemObject Resolve(string path, int flags = ResolveDefault)
+		public IFilesystemObject Resolve(
+			FS.Context cx, string path, int flags = ResolveDefault)
 		{
-			path = path.Replace('\\', '/');
-			return Resolve(root_, path.Split('/'), 0, flags);
+			return Resolve<IFilesystemObject>(cx, path, flags);
 		}
 
-		private IFilesystemObject Resolve(IFilesystemContainer o, string[] cs, int csi, int flags)
+		public T Resolve<T>(
+			FS.Context cx, string path, int flags = ResolveDefault)
+				where T : class, IFilesystemObject
+		{
+			path = path.Replace('\\', '/');
+			var r = Resolve(cx, root_, path.Split('/'), 0, flags) as T;
+
+			return r;
+		}
+
+		private IFilesystemObject Resolve(
+			FS.Context cx, IFilesystemContainer o, string[] cs, int csi, int flags)
 		{
 			if (csi >= cs.Length || o.Name != cs[csi])
 				return null;
@@ -139,12 +150,13 @@ namespace AUI.FS
 			if (csi + 1 == cs.Length)
 				return o;
 
-			foreach (var d in o.GetSubDirectories(null))
+			foreach (var d in o.GetDirectories(cx))
 			{
-				var r = Resolve(d, cs, csi + 1, flags);
+				var r = Resolve(cx, d, cs, csi + 1, flags);
 				if (r != null)
 					return r;
 			}
+
 
 			if (!Bits.IsSet(flags, ResolveDirsOnly))
 			{
@@ -154,7 +166,7 @@ namespace AUI.FS
 					return null;
 				}
 
-				foreach (var f in o.GetFiles(null))
+				foreach (var f in o.GetFiles(cx))
 				{
 					if (f.Name == cs[csi + 1])
 						return f;
@@ -174,7 +186,6 @@ namespace AUI.FS
 		private readonly SavesDirectory saves_;
 		private readonly FSDirectory custom_;
 		private readonly PinnedRoot pinned_;
-		private List<IFilesystemContainer> dirs_ = null;
 
 		public RootDirectory(Filesystem fs)
 			: base(fs, null, "VaM")
@@ -192,15 +203,6 @@ namespace AUI.FS
 			return "RootDirectory";
 		}
 
-		public List<IFilesystemContainer> Directories
-		{
-			get
-			{
-				MakeDirectories();
-				return dirs_;
-			}
-		}
-
 		public SavesDirectory Saves
 		{
 			get { return saves_; }
@@ -214,6 +216,11 @@ namespace AUI.FS
 		public PinnedRoot PinnedRoot
 		{
 			get { return pinned_; }
+		}
+
+		public override bool AlreadySorted
+		{
+			get { return true; }
 		}
 
 		public override DateTime DateCreated
@@ -256,45 +263,30 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
-			return Directories;
+			return (o != custom_);
 		}
 
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
+		protected override List<IFilesystemContainer> GetDirectories()
+		{
+			var list = new List<IFilesystemContainer>();
+
+			list.Add(allFlat_);
+			list.Add(packagesFlat_);
+			list.Add(pinnedFlat_);
+			list.Add(pinned_);
+			list.Add(saves_);
+			list.Add(custom_);
+			list.Add(fs_.GetPackagesRootDirectory());
+
+			return list;
+		}
+
+		protected override List<IFilesystemObject> GetFiles()
 		{
 			// no-op
-			if (c.Files.entries == null)
-				c.Files.entries = new List<IFilesystemObject>();
-
-			return c.Files.entries;
-		}
-
-		public List<IFilesystemContainer> GetRealDirectories()
-		{
-			return new List<IFilesystemContainer>
-			{
-				saves_,
-				custom_,
-				fs_.GetPackagesRootDirectory()
-			};
-		}
-
-		private void MakeDirectories()
-		{
-			if (dirs_ == null)
-			{
-				dirs_ = new List<IFilesystemContainer>
-				{
-					allFlat_,
-					packagesFlat_,
-					pinnedFlat_,
-					pinned_,
-					saves_,
-					custom_,
-					fs_.GetPackagesRootDirectory()
-				};
-			}
+			return null;
 		}
 	}
 
@@ -313,16 +305,15 @@ namespace AUI.FS
 			};
 		}
 
-		protected override bool IncludeDirectory(string name)
+		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
-			//for (int i = 0; i < whitelist_.Length; ++i)
-			//{
-			//	if (whitelist_[i] == name)
-			//		return true;
-			//}
-			//
-			//return false;
-			return true;
+			for (int i = 0; i < whitelist_.Length; ++i)
+			{
+				if (whitelist_[i] == o.Name)
+					return true;
+			}
+
+			return false;
 		}
 	}
 
@@ -336,6 +327,7 @@ namespace AUI.FS
 		public string Name { get { return ""; } }
 		public string VirtualPath { get { return ""; } }
 		public string DisplayName { get { return ""; } set { } }
+		public string Tooltip { get { return ""; } }
 		public bool HasCustomDisplayName { get { return false; } }
 		public DateTime DateCreated { get { return DateTime.MaxValue; } }
 		public DateTime DateModified { get { return DateTime.MaxValue; } }
@@ -343,7 +335,9 @@ namespace AUI.FS
 		public bool Virtual { get { return true; } }
 		public bool ChildrenVirtual { get { return true; } }
 		public bool IsFlattened { get { return false; } }
+		public bool IsRedundant { get { return false; } }
 		public IPackage ParentPackage { get { return null; } }
+		public bool AlreadySorted { get { return false; } }
 
 		public override string ToString()
 		{
@@ -355,17 +349,28 @@ namespace AUI.FS
 			get { return null; }
 		}
 
-		public List<IFilesystemObject> GetFiles(Filter filter)
+		public bool HasDirectories(Context cx)
+		{
+			return false;
+		}
+
+		public List<IFilesystemContainer> GetDirectories(Context cx)
+		{
+			return emptyDirs_;
+		}
+
+		public List<IFilesystemObject> GetFiles(Context cx)
 		{
 			return emptyFiles_;
 		}
 
-		public List<IFilesystemObject> GetFilesRecursive(Filter filter)
+		public void GetFilesRecursiveInternal(Context cx, Listing<IFilesystemObject> listing)
 		{
-			return emptyFiles_;
+			// no-op
 		}
 
-		public void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
+		public void GetFilesRecursiveUnfilteredInternal(
+			Context cx, List<IFilesystemObject> list)
 		{
 			// no-op
 		}
@@ -373,16 +378,6 @@ namespace AUI.FS
 		public VUI.Icon Icon
 		{
 			get { return Icons.Get(Icons.Null); }
-		}
-
-		public List<IFilesystemContainer> GetSubDirectories(Filter filter)
-		{
-			return emptyDirs_;
-		}
-
-		public bool HasSubDirectories(Filter filter)
-		{
-			return false;
 		}
 
 		public string MakeRealPath()

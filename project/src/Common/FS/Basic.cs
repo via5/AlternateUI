@@ -1,6 +1,7 @@
 ﻿using MVR.FileManagementSecure;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace AUI.FS
 {
@@ -92,6 +93,36 @@ namespace AUI.FS
 		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
 
+		public virtual bool IsRedundant
+		{
+			get { return false; }
+		}
+
+
+		public virtual string Tooltip
+		{
+			get
+			{
+				string tt =
+					$"Virtual path: {VirtualPath}" +
+					$"\nReal path: {(Virtual ? "(virtual)" : MakeRealPath())}";
+
+				var p = ParentPackage;
+
+				if (p != null)
+					tt += $"\nPackage: {p.DisplayName}";
+
+				tt += $"\nCreated: {FormatDT(DateCreated)}";
+				tt += $"\nLast modified: {FormatDT(DateModified)}";
+
+				return tt;
+			}
+		}
+
+		private string FormatDT(DateTime dt)
+		{
+			return dt.ToString(CultureInfo.CurrentCulture);
+		}
 
 		public virtual bool IsSameObject(IFilesystemObject o)
 		{
@@ -116,101 +147,14 @@ namespace AUI.FS
 		}
 	}
 
-
 	abstract class BasicFilesystemContainer : BasicFilesystemObject, IFilesystemContainer
 	{
-		public class Cache<EntriesType> where EntriesType : IFilesystemObject
-		{
-			public List<EntriesType> entries = null;
-
-			public string currentExtensions = "";
-			public List<EntriesType> perExtension = null;
-
-			public string currentSearch = "";
-			public List<EntriesType> searched = null;
-
-			public int currentSort = Filter.NoSort;
-			public int currentSortDir = Filter.NoSortDirection;
-			public List<EntriesType> sorted = null;
-
-			public void Clear()
-			{
-				entries = null;
-				perExtension = null;
-				searched = null;
-				sorted = null;
-
-				currentExtensions = "";
-				currentSearch = "";
-				currentSort = Filter.NoSort;
-				currentSortDir = Filter.NoSortDirection;
-			}
-		}
-
-		public class Caches
-		{
-			private readonly Filesystem fs_;
-			private Cache<IFilesystemObject> files_ = null;
-			private Cache<IFilesystemContainer> dirs_ = null;
-			private int cacheToken_ = -1;
-
-			public Caches(Filesystem fs)
-			{
-				fs_ = fs;
-			}
-
-			public Cache<IFilesystemObject> Files
-			{
-				get
-				{
-					CheckToken();
-					if (files_ == null)
-						files_ = new Cache<IFilesystemObject>();
-
-					return files_;
-				}
-			}
-
-			public Cache<IFilesystemContainer> Directories
-			{
-				get
-				{
-					CheckToken();
-					if (dirs_ == null)
-						dirs_ = new Cache<IFilesystemContainer>();
-
-					return dirs_;
-				}
-			}
-
-			public void Clear()
-			{
-				cacheToken_ = -1;
-			}
-
-			private void CheckToken()
-			{
-				if (cacheToken_ != fs_.CacheToken)
-				{
-					cacheToken_ = fs_.CacheToken;
-					files_?.Clear();
-					dirs_?.Clear();
-				}
-			}
-		}
-
-
 		private readonly string name_;
-		protected readonly Caches c_;
-		protected readonly Caches rc_;
-
 
 		public BasicFilesystemContainer(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent)
 		{
 			name_ = name;
-			c_ = new Caches(fs);
-			rc_ = new Caches(fs);
 		}
 
 		public override string Name
@@ -220,205 +164,260 @@ namespace AUI.FS
 
 		public override void ClearCache()
 		{
-			c_.Clear();
-			rc_.Clear();
 		}
 
-		public virtual bool HasSubDirectories(Filter filter)
+		public virtual bool AlreadySorted
 		{
-			return (GetSubDirectories(filter).Count > 0);
+			get { return false; }
 		}
 
-		public virtual List<IFilesystemContainer> GetSubDirectories(Filter filter)
+
+		public bool HasDirectories(Context cx)
 		{
-			return GetSubDirectoriesImpl(filter);
+			return (GetDirectories(cx).Count > 0);
 		}
 
-		protected abstract List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter);
-
-		public virtual List<IFilesystemObject> GetFiles(Filter filter)
+		public List<IFilesystemContainer> GetDirectories(Context cx)
 		{
-			return GetFilesImpl(c_, filter);
+			var listing = new Listing<IFilesystemContainer>();
+
+			var list = DoGetDirectories(cx);
+			if (list != null)
+				listing.SetRaw(list);
+
+			Filter(cx, listing);
+
+			return listing.Last;
 		}
 
-		protected abstract List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter);
-
-		public virtual List<IFilesystemObject> GetFilesRecursive(Filter filter)
+		public List<IFilesystemObject> GetFiles(Context cx)
 		{
-			if (rc_.Files.entries == null)
+			var listing = new Listing<IFilesystemObject>();
+
+			if (cx.Recursive || IsFlattened)
 			{
-				rc_.Files.entries = new List<IFilesystemObject>();
-				GetFilesRecursiveImpl(filter);
+				GetFilesRecursiveInternal(cx, listing);
 			}
-
-			return FilterCaches(rc_.Files, filter);
-		}
-
-		public virtual void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
-		{
-			DoGetFilesRecursive(list);
-		}
-
-		protected virtual void GetFilesRecursiveImpl(Filter filter)
-		{
-			DoGetFilesRecursive(rc_.Files.entries);
-		}
-
-
-		protected List<IFilesystemContainer> DoGetSubDirectories(Caches c, Filter filter)
-		{
-			if (c.Directories.entries == null)
-			{
-				c.Directories.entries = new List<IFilesystemContainer>();
-
-				foreach (var dirPath in GetDirectoriesFromFMS(MakeRealPath()))
-				{
-					var name = Path.Filename(dirPath);
-
-					if (IncludeDirectory(name))
-						c.Directories.entries.Add(new FSDirectory(fs_, this, name));
-				}
-			}
-
-			return FilterCaches(c.Directories, filter);
-		}
-
-		protected virtual bool IncludeDirectory(string name)
-		{
-			return true;
-		}
-
-		protected virtual bool IncludeFile(string name)
-		{
-			return true;
-		}
-
-		internal void DoGetFilesRecursive(List<IFilesystemObject> list)
-		{
-			list.AddRange(GetFiles(null));
-
-			foreach (var sd in GetSubDirectories(null))
-				sd.GetFilesRecursiveUnfiltered(list);
-		}
-
-		protected List<IFilesystemObject> DoGetFiles(Caches c, Filter filter)
-		{
-			if (c.Files.entries == null)
-			{
-				c.Files.entries = new List<IFilesystemObject>();
-
-				foreach (var filePath in GetFilesFromFMS(MakeRealPath()))
-				{
-					var name = Path.Filename(filePath);
-
-					if (IncludeFile(name))
-					{
-						if (filter == null || filter.Matches(name))
-							c.Files.entries.Add(new FSFile(fs_, this, name));
-					}
-				}
-			}
-
-			if (filter == null)
-				return c.Files.entries;
 			else
-				return FilterCaches(c.Files, filter);
+			{
+				var list = DoGetFiles(cx);
+				if (list != null)
+					listing.SetRaw(list);
+			}
+
+			Filter(cx, listing);
+
+			return listing.Last;
 		}
 
-		protected List<EntryType> FilterCaches<EntryType>(Cache<EntryType> c, Filter filter)
-			where EntryType : IFilesystemObject
+		public void GetFilesRecursiveInternal(
+			Context cx, Listing<IFilesystemObject> listing)
 		{
-			if (filter == null)
-				return c.entries;
+			var list = DoGetFiles(cx);
+			if (list != null)
+				listing.AddRaw(list);
 
-			var list = c.entries;
+			var dirs = DoGetDirectories(cx);
 
-			if (c.currentExtensions != filter.ExtensionsString)
+			if (dirs != null)
 			{
-				c.currentExtensions = filter.ExtensionsString;
-				c.currentSearch = null;
-				c.currentSort = Filter.NoSort;
-				c.currentSortDir = Filter.NoSortDirection;
-
-				if (filter.ExtensionsString != "")
+				foreach (var sd in dirs)
 				{
-					if (c.perExtension == null)
-						c.perExtension = new List<EntryType>();
+					if (sd.IsFlattened || sd.IsRedundant)
+						continue;
 
-					c.perExtension.Clear();
-
-					foreach (var f in list)
-					{
-						if (filter.ExtensionMatches(f.DisplayName))
-							c.perExtension.Add(f);
-					}
-
-					list = c.perExtension;
+					sd.GetFilesRecursiveInternal(cx, listing);
 				}
 			}
-			else if (filter.ExtensionsString != "")
-			{
-				list = c.perExtension;
-			}
-
-			if (c.currentSearch != filter.Search)
-			{
-				c.currentSearch = filter.Search;
-				c.currentSort = Filter.NoSort;
-				c.currentSortDir = Filter.NoSortDirection;
-
-				if (filter.Search != "")
-				{
-					if (c.searched == null)
-						c.searched = new List<EntryType>();
-
-					c.searched.Clear();
-
-					foreach (var f in list)
-					{
-						if (filter.SearchMatches(f.DisplayName))
-							c.searched.Add(f);
-					}
-
-					list = c.searched;
-				}
-			}
-			else if (filter.Search != "")
-			{
-				list = c.searched;
-			}
-
-			return DoSort(c, filter, list);
 		}
 
-		protected List<EntryType> DoSort<EntryType>(Cache<EntryType> c, Filter filter, List<EntryType> list)
-			where EntryType : IFilesystemObject
+
+		protected virtual List<IFilesystemContainer> GetDirectories()
 		{
-			if (c.currentSort != filter.Sort ||
-				c.currentSortDir != filter.SortDirection)
-			{
-				c.currentSort = filter.Sort;
-				c.currentSortDir = filter.SortDirection;
+			var list = new List<IFilesystemContainer>();
 
-				if (filter.Sort != Filter.NoSort)
-				{
-					if (c.sorted == null)
-						c.sorted = new List<EntryType>();
-
-					c.sorted.Clear();
-					c.sorted.AddRange(list);
-
-					filter.SortList(c.sorted);
-				}
-
-				list = c.sorted;
-			}
-			else if (filter.Sort != Filter.NoSort)
-			{
-				list = c.sorted;
-			}
+			foreach (var dirPath in GetDirectoriesFromFMS(MakeRealPath()))
+				list.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
 
 			return list;
+		}
+
+		protected virtual List<IFilesystemObject> GetFiles()
+		{
+			var list = new List<IFilesystemObject>();
+
+			foreach (var filePath in GetFilesFromFMS(MakeRealPath()))
+				list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
+
+			return list;
+		}
+
+		protected virtual bool IncludeDirectory(Context cx, IFilesystemContainer o)
+		{
+			return true;
+		}
+
+		protected virtual bool IncludeFile(Context cx, IFilesystemObject o)
+		{
+			return true;
+		}
+
+
+		private List<IFilesystemContainer> DoGetDirectories(Context cx)
+		{
+			var dirs = GetDirectories();
+
+			if (dirs != null && !cx.ShowHiddenFolders)
+			{
+				List<IFilesystemContainer> checkedDirs = null;
+
+				for (int i = 0; i < dirs.Count; ++i)
+				{
+					var d = dirs[i];
+
+					if (checkedDirs == null)
+					{
+						if (!IncludeDirectory(cx, d))
+						{
+							checkedDirs = new List<IFilesystemContainer>();
+
+							for (int j = 0; j < i; ++j)
+								checkedDirs.Add(dirs[j]);
+						}
+					}
+					else
+					{
+						if (IncludeDirectory(cx, d))
+							checkedDirs.Add(d);
+					}
+				}
+
+				if (checkedDirs != null)
+					dirs = checkedDirs;
+			}
+
+			return dirs;
+		}
+
+		private List<IFilesystemObject> DoGetFiles(Context cx)
+		{
+			var files = GetFiles();
+
+			if (files != null && !cx.ShowHiddenFiles)
+			{
+				List<IFilesystemObject> checkedFiles = null;
+
+				for (int i = 0; i < files.Count; ++i)
+				{
+					var f = files[i];
+
+					if (checkedFiles == null)
+					{
+						if (!IncludeFile(cx, f))
+						{
+							checkedFiles = new List<IFilesystemObject>();
+
+							for (int j = 0; j < i; ++j)
+								checkedFiles.Add(files[j]);
+						}
+					}
+					else
+					{
+						if (IncludeFile(cx, f))
+							checkedFiles.Add(f);
+					}
+				}
+
+				if (checkedFiles != null)
+					files = checkedFiles;
+			}
+
+			return files;
+		}
+
+		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)
+			where EntryType : class, IFilesystemObject
+		{
+			if (listing.ExtensionsStale(cx))
+			{
+				if (cx.ExtensionsString == "")
+				{
+					listing.SetExtensions(cx, null);
+				}
+				else
+				{
+					List<EntryType> perExtension = null;
+
+					if (listing.Raw != null)
+					{
+						perExtension = new List<EntryType>();
+
+						foreach (var f in listing.Raw)
+						{
+							if (cx.ExtensionMatches(f.DisplayName))
+								perExtension.Add(f);
+						}
+					}
+
+					listing.SetExtensions(cx, perExtension);
+				}
+			}
+
+			if (listing.SearchStale(cx))
+			{
+				if (cx.Search == "")
+				{
+					listing.SetSearched(cx, null);
+				}
+				else
+				{
+					List<EntryType> searched = null;
+
+					if (listing.Raw != null)
+					{
+						searched = new List<EntryType>();
+
+						foreach (var f in (listing.PerExtension ?? listing.Raw))
+						{
+							if (cx.SearchMatches(f.DisplayName))
+								searched.Add(f);
+						}
+					}
+
+					listing.SetSearched(cx, searched);
+				}
+			}
+
+			DoSort(cx, listing);
+		}
+
+		private void DoSort<EntryType>(Context cx, Listing<EntryType> listing)
+			where EntryType : class, IFilesystemObject
+		{
+			if (!AlreadySorted)
+			{
+				if (listing.SortStale(cx))
+				{
+					if (cx.Sort == Context.NoSort)
+					{
+						listing.SetSorted(cx, null);
+					}
+					else
+					{
+						List<EntryType> sorted = null;
+
+						if (listing.Raw != null)
+						{
+							var parentList = listing.Searched ?? listing.PerExtension ?? listing.Raw;
+
+							sorted = new List<EntryType>(parentList);
+							cx.SortList(sorted);
+						}
+
+						listing.SetSorted(cx, sorted);
+					}
+				}
+			}
 		}
 
 		private string[] GetDirectoriesFromFMS(string path)

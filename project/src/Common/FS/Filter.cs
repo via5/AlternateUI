@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace AUI.FS
 {
-	class Filter
+	class Context
 	{
 		public const int NoSort = 0;
 		public const int SortFilename = 1;
@@ -18,19 +18,28 @@ namespace AUI.FS
 
 		public const int SortCount = 4 * 2;
 
+		public const int NoFlags = 0x00;
+		public const int RecursiveFlags = 0x01;
+		public const int ShowHiddenFoldersFlags = 0x02;
+		public const int ShowHiddenFilesFlags = 0x04;
+
 		private readonly string search_;
 		private readonly string searchLc_;
 		private readonly string[] exts_;
 		private readonly Regex searchRe_;
 		private readonly int sort_;
 		private readonly int sortDir_;
+		private readonly int flags_;
 
-		public Filter(string search, string[] extensions, int sort, int sortDir)
+		public Context(
+			string search, string[] extensions,
+			int sort, int sortDir, int flags)
 		{
 			search_ = search;
 			exts_ = extensions;
 			sort_ = sort;
 			sortDir_ = sortDir;
+			flags_ = flags;
 
 			if (VUI.Utilities.IsRegex(search_))
 			{
@@ -41,6 +50,24 @@ namespace AUI.FS
 			{
 				searchLc_ = search.ToLower();
 				searchRe_ = null;
+			}
+		}
+
+		public override string ToString()
+		{
+			return
+				$"search='{search_}' " +
+				$"exts={(exts_?.ToString() ?? "(none)")} " +
+				$"sort={sort_} " +
+				$"sortDir={sortDir_} " +
+				$"flags={flags_}";
+		}
+
+		public static Context None
+		{
+			get
+			{
+				return new Context(	"", null, NoSort, NoSortDirection, NoFlags);
 			}
 		}
 
@@ -85,6 +112,21 @@ namespace AUI.FS
 			get { return sortDir_; }
 		}
 
+		public bool Recursive
+		{
+			get { return Bits.IsSet(flags_, RecursiveFlags); }
+		}
+
+		public bool ShowHiddenFolders
+		{
+			get { return Bits.IsSet(flags_, ShowHiddenFoldersFlags); }
+		}
+
+		public bool ShowHiddenFiles
+		{
+			get { return Bits.IsSet(flags_, ShowHiddenFilesFlags); }
+		}
+
 		public bool ExtensionMatches(string path)
 		{
 			if (exts_ != null)
@@ -119,10 +161,16 @@ namespace AUI.FS
 			return true;
 		}
 
-		public bool Matches(string path)
-		{
-			return ExtensionMatches(path) && SearchMatches(path);
-		}
+		//public bool Matches(string path)
+		//{
+		//	if (exts_ != null && !ExtensionMatches(path))
+		//		return false;
+		//
+		//	if (!string.IsNullOrEmpty(search_) && !SearchMatches(path))
+		//		return false;
+		//
+		//	return true;
+		//}
 
 
 

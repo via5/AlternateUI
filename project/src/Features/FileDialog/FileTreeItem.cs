@@ -31,6 +31,11 @@ namespace AUI.FileDialog
 			return $"FileTreeItem({path_})";
 		}
 
+		protected override string GetTooltip()
+		{
+			return Object?.Tooltip ?? "";
+		}
+
 		public FileTree FileTree
 		{
 			get { return tree_; }
@@ -44,7 +49,16 @@ namespace AUI.FileDialog
 		private FS.IFilesystemContainer GetFSObject()
 		{
 			if (o_ == null)
-				o_ = FS.Filesystem.Instance.Resolve(path_) as FS.IFilesystemContainer;
+			{
+				o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
+					CreateContext(), path_);
+
+				if (o_ == null)
+				{
+					tree_.FileDialog.Log.Error(
+						$"treeitem can't resolve {path_}");
+				}
+			}
 
 			return o_;
 		}
@@ -164,17 +178,17 @@ namespace AUI.FileDialog
 
 		private List<FS.IFilesystemContainer> GetSubDirectories(FS.IFilesystemContainer o)
 		{
-			return o.GetSubDirectories(CreateFilter());
+			return o.GetDirectories(CreateContext());
 		}
 
 		private bool HasSubDirectories(FS.IFilesystemContainer o)
 		{
-			return o.HasSubDirectories(null);
+			return o.HasDirectories(CreateContext());
 		}
 
-		private FS.Filter CreateFilter()
+		private FS.Context CreateContext()
 		{
-			return new FS.Filter("", null, FS.Filter.SortFilename, FS.Filter.SortAscending);
+			return FileTree.FileDialog.CreateTreeContext(false);
 		}
 	}
 }

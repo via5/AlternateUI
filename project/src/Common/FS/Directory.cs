@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace AUI.FS
 {
@@ -58,16 +57,6 @@ namespace AUI.FS
 				s = Parent.MakeRealPath() + s;
 
 			return s;
-		}
-
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
-		{
-			return DoGetSubDirectories(c_, filter);
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			return DoGetFiles(c, filter);
 		}
 	}
 }

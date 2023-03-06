@@ -58,8 +58,6 @@
 			Layout = new BorderLayout();
 			Borders = new Insets(1);
 
-			content_.Margins = new Insets(10, 10, 10, 10);
-
 			Add(tb_, BorderLayout.Top);
 			Add(content_, BorderLayout.Center);
 		}

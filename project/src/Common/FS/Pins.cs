@@ -9,8 +9,8 @@ namespace AUI.FS
 
 	class PinnedRoot : BasicFilesystemContainer
 	{
-		private readonly List<IFilesystemContainer> pinned_ = new List<IFilesystemContainer>();
-		private readonly List<IFilesystemObject> emptyFiles_ = new List<IFilesystemObject>();
+		private readonly List<IFilesystemContainer> pinned_ =
+			new List<IFilesystemContainer>();
 
 		public PinnedRoot(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Pinned")
@@ -31,6 +31,12 @@ namespace AUI.FS
 		{
 			get { return pinned_; }
 		}
+
+		public override bool AlreadySorted
+		{
+			get { return true; }
+		}
+
 
 		public void Load()
 		{
@@ -86,7 +92,9 @@ namespace AUI.FS
 
 		public void Pin(string s, string display = null)
 		{
-			var o = fs_.Resolve(s, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
+			var o = fs_.Resolve<IFilesystemContainer>(
+				Context.None, s, Filesystem.ResolveDirsOnly);
+
 			if (o == null)
 			{
 				AlternateUI.Instance.Log.Error($"cannot resolve pinned item '{s}'");
@@ -167,6 +175,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsRedundant
+		{
+			get { return true; }
+		}
+
 		public override VUI.Icon Icon
 		{
 			get { return Icons.Get(Icons.UnpinnedDark); }
@@ -177,18 +190,9 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetSubDirectoriesImpl(Filter filter)
+		protected override List<IFilesystemContainer> GetDirectories()
 		{
 			return pinned_;
-		}
-
-		protected override List<IFilesystemObject> GetFilesImpl(Caches c, Filter filter)
-		{
-			// no-op
-			if (c.Files.entries == null)
-				c.Files.entries = new List<IFilesystemObject>();
-
-			return c.Files.entries;
 		}
 	}
 
@@ -198,7 +202,7 @@ namespace AUI.FS
 		private readonly IFilesystemContainer c_;
 
 		public PinnedObject(Filesystem fs, PinnedRoot parent, IFilesystemContainer c, string displayName = null)
-			: base(fs, parent)
+			: base(fs, parent, displayName)
 		{
 			c_ = c;
 		}
@@ -218,31 +222,8 @@ namespace AUI.FS
 		public override bool ChildrenVirtual { get { return c_.ChildrenVirtual; } }
 		public override bool IsFlattened { get { return c_.IsFlattened; } }
 		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
+		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 
-		public List<IFilesystemObject> GetFiles(Filter filter)
-		{
-			return c_.GetFiles(filter);
-		}
-
-		public List<IFilesystemObject> GetFilesRecursive(Filter filter)
-		{
-			return c_.GetFilesRecursive(filter);
-		}
-
-		public void GetFilesRecursiveUnfiltered(List<IFilesystemObject> list)
-		{
-			c_.GetFilesRecursiveUnfiltered(list);
-		}
-
-		public List<IFilesystemContainer> GetSubDirectories(Filter filter)
-		{
-			return c_.GetSubDirectories(filter);
-		}
-
-		public bool HasSubDirectories(Filter filter)
-		{
-			return c_.HasSubDirectories(filter);
-		}
 
 		public override string MakeRealPath()
 		{
@@ -252,6 +233,28 @@ namespace AUI.FS
 		public override bool IsSameObject(IFilesystemObject o)
 		{
 			return c_.IsSameObject(o);
+		}
+
+
+		public bool HasDirectories(Context cx)
+		{
+			return c_.HasDirectories(cx);
+		}
+
+		public List<IFilesystemContainer> GetDirectories(Context cx)
+		{
+			return c_.GetDirectories(cx);
+		}
+
+		public List<IFilesystemObject> GetFiles(Context cx)
+		{
+			return c_.GetFiles(cx);
+		}
+
+		public void GetFilesRecursiveInternal(
+			Context cx, Listing<IFilesystemObject> listing)
+		{
+			c_.GetFilesRecursiveInternal(cx, listing);
 		}
 
 		protected override void DisplayNameChanged()

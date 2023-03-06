@@ -74,13 +74,6 @@ namespace VUI
 			get { return 5; }
 		}
 
-		// padding around the whole tree
-		//
-		public float TreeInternalPadding
-		{
-			get { return 5; }
-		}
-
 		// height of a tree item
 		//
 		public float TreeItemHeight
@@ -93,6 +86,20 @@ namespace VUI
 		public float TreeItemSpacing
 		{
 			get { return 2; }
+		}
+
+		// padding to the left of all items
+		//
+		public float TreeViewLeftMargin
+		{
+			get { return 10; }
+		}
+
+		// padding to the top of the tree
+		//
+		public float TreeViewTopMargin
+		{
+			get { return 0; }
 		}
 
 		// width of one indent for a tree item

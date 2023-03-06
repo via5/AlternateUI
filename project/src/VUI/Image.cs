@@ -75,6 +75,12 @@ namespace VUI
 				if (tex != null)
 				{
 					texture_ = tex;
+
+					if (w_ != 0 && h_ != 0)
+						texture_ = ScaleTexture(texture_, w_, h_);
+
+					texture_.wrapMode = TextureWrapMode.Clamp;
+
 					return true;
 				}
 			}

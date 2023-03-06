@@ -150,6 +150,8 @@ namespace AUI.FileDialog
 		private readonly VUI.CheckBox flattenDirs_;
 		private readonly VUI.CheckBox flattenPackages_;
 		private readonly VUI.CheckBox mergePackages_;
+		private readonly VUI.CheckBox showHiddenFolders_;
+		private readonly VUI.CheckBox showHiddenFiles_;
 		private readonly VUI.MenuButton sortPanel_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
@@ -167,13 +169,13 @@ namespace AUI.FileDialog
 
 			var sortMenu = new VUI.Menu();
 
-			AddSortItem(sortMenu, "Filename", FS.Filter.SortFilename);
-			AddSortItem(sortMenu, "Type", FS.Filter.SortType);
-			AddSortItem(sortMenu, "Date modified", FS.Filter.SortDateModified);
-			AddSortItem(sortMenu, "Date created", FS.Filter.SortDateCreated);
+			AddSortItem(sortMenu, "Filename", FS.Context.SortFilename);
+			AddSortItem(sortMenu, "Type", FS.Context.SortType);
+			AddSortItem(sortMenu, "Date modified", FS.Context.SortDateModified);
+			AddSortItem(sortMenu, "Date created", FS.Context.SortDateCreated);
 			sortMenu.AddSeparator();
-			AddSortDirItem(sortMenu, "Ascending", FS.Filter.SortAscending);
-			AddSortDirItem(sortMenu, "Descending", FS.Filter.SortDescending);
+			AddSortDirItem(sortMenu, "Ascending", FS.Context.SortAscending);
+			AddSortDirItem(sortMenu, "Descending", FS.Context.SortDescending);
 
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
@@ -182,6 +184,8 @@ namespace AUI.FileDialog
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
 			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
+			showHiddenFolders_ = Add(new VUI.CheckBox("Show all folders", SetShowHiddenFolders));
+			showHiddenFiles_ = Add(new VUI.CheckBox("Show all files", SetShowHiddenFiles));
 			Add(sortPanel_.Button);
 		}
 
@@ -210,6 +214,8 @@ namespace AUI.FileDialog
 
 				flattenDirs_.Checked = mode_.Options.FlattenDirectories;
 				flattenPackages_.Checked = mode_.Options.FlattenPackages;
+				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
+				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
 
 				VUI.RadioMenuItem item;
 
@@ -270,6 +276,22 @@ namespace AUI.FileDialog
 			mode_.Options.MergePackages = b;
 			DirectoriesChanged?.Invoke();
 			FilesChanged?.Invoke();
+		}
+
+		private void SetShowHiddenFolders(bool b)
+		{
+			if (ignore_) return;
+
+			mode_.Options.ShowHiddenFolders = b;
+			fd_.Refresh();
+		}
+
+		private void SetShowHiddenFiles(bool b)
+		{
+			if (ignore_) return;
+
+			mode_.Options.ShowHiddenFiles = b;
+			fd_.Refresh();
 		}
 
 		private void SetSort(int s)
@@ -712,10 +734,11 @@ namespace AUI.FileDialog
 
 		public void Show(IFileDialogMode mode, Action<string> callback, string cwd = null)
 		{
+			mode_ = mode;
+
 			if (root_ == null)
 				CreateUI();
 
-			mode_ = mode;
 			callback_ = callback;
 
 			root_.Visible = true;
@@ -962,13 +985,39 @@ namespace AUI.FileDialog
 			RefreshFiles();
 		}
 
-		protected FS.Filter CreateFilter()
+		private int MakeContextFlags(bool recursive, Options opts)
 		{
-			return new FS.Filter(
+			int f = FS.Context.NoFlags;
+
+			if (recursive)
+				f |= FS.Context.RecursiveFlags;
+
+			if (opts.ShowHiddenFolders)
+				f |= FS.Context.ShowHiddenFoldersFlags;
+
+			if (opts.ShowHiddenFiles)
+				f |= FS.Context.ShowHiddenFilesFlags;
+
+			return f;
+		}
+
+		public FS.Context CreateFileContext(bool recursive)
+		{
+			return new FS.Context(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.Options.Sort,
-				mode_.Options.SortDirection);
+				mode_.Options.SortDirection,
+				MakeContextFlags(recursive, mode_.Options));
+		}
+
+		public FS.Context CreateTreeContext(bool recursive)
+		{
+			return new FS.Context(
+				"", null,
+				//FS.Context.NoSort, FS.Context.NoSortDirection,
+				FS.Context.SortFilename, FS.Context.SortAscending,
+				MakeContextFlags(recursive, mode_.Options));
 		}
 
 		public void Refresh()
@@ -980,25 +1029,8 @@ namespace AUI.FileDialog
 
 		public void RefreshFiles()
 		{
-			List<FS.IFilesystemObject> files;
-
-			if (dir_.ParentPackage == null)
-			{
-				if (mode_.Options.FlattenDirectories && !mode_.IsWritable)
-					files = dir_.GetFilesRecursive(CreateFilter());
-				else
-					files = dir_.GetFiles(CreateFilter());
-			}
-			else
-			{
-				if (mode_.Options.FlattenPackages)
-					files = dir_.GetFilesRecursive(CreateFilter());
-				else
-					files = dir_.GetFiles(CreateFilter());
-			}
-
-			files_ = files;
-			filesPanel_.SetFiles(files);
+			files_ = GetFiles();
+			filesPanel_.SetFiles(files_);
 			SetPath();
 			UpdateActionButton();
 		}
@@ -1006,6 +1038,29 @@ namespace AUI.FileDialog
 		public void RefreshDirectories()
 		{
 			tree_.Refresh();
+		}
+
+		private List<FS.IFilesystemObject> GetFiles()
+		{
+			List<FS.IFilesystemObject> files;
+
+			if (dir_.ParentPackage == null)
+			{
+				var cx = CreateFileContext(
+					mode_.Options.FlattenDirectories && !mode_.IsWritable);
+
+				AlternateUI.Instance.Log.Info($"GetFiles cx={cx}");
+
+				files = dir_.GetFiles(cx);
+			}
+			else
+			{
+				var cx = CreateFileContext(mode_.Options.FlattenPackages);
+
+				files = dir_.GetFiles(cx);
+			}
+
+			return files;
 		}
 
 		private void CreateUI()
@@ -1020,13 +1075,15 @@ namespace AUI.FileDialog
 
 			window_ = new VUI.Window();
 			window_.CloseRequest += Cancel;
-			window_.ContentPanel.Layout = new VUI.BorderLayout(10);
+			window_.ContentPanel.Layout = new VUI.BorderLayout();
 
 			window_.ContentPanel.Add(CreateTop(), VUI.BorderLayout.Top);
 			window_.ContentPanel.Add(CreateCenter(), VUI.BorderLayout.Center);
 			window_.ContentPanel.Add(CreateBottom(), VUI.BorderLayout.Bottom);
 
 			root_.ContentPanel.Add(window_, VUI.BorderLayout.Center);
+
+			tree_.Init();
 		}
 
 		private VUI.Panel CreateTop()
@@ -1038,6 +1095,9 @@ namespace AUI.FileDialog
 			addressBar_ = new AddressBar(this);
 
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+			p.BackgroundColor = VUI.Style.Theme.SplitterHandleBackgroundColor;
+			p.Padding = new VUI.Insets(10, 10, 10, 10);
+
 			p.Add(addressBar_);
 			p.Add(optionsPanel_);
 
@@ -1122,6 +1182,11 @@ namespace AUI.FileDialog
 		private void OnTreeSelection(IFileTreeItem item)
 		{
 			var c = item?.Object as FS.IFilesystemContainer;
+			if (c == null)
+			{
+				Log.Error("selected a file tree item with a null object");
+				return;
+			}
 
 			SetCurrentDirectory(c);
 			addressBar_.SetDirectory(c);

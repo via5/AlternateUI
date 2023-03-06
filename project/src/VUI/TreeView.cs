@@ -67,8 +67,13 @@ namespace VUI
 
 			public string Tooltip
 			{
-				get { return tooltip_; }
+				get { return GetTooltip(); }
 				set { tooltip_ = value; }
+			}
+
+			protected virtual string GetTooltip()
+			{
+				return tooltip_;
 			}
 
 			public string Text
@@ -521,6 +526,7 @@ namespace VUI
 
 					UpdatePanel(r);
 
+					r.Left += Style.Metrics.TreeViewLeftMargin;
 					r.Left += indent * Style.Metrics.TreeIndentSize;
 
 					if (item_.HasChildren)
@@ -567,6 +573,9 @@ namespace VUI
 				if (panel_ == null)
 				{
 					panel_ = new Panel("TreeViewNode", new AbsoluteLayout());
+					panel_.Tooltip.TextFunc = () => item_?.Tooltip ?? "";
+					panel_.Clickthrough = false;
+
 					tree_.Add(panel_);
 					panel_.Create();
 					panel_.Events.PointerClick += (e) => { e.Bubble = true; };
@@ -711,7 +720,6 @@ namespace VUI
 				if (tree_.Icons)
 					lr.Left += Style.Metrics.TreeIconWidth + Style.Metrics.TreeIconSpacing;
 
-				label_.Tooltip.Text = item_.Tooltip;
 				label_.Text = item_.Text;
 				label_.SetBounds(lr);
 			}
@@ -814,11 +822,6 @@ namespace VUI
 					Style.Metrics.TreeItemHeight +
 					Style.Metrics.TreeItemSpacing;
 			}
-		}
-
-		private float InternalPadding
-		{
-			get { return Style.Metrics.TreeInternalPadding; }
 		}
 
 		private void OnVerticalScroll(float v)
@@ -1169,8 +1172,8 @@ namespace VUI
 				cx.av = AbsoluteClientBounds;
 				cx.nodeIndex = 0;
 				cx.itemIndex = 0;
-				cx.x = cx.av.Left + InternalPadding;
-				cx.y = cx.av.Top + InternalPadding;
+				cx.x = cx.av.Left;
+				cx.y = cx.av.Top + Style.Metrics.TreeViewTopMargin;
 				cx.indent = 0;
 
 				int nodeCount = (int)(cx.av.Height / FullItemHeight);
@@ -1242,7 +1245,7 @@ namespace VUI
 
 						var r = Rectangle.FromPoints(
 							x, y,
-							cx.av.Right - InternalPadding,
+							cx.av.Right,
 							y + Style.Metrics.TreeItemHeight);
 
 						if (vsb_.Visible)
