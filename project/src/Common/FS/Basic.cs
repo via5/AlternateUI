@@ -150,6 +150,7 @@ namespace AUI.FS
 
 	class CachedListing<T> where T : class, IFilesystemObject
 	{
+		private int cacheToken_ = -1;
 		private bool showHiddenFolders_ = false;
 		private bool showHiddenFiles_ = false;
 		private Listing<T> listing_ = null;
@@ -169,8 +170,20 @@ namespace AUI.FS
 			get { return listing_; }
 		}
 
-		public void SetRaw(Context cx, List<T> list)
+		public bool Stale(Filesystem fs)
 		{
+			if (cacheToken_ != fs.CacheToken)
+				return true;
+
+			if (listing_?.Raw == null)
+				return true;
+
+			return false;
+		}
+
+		public void SetRaw(Filesystem fs, Context cx, List<T> list)
+		{
+			cacheToken_ = fs.CacheToken;
 			showHiddenFolders_ = cx.ShowHiddenFolders;
 			showHiddenFiles_ = cx.ShowHiddenFiles;
 
@@ -188,9 +201,9 @@ namespace AUI.FS
 		private CachedListing<IFilesystemObject> localFiles_;
 		private CachedListing<IFilesystemObject> recursiveFiles_;
 
-		public bool StaleLocalDirectoriesCache(Context cx)
+		public bool StaleLocalDirectoriesCache(Filesystem fs, Context cx)
 		{
-			if (localDirs_?.Listing?.Raw == null)
+			if (localDirs_?.Stale(fs) ?? true)
 				return true;
 
 			if (localDirs_.ShowHiddenFolders != cx.ShowHiddenFolders)
@@ -200,12 +213,12 @@ namespace AUI.FS
 		}
 
 		public void SetLocalDirectoriesCache(
-			Context cx, List<IFilesystemContainer> list)
+			Filesystem fs, Context cx, List<IFilesystemContainer> list)
 		{
 			if (localDirs_ == null)
 				localDirs_ = new CachedListing<IFilesystemContainer>();
 
-			localDirs_.SetRaw(cx, list);
+			localDirs_.SetRaw(fs, cx, list);
 		}
 
 		public Listing<IFilesystemContainer> GetLocalDirectories()
@@ -222,9 +235,9 @@ namespace AUI.FS
 		}
 
 
-		public bool StaleLocalFilesCache(Context cx)
+		public bool StaleLocalFilesCache(Filesystem fs, Context cx)
 		{
-			if (localFiles_?.Listing?.Raw == null)
+			if (localFiles_?.Stale(fs) ?? true)
 				return true;
 
 			if (localFiles_.ShowHiddenFolders != cx.ShowHiddenFolders)
@@ -236,12 +249,13 @@ namespace AUI.FS
 			return false;
 		}
 
-		public void SetLocalFilesCache(Context cx, List<IFilesystemObject> list)
+		public void SetLocalFilesCache(
+			Filesystem fs, Context cx, List<IFilesystemObject> list)
 		{
 			if (localFiles_ == null)
 				localFiles_ = new CachedListing<IFilesystemObject>();
 
-			localFiles_.SetRaw(cx, list);
+			localFiles_.SetRaw(fs, cx, list);
 		}
 
 		public Listing<IFilesystemObject> GetLocalFilesCache()
@@ -253,9 +267,9 @@ namespace AUI.FS
 		}
 
 
-		public bool StaleRecursiveFilesCache(Context cx)
+		public bool StaleRecursiveFilesCache(Filesystem fs, Context cx)
 		{
-			if (recursiveFiles_?.Listing?.Raw == null)
+			if (recursiveFiles_?.Stale(fs) ?? true)
 				return true;
 
 			if (recursiveFiles_.ShowHiddenFolders != cx.ShowHiddenFolders)
@@ -267,12 +281,12 @@ namespace AUI.FS
 			return false;
 		}
 
-		public void SetRecursiveFilesCache(Context cx)
+		public void SetRecursiveFilesCache(Filesystem fs, Context cx)
 		{
 			if (recursiveFiles_ == null)
 				recursiveFiles_ = new CachedListing<IFilesystemObject>();
 
-			recursiveFiles_.SetRaw(cx, null);
+			recursiveFiles_.SetRaw(fs, cx, null);
 		}
 
 		public Listing<IFilesystemObject> GetRecursiveFilesCache()
@@ -319,7 +333,7 @@ namespace AUI.FS
 
 		private bool StaleLocalDirectoriesCache(Context cx)
 		{
-			return (cache_?.StaleLocalDirectoriesCache(cx) ?? true);
+			return (cache_?.StaleLocalDirectoriesCache(fs_, cx) ?? true);
 		}
 
 		private void SetLocalDirectoriesCache(
@@ -328,7 +342,7 @@ namespace AUI.FS
 			if (cache_ == null)
 				cache_ = new Cache();
 
-			cache_.SetLocalDirectoriesCache(cx, list);
+			cache_.SetLocalDirectoriesCache(fs_, cx, list);
 		}
 
 		private Listing<IFilesystemContainer> GetLocalDirectoriesCache()
@@ -342,7 +356,7 @@ namespace AUI.FS
 
 		private bool StaleLocalFilesCache(Context cx)
 		{
-			return (cache_?.StaleLocalFilesCache(cx) ?? true);
+			return (cache_?.StaleLocalFilesCache(fs_, cx) ?? true);
 		}
 
 		private void SetLocalFilesCache(Context cx, List<IFilesystemObject> list)
@@ -350,7 +364,7 @@ namespace AUI.FS
 			if (cache_ == null)
 				cache_ = new Cache();
 
-			cache_.SetLocalFilesCache(cx, list);
+			cache_.SetLocalFilesCache(fs_, cx, list);
 		}
 
 		private Listing<IFilesystemObject> GetLocalFilesCache()
@@ -364,7 +378,7 @@ namespace AUI.FS
 
 		private bool StaleRecursiveFilesCache(Context cx)
 		{
-			return (cache_?.StaleRecursiveFilesCache(cx) ?? true);
+			return (cache_?.StaleRecursiveFilesCache(fs_, cx) ?? true);
 		}
 
 		private void SetRecursiveFilesCache(Context cx)
@@ -372,7 +386,7 @@ namespace AUI.FS
 			if (cache_ == null)
 				cache_ = new Cache();
 
-			cache_.SetRecursiveFilesCache(cx);
+			cache_.SetRecursiveFilesCache(fs_, cx);
 		}
 
 		private Listing<IFilesystemObject> GetRecursiveFilesCache()
@@ -400,8 +414,6 @@ namespace AUI.FS
 
 			if (cx.Recursive || IsFlattened)
 			{
-				AlternateUI.Instance.Log.Info($"{this} getfiles");
-
 				if (StaleRecursiveFilesCache(cx))
 				{
 					SetRecursiveFilesCache(cx);
@@ -426,17 +438,14 @@ namespace AUI.FS
 		public void GetFilesRecursiveInternal(
 			Context cx, Listing<IFilesystemObject> listing)
 		{
-			AlternateUI.Instance.Log.Info($"{this} GetFilesRecursiveInternal");
 			if (StaleLocalFilesCache(cx))
 			{
-				AlternateUI.Instance.Log.Info($"{this} stale");
 				var list = GetFilesInternal(cx);
 				SetLocalFilesCache(cx, list);
 				listing.AddRaw(list);
 			}
 			else
 			{
-				AlternateUI.Instance.Log.Info($"{this} not stale");
 				listing.AddRaw(GetLocalFilesCache().Raw);
 			}
 
@@ -542,9 +551,7 @@ namespace AUI.FS
 
 		private List<IFilesystemObject> GetFilesInternal(Context cx)
 		{
-			AlternateUI.Instance.Log.Info($"{this} GetFilesInternal {cx.ShowHiddenFiles}");
 			var files = DoGetFiles(cx);
-			AlternateUI.Instance.Log.Info($"{this} GetFilesInternal files={files.Count}");
 
 			if (files != null)
 			{
@@ -553,7 +560,6 @@ namespace AUI.FS
 				for (int i = 0; i < files.Count; ++i)
 				{
 					var f = files[i];
-					AlternateUI.Instance.Log.Info($"{this} GetFilesInternal {f}");
 
 					if (checkedFiles == null)
 					{

@@ -259,7 +259,6 @@ namespace AUI.FS
 
 		protected override bool IncludeFile(Context cx, IFilesystemObject o)
 		{
-			AlternateUI.Instance.Log.Info($"{cx.ShowHiddenFiles}");
 			if (cx.ShowHiddenFiles)
 				return true;
 
