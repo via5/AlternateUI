@@ -52,12 +52,6 @@ namespace AUI.FileDialog
 			{
 				o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
 					CreateContext(), path_);
-
-				if (o_ == null)
-				{
-					tree_.FileDialog.Log.Error(
-						$"treeitem can't resolve {path_}");
-				}
 			}
 
 			return o_;
@@ -114,13 +108,17 @@ namespace AUI.FileDialog
 					{
 						bool found = false;
 						var c = cs[i] as FileTreeItem;
+						var co = c.GetFSObject();
 
-						for (int j = 0; j < dirs.Count; ++j)
+						if (co != null)
 						{
-							if (c.GetFSObject().IsSameObject(dirs[j]))
+							for (int j = 0; j < dirs.Count; ++j)
 							{
-								found = true;
-								break;
+								if (co.IsSameObject(dirs[j]))
+								{
+									found = true;
+									break;
+								}
 							}
 						}
 

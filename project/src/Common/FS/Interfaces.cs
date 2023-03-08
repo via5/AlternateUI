@@ -7,9 +7,9 @@ namespace AUI.FS
 		where EntriesType : class, IFilesystemObject
 	{
 		private List<EntriesType> raw_ = null;
-		private string currentExtensions_ = "";
+		private string currentExtensions_ = null;
 		private List<EntriesType> perExtension_ = null;
-		public string currentSearch_ = "";
+		public string currentSearch_ = null;
 		private List<EntriesType> searched_ = null;
 		public int currentSort_ = Context.NoSort;
 		public int currentSortDir_ = Context.NoSortDirection;
@@ -18,6 +18,7 @@ namespace AUI.FS
 		public void SetRaw(List<EntriesType> list)
 		{
 			raw_ = list;
+			SetAllStale();
 		}
 
 		public void AddRaw(List<EntriesType> list)
@@ -26,6 +27,7 @@ namespace AUI.FS
 				raw_ = new List<EntriesType>();
 
 			raw_.AddRange(list);
+			SetAllStale();
 		}
 
 		public List<EntriesType> Raw
@@ -62,10 +64,10 @@ namespace AUI.FS
 		public void SetExtensions(Context cx, List<EntriesType> list)
 		{
 			currentExtensions_ = cx.ExtensionsString;
-			currentSearch_ = null;
-			currentSort_ = Context.NoSort;
-			currentSortDir_ = Context.NoSortDirection;
 			perExtension_ = list;
+
+			SetSearchStale();
+			SetSortStale();
 		}
 
 
@@ -77,9 +79,8 @@ namespace AUI.FS
 		public void SetSearched(Context cx, List<EntriesType> list)
 		{
 			currentSearch_ = cx.Search;
-			currentSort_ = Context.NoSort;
-			currentSortDir_ = Context.NoSortDirection;
 			searched_ = list;
+			SetSortStale();
 		}
 
 
@@ -93,6 +94,33 @@ namespace AUI.FS
 			currentSort_ = cx.Sort;
 			currentSortDir_ = cx.SortDirection;
 			sorted_ = list;
+		}
+
+
+		private void SetAllStale()
+		{
+			SetPerExtensionStale();
+			SetSearchStale();
+			SetSortStale();
+		}
+
+		private void SetPerExtensionStale()
+		{
+			currentExtensions_ = null;
+			perExtension_ = null;
+		}
+
+		private void SetSearchStale()
+		{
+			currentSearch_ = null;
+			searched_ = null;
+		}
+
+		private void SetSortStale()
+		{
+			currentSort_ = Context.NoSort;
+			currentSortDir_ = Context.NoSortDirection;
+			sorted_ = null;
 		}
 	}
 

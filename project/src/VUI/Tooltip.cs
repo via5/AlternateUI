@@ -85,10 +85,10 @@ namespace VUI
 			base.Destroy();
 		}
 
-		public Size Set(Tooltip tt)
+		public Size Set(string text, int fontSize)
 		{
-			label_.Text = tt.GetText();
-			label_.FontSize = tt.FontSize;
+			label_.Text = text;
+			label_.FontSize = fontSize;
 			label_.Polish();
 
 			return label_.FitText(
@@ -149,10 +149,18 @@ namespace VUI
 			if (mp == Root.NoMousePos)
 				return;
 
+			var text = w.Tooltip.GetText();
+			if (text == "")
+			{
+				// some tooltips have a TextFunc, but it returns an empty
+				// string
+				return;
+			}
+
 			active_ = w;
 
 			// size of text
-			var size = widget_.Set(w.Tooltip);
+			var size = widget_.Set(text, w.Tooltip.FontSize);
 
 			// widget is size of text plus its insets
 			size += widget_.Insets.Size;

@@ -275,10 +275,13 @@ namespace AUI.FS
 
 		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
+			if (cx.ShowHiddenFolders)
+				return true;
+
 			return (o != custom_);
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return new List<IFilesystemContainer>()
 			{
@@ -310,6 +313,9 @@ namespace AUI.FS
 
 		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
+			if (cx.ShowHiddenFolders)
+				return true;
+
 			for (int i = 0; i < whitelist_.Length; ++i)
 			{
 				if (whitelist_[i] == o.Name)

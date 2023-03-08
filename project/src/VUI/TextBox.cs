@@ -395,6 +395,8 @@ namespace VUI
 			panel_.BringToTop();
 			panel_.DoLayout();
 
+			listView_.ScrollToTop();
+
 			panel_.GetRoot().SetOpenedPopup(listView_, listView_.Popup.popup);
 		}
 

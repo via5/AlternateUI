@@ -190,7 +190,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return pinned_;
 		}

@@ -8,7 +8,12 @@ namespace AUI.FS
 
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
-		private List<IFilesystemContainer> packages_ = null;
+		private List<IFilesystemContainer> packagesScene_ = null;
+		private Dictionary<string, ShortCut> shortCutsScene_ = null;
+
+		private List<IFilesystemContainer> packagesAll_ = null;
+		private Dictionary<string, ShortCut> shortCutsAll_ = null;
+
 
 		public PackageRootDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Packages")
@@ -60,26 +65,57 @@ namespace AUI.FS
 			return "";
 		}
 
-		public List<IFilesystemContainer> GetPackages()
+		public List<IFilesystemContainer> GetPackages(Context cx)
 		{
-			RefreshPackages();
-			return packages_;
+			return RefreshPackages(cx);
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		public ShortCut GetShortCut(string name, bool showHiddenFolders)
 		{
-			RefreshPackages();
-			return packages_;
+			ShortCut sc;
+
+			if (showHiddenFolders)
+				shortCutsAll_.TryGetValue(name, out sc);
+			else
+				shortCutsScene_.TryGetValue(name, out sc);
+
+			return sc;
 		}
 
-		private void RefreshPackages()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			if (packages_ != null)
-				return;
+			return GetPackages(cx);
+		}
 
-			packages_ = new List<IFilesystemContainer>();
+		private List<IFilesystemContainer> RefreshPackages(Context cx)
+		{
+			var ps = (cx.ShowHiddenFolders ? packagesAll_ : packagesScene_);
+			if (ps != null)
+				return ps;
 
-			foreach (var sc in FMS.GetShortCutsForDirectory("Saves/scene"))
+			ps = new List<IFilesystemContainer>();
+
+			Dictionary<string, ShortCut> map;
+
+			if (cx.ShowHiddenFolders)
+			{
+				if (shortCutsAll_ == null)
+					shortCutsAll_ = new Dictionary<string, ShortCut>();
+
+				map = shortCutsAll_;
+			}
+			else
+			{
+				if (shortCutsScene_ == null)
+					shortCutsScene_ = new Dictionary<string, ShortCut>();
+
+				map = shortCutsScene_;
+			}
+
+			string path = (cx.ShowHiddenFolders ? "" : "Saves/scene");
+			map.Clear();
+
+			foreach (var sc in FMS.GetShortCutsForDirectory(path))
 			{
 				if (string.IsNullOrEmpty(sc.package))
 					continue;
@@ -90,44 +126,65 @@ namespace AUI.FS
 				if (sc.path == "AddonPackages")
 					continue;
 
-				packages_.Add(new Package(fs_, this, sc));
+				ps.Add(new Package(fs_, this, sc.package, cx.ShowHiddenFolders));
+				map.Add(sc.package, sc);
 			}
+
+			if (cx.ShowHiddenFolders)
+				packagesAll_ = ps;
+			else
+				packagesScene_ = ps;
+
+			return ps;
 		}
 	}
 
 
 	class Package : BasicFilesystemContainer, IPackage
 	{
-		private readonly ShortCut sc_;
+		private readonly string name_;
+		private ShortCut sc_ = null;
+		private bool showHiddenFolders_ = false;
 
-		public Package(Filesystem fs, IFilesystemContainer parent, ShortCut sc)
-			: base(fs, parent, sc.package)
+		public Package(Filesystem fs, IFilesystemContainer parent, string name, bool showHiddenFolders)
+			: base(fs, parent, name)
 		{
-			sc_ = sc;
+			name_ = name;
+			showHiddenFolders_ = showHiddenFolders;
 		}
 
 		public override string ToString()
 		{
-			return $"Package({sc_.package})";
+			return $"Package({ShortCut.package})";
 		}
 
 		public ShortCut ShortCut
 		{
-			get { return sc_; }
+			get
+			{
+				if (sc_ == null)
+				{
+					sc_ = fs_.GetPackagesRootDirectory()
+						.GetShortCut(name_, showHiddenFolders_);
+				}
+
+				return sc_;
+			}
 		}
 
 		public override string Tooltip
 		{
 			get
 			{
+				var sc = ShortCut;
 				var tt = base.Tooltip;
 
 				tt +=
-					$"\npackage={sc_.package}" +
-					$"\nfilter={sc_.packageFilter}" +
-					$"\nflatten={sc_.flatten}" +
-					$"\nhidden={sc_.isHidden}" +
-					$"\npath={sc_.path}";
+					$"\npackage={sc.package}" +
+					$"\nfilter={sc.packageFilter}" +
+					$"\nflatten={sc.flatten}" +
+					$"\nhidden={sc.isHidden}" +
+					$"\npath={sc.path}";
 
 				return tt;
 			}
@@ -135,17 +192,17 @@ namespace AUI.FS
 
 		protected override string GetDisplayName()
 		{
-			return sc_.package;
+			return ShortCut.package;
 		}
 
 		public override DateTime DateCreated
 		{
-			get { return FMS.FileCreationTime(sc_.path); }
+			get { return FMS.FileCreationTime(ShortCut.path); }
 		}
 
 		public override DateTime DateModified
 		{
-			get { return FMS.FileLastWriteTime(sc_.path); }
+			get { return FMS.FileLastWriteTime(ShortCut.path); }
 		}
 
 		public override VUI.Icon Icon
@@ -175,11 +232,37 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			return sc_.path + "/";
+			return ShortCut.path + "/";
+		}
+
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
+		{
+			if (showHiddenFolders_ != cx.ShowHiddenFolders)
+			{
+				sc_ = null;
+				showHiddenFolders_ = cx.ShowHiddenFolders;
+			}
+
+			return base.DoGetDirectories(cx);
+		}
+
+		protected override List<IFilesystemObject> DoGetFiles(Context cx)
+		{
+			if (showHiddenFolders_ != cx.ShowHiddenFolders)
+			{
+				sc_ = null;
+				showHiddenFolders_ = cx.ShowHiddenFolders;
+			}
+
+			return base.DoGetFiles(cx);
 		}
 
 		protected override bool IncludeFile(Context cx, IFilesystemObject o)
 		{
+			AlternateUI.Instance.Log.Info($"{cx.ShowHiddenFiles}");
+			if (cx.ShowHiddenFiles)
+				return true;
+
 			return (o.Name != "meta.json");
 		}
 	}

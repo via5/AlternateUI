@@ -55,7 +55,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return fs_.GetRootDirectory().GetDirectoriesForFlatten();
 		}
@@ -119,9 +119,9 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return fs_.GetPackagesRootDirectory().GetPackages();
+			return fs_.GetPackagesRootDirectory().GetPackages(cx);
 		}
 	}
 
@@ -179,7 +179,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		protected override List<IFilesystemContainer> GetDirectories()
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return fs_.GetRootDirectory().PinnedRoot.Pinned;
 		}

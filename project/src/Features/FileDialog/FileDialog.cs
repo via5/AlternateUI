@@ -141,9 +141,6 @@ namespace AUI.FileDialog
 
 	class OptionsPanel : VUI.Panel
 	{
-		public delegate void Handler();
-		public event Handler DirectoriesChanged, FilesChanged;
-
 		private readonly FileDialog fd_;
 		private IFileDialogMode mode_ = null;
 
@@ -258,7 +255,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenDirectories = b;
-			DirectoriesChanged?.Invoke();
+			fd_.Refresh();
 		}
 
 		private void SetFlattenPackages(bool b)
@@ -266,7 +263,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenPackages = b;
-			DirectoriesChanged?.Invoke();
+			fd_.Refresh();
 		}
 
 		private void SetMergePackages(bool b)
@@ -274,8 +271,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.MergePackages = b;
-			DirectoriesChanged?.Invoke();
-			FilesChanged?.Invoke();
+			fd_.Refresh();
 		}
 
 		private void SetShowHiddenFolders(bool b)
@@ -283,6 +279,9 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.ShowHiddenFolders = b;
+
+			// this can also affect files for flattened folders where some
+			// folders are hidden
 			fd_.Refresh();
 		}
 
@@ -291,7 +290,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.ShowHiddenFiles = b;
-			fd_.Refresh();
+			fd_.RefreshFiles();
 		}
 
 		private void SetSort(int s)
@@ -299,7 +298,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.Sort = s;
-			FilesChanged?.Invoke();
+			fd_.RefreshFiles();
 		}
 
 		private void SetSortDirection(int s)
@@ -307,7 +306,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.SortDirection = s;
-			FilesChanged?.Invoke();
+			fd_.RefreshFiles();
 		}
 	}
 
@@ -1015,7 +1014,6 @@ namespace AUI.FileDialog
 		{
 			return new FS.Context(
 				"", null,
-				//FS.Context.NoSort, FS.Context.NoSortDirection,
 				FS.Context.SortFilename, FS.Context.SortAscending,
 				MakeContextFlags(recursive, mode_.Options));
 		}
@@ -1023,8 +1021,11 @@ namespace AUI.FileDialog
 		public void Refresh()
 		{
 			FS.Filesystem.Instance.ClearCaches();
-			RefreshDirectories();
-			RefreshFiles();
+
+			// give some time for the panels to clear so there's a visual
+			// feedback that a refresh has occured
+			filesPanel_.Clear();
+			AlternateUI.Instance.StartCoroutine(CoRefresh());
 		}
 
 		public void RefreshFiles()
@@ -1037,7 +1038,16 @@ namespace AUI.FileDialog
 
 		public void RefreshDirectories()
 		{
+			tree_.SetFlags(GetTreeFlags());
 			tree_.Refresh();
+		}
+
+		private IEnumerator CoRefresh()
+		{
+			yield return new WaitForEndOfFrame();
+
+			RefreshDirectories();
+			RefreshFiles();
 		}
 
 		private List<FS.IFilesystemObject> GetFiles()
@@ -1054,7 +1064,6 @@ namespace AUI.FileDialog
 			else
 			{
 				var cx = CreateFileContext(mode_.Options.FlattenPackages);
-
 				files = dir_.GetFiles(cx);
 			}
 
@@ -1087,9 +1096,6 @@ namespace AUI.FileDialog
 		private VUI.Panel CreateTop()
 		{
 			optionsPanel_ = new OptionsPanel(this);
-			optionsPanel_.DirectoriesChanged += OnDirectoryOptionsChanged;
-			optionsPanel_.FilesChanged += OnFileOptionsChanged;
-
 			addressBar_ = new AddressBar(this);
 
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));
@@ -1163,18 +1169,6 @@ namespace AUI.FileDialog
 				// would be lost
 				SelectFile(null, false);
 			}
-		}
-
-		private void OnDirectoryOptionsChanged()
-		{
-			AlternateUI.Instance.Save();
-			tree_.SetFlags(GetTreeFlags());
-			SetCurrentDirectory(dir_);
-		}
-
-		private void OnFileOptionsChanged()
-		{
-			RefreshFiles();
 		}
 
 		private void OnTreeSelection(IFileTreeItem item)
