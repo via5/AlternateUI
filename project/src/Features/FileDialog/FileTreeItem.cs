@@ -46,12 +46,17 @@ namespace AUI.FileDialog
 			get { return GetFSObject(); }
 		}
 
-		private FS.IFilesystemContainer GetFSObject()
+		public string Path
+		{
+			get { return path_; }
+		}
+
+		public FS.IFilesystemContainer GetFSObject(int moreFlags = 0)
 		{
 			if (o_ == null)
 			{
 				o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
-					CreateContext(), path_);
+					CreateContext(), path_, FS.Filesystem.ResolveDefault | moreFlags);
 			}
 
 			return o_;

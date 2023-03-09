@@ -155,7 +155,7 @@ namespace AUI.FS
 
 		public override string ToString()
 		{
-			return $"Package({ShortCut.package})";
+			return $"Package({ShortCut.path})";
 		}
 
 		public ShortCut ShortCut
@@ -233,6 +233,140 @@ namespace AUI.FS
 		public override string MakeRealPath()
 		{
 			return ShortCut.path + "/";
+		}
+
+		public override ResolveResult ResolveInternal(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			if (debug.Enabled)
+				debug.Info(this, $"resolveinternal cs={cs} flags={flags}");
+
+			if (cs.Done)
+			{
+				debug.Info(this, $"done, cs={cs}");
+				return ResolveResult.NotFound();
+			}
+
+			var sc = ShortCut;
+			if (sc == null)
+			{
+				AlternateUI.Instance.Log.Error(
+					$"{this} ResolveInternal: null shortcut");
+
+				return ResolveResult.NotFound();
+			}
+
+			var col = sc.path.IndexOf(":");
+			if (col == -1)
+			{
+				AlternateUI.Instance.Log.Error(
+					$"{this} ResolveInternal: shortcut path has no " +
+					$"colon '{sc.path}'");
+
+				return ResolveResult.NotFound();
+			}
+
+			var pn = cs.Current;
+			if (pn.EndsWith(":"))
+				pn = pn.Substring(0, pn.Length - 1);
+
+			if (pn != sc.package)
+			{
+				if (debug.Enabled)
+					debug.Info(this, $"resolve bad, {pn}!={sc.package}");
+
+				return ResolveResult.NotFound();
+			}
+
+			if (debug.Enabled)
+				debug.Info(this, $"resolved to this cs={cs}");
+
+			cs.Next();
+
+			if (cs.Done)
+				return ResolveResult.Found(this);
+
+			debug = debug.Inc();
+
+			var scPath = sc.path.Substring(col + 1);
+
+			if (scPath.Length > 0)
+			{
+				var sccs = new PathComponents(scPath);
+
+				if (debug.Enabled)
+					debug.Info(this, $"checking sc path cs={cs} sccs={sccs}");
+
+				bool found = true;
+
+				while (!sccs.Done && !cs.Done)
+				{
+					if (cs.Done)
+					{
+						if (debug.Enabled)
+							debug.Info(this, $"resolve bad, at end");
+
+						found = false;
+						break;
+						//return ResolveResult.FoundPartial(this);
+					}
+					else if (cs.Current != sccs.Current)
+					{
+						if (debug.Enabled)
+							debug.Info(this, $"resolve bad cs={cs} sccs={sccs}");
+
+						found = false;
+						break;
+						//return ResolveResult.FoundPartial(this);
+					}
+
+					cs.Next();
+					sccs.Next();
+				}
+
+				if (found && cs.Done && sccs.Done)
+					return ResolveResult.Found(this);
+
+				if (debug.Enabled)
+					debug.Info(this, $"sc path failed, will fwd to base cs={cs}");
+			}
+			else
+			{
+				if (debug.Enabled)
+					debug.Info(this, $"resolve ok, fwd to base cs={cs}");
+			}
+
+			return base.ResolveInternal2(cx, cs, flags, debug);
+		}
+
+		public List<IFilesystemObject> GetFilesForMerge(Context cx, string path)
+		{
+			var sc = ShortCut;
+			path = sc.package + ":/" + path;
+
+			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
+			if (o == null)
+			{
+				//AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
+				return null;
+			}
+
+			return o.GetFiles(cx);
+		}
+
+		public List<IFilesystemContainer> GetDirectoriesForMerge(Context cx, string path)
+		{
+			var sc = ShortCut;
+			path = sc.package + ":/" + path;
+
+			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
+			if (o == null)
+			{
+				//AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
+				return null;
+			}
+
+			return o.GetDirectories(cx);
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)

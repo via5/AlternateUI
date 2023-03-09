@@ -235,6 +235,18 @@ namespace AUI.FS
 			return c_.IsSameObject(o);
 		}
 
+		public override IFilesystemObject Resolve(
+			Context cx, string path, int flags = Filesystem.ResolveDefault)
+		{
+			return c_.Resolve(cx, path, flags);
+		}
+
+		public ResolveResult ResolveInternal(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			return c_.ResolveInternal(cx, cs, flags, debug);
+		}
+
 
 		public bool HasDirectories(Context cx)
 		{

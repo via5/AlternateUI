@@ -3,6 +3,88 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
+	public struct PathComponents
+	{
+		private readonly string path_;
+		private readonly string[] cs_;
+		private int i_;
+
+		public PathComponents(string path)
+		{
+			path_ = path.Replace('\\', '/');
+			if (path_.StartsWith("/"))
+				path_ = path_.Substring(1);
+
+			cs_ = path_.Split('/');
+			i_ = 0;
+		}
+
+		private PathComponents(string path, string[] cs, int i)
+		{
+			path_ = path;
+			cs_ = cs;
+			i_ = i;
+		}
+
+		public bool Done
+		{
+			get { return (i_ >= cs_.Length); }
+		}
+
+		public bool Last
+		{
+			get { return (i_ + 1 >= cs_.Length); }
+		}
+
+		public bool NextIsLast
+		{
+			get { return (i_ + 2 >= cs_.Length); }
+		}
+
+		public string Current
+		{
+			get
+			{
+				if (i_ < 0 || i_ >= cs_.Length)
+					return null;
+				else
+					return cs_[i_];
+			}
+		}
+
+		public void Next()
+		{
+			++i_;
+		}
+
+		public PathComponents NextCopy()
+		{
+			return new PathComponents(path_, cs_, i_ + 1);
+		}
+
+		public override string ToString()
+		{
+			string s = "";
+
+			for (int i = 0; i < cs_.Length; ++i)
+			{
+				if (s != "")
+					s += ",";
+
+				if (i == i_)
+					s += "[" + cs_[i] + "]";
+				else
+					s += cs_[i];
+			}
+
+			if (i_ >= cs_.Length)
+				s += "[]";
+
+			return s;
+		}
+	}
+
+
 	class Listing<EntriesType>
 		where EntriesType : class, IFilesystemObject
 	{
@@ -151,6 +233,97 @@ namespace AUI.FS
 	}
 
 
+	struct ResolveDebug
+	{
+		public int indent;
+
+		public ResolveDebug(int i)
+		{
+			indent = i;
+		}
+
+		public static ResolveDebug Null
+		{
+			get { return new ResolveDebug(-1); }
+		}
+
+		public bool Enabled
+		{
+			get { return (indent >= 0); }
+		}
+
+		public ResolveDebug Inc()
+		{
+			if (indent < 0)
+				return Null;
+			else
+				return new ResolveDebug(indent + 1);
+		}
+
+		public void Info(object o, string s)
+		{
+			if (Enabled)
+			{
+				if (o == null)
+				{
+					AlternateUI.Instance.Log.Info(
+						new string(' ', indent * 4) + $"{s}");
+				}
+				else
+				{
+					AlternateUI.Instance.Log.Info(
+						new string(' ', indent * 4) + $"{o} {s}");
+				}
+			}
+		}
+
+		public void Error(object o, string s)
+		{
+			if (Enabled)
+			{
+				if (o == null)
+				{
+					AlternateUI.Instance.Log.Error(
+						new string(' ', indent * 4) + $"{s}");
+				}
+				else
+				{
+					AlternateUI.Instance.Log.Error(
+						new string(' ', indent * 4) + $"{o} {s}");
+				}
+			}
+		}
+	}
+
+
+	struct ResolveResult
+	{
+		public IFilesystemObject o;
+		public bool partial;
+
+		private ResolveResult(IFilesystemObject o, bool partial)
+		{
+			this.o = o;
+			this.partial = partial;
+		}
+
+		public static ResolveResult NotFound()
+		{
+			return new ResolveResult(null, false);
+		}
+
+		public static ResolveResult Found(IFilesystemObject o)
+		{
+			return new ResolveResult(o, false);
+		}
+
+		public static ResolveResult FoundPartial(IFilesystemObject o)
+		{
+			return new ResolveResult(o, true);
+		}
+	}
+
+
 	interface IFilesystemContainer : IFilesystemObject
 	{
 		bool AlreadySorted { get; }
@@ -158,8 +331,15 @@ namespace AUI.FS
 		List<IFilesystemContainer> GetDirectories(Context cx);
 		List<IFilesystemObject> GetFiles(Context cx);
 
+		IFilesystemObject Resolve(
+			Context cx, string path, int flags = Filesystem.ResolveDefault);
+
 		void GetFilesRecursiveInternal(
 			Context cx, Listing<IFilesystemObject> listing);
+
+		ResolveResult ResolveInternal(
+			Context cx, PathComponents cs, int flags,
+			ResolveDebug debug);
 	}
 
 

@@ -32,6 +32,7 @@ namespace AUI.FS
 
 		public const int ResolveDefault = 0x00;
 		public const int ResolveDirsOnly = 0x01;
+		public const int ResolveDebug = 0x02;
 
 		private static readonly Filesystem instance_ = new Filesystem();
 
@@ -126,54 +127,16 @@ namespace AUI.FS
 		}
 
 		public IFilesystemObject Resolve(
-			FS.Context cx, string path, int flags = ResolveDefault)
+			Context cx, string path, int flags = ResolveDefault)
 		{
 			return Resolve<IFilesystemObject>(cx, path, flags);
 		}
 
 		public T Resolve<T>(
-			FS.Context cx, string path, int flags = ResolveDefault)
+			Context cx, string path, int flags = ResolveDefault)
 				where T : class, IFilesystemObject
 		{
-			path = path.Replace('\\', '/');
-			var r = Resolve(cx, root_, path.Split('/'), 0, flags) as T;
-
-			return r;
-		}
-
-		private IFilesystemObject Resolve(
-			FS.Context cx, IFilesystemContainer o, string[] cs, int csi, int flags)
-		{
-			if (csi >= cs.Length || o.Name != cs[csi])
-				return null;
-
-			if (csi + 1 == cs.Length)
-				return o;
-
-			foreach (var d in o.GetDirectories(cx))
-			{
-				var r = Resolve(cx, d, cs, csi + 1, flags);
-				if (r != null)
-					return r;
-			}
-
-
-			if (!Bits.IsSet(flags, ResolveDirsOnly))
-			{
-				if (csi + 2 < cs.Length)
-				{
-					// cannot be a file
-					return null;
-				}
-
-				foreach (var f in o.GetFiles(cx))
-				{
-					if (f.Name == cs[csi + 1])
-						return f;
-				}
-			}
-
-			return null;
+			return root_.Resolve(cx, path, flags) as T;
 		}
 	}
 
@@ -373,7 +336,8 @@ namespace AUI.FS
 			return emptyFiles_;
 		}
 
-		public void GetFilesRecursiveInternal(Context cx, Listing<IFilesystemObject> listing)
+		public void GetFilesRecursiveInternal(
+			Context cx, Listing<IFilesystemObject> listing)
 		{
 			// no-op
 		}
@@ -402,6 +366,149 @@ namespace AUI.FS
 		public bool IsSameObject(IFilesystemObject o)
 		{
 			return (o is NullDirectory);
+		}
+
+		public IFilesystemObject Resolve(
+			Context cx, string path, int flags = Filesystem.ResolveDefault)
+		{
+			return null;
+		}
+
+		public ResolveResult ResolveInternal(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			return ResolveResult.NotFound();
+		}
+	}
+
+
+	class VirtualDirectory : BasicFilesystemContainer
+	{
+		private List<IFilesystemContainer> dirs_ = null;
+
+		public VirtualDirectory(Filesystem fs, IFilesystemContainer parent, string displayName = null)
+			: base(fs, parent, displayName)
+		{
+		}
+
+		public override string ToString()
+		{
+			return $"VirtualDirectory({Name})";
+		}
+
+		public void Add(IFilesystemContainer c)
+		{
+			if (dirs_ == null)
+				dirs_ = new List<IFilesystemContainer>();
+
+			dirs_.Add(c);
+		}
+
+		public void AddRange(IEnumerable<IFilesystemContainer> c)
+		{
+			if (dirs_ == null)
+				dirs_ = new List<IFilesystemContainer>();
+
+			dirs_.AddRange(c);
+		}
+
+		protected override string GetDisplayName()
+		{
+			return base.Name + $" ({dirs_?.Count})";
+		}
+
+		public override DateTime DateCreated
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override DateTime DateModified
+		{
+			get { return DateTime.MaxValue; }
+		}
+
+		public override VUI.Icon Icon
+		{
+			get { return Icons.Get(Icons.Directory); }
+		}
+
+		public override bool CanPin
+		{
+			get { return true; }
+		}
+
+		public override bool Virtual
+		{
+			get { return true; }
+		}
+
+		public override bool ChildrenVirtual
+		{
+			get { return false; }
+		}
+
+		public override bool IsFlattened
+		{
+			get { return false; }
+		}
+
+		public override IPackage ParentPackage
+		{
+			get { return null; }
+		}
+
+		public override bool AlreadySorted
+		{
+			get { return false; }
+		}
+
+
+		public override string MakeRealPath()
+		{
+			return "";
+		}
+
+		public override bool IsSameObject(IFilesystemObject o)
+		{
+			if (o == null)
+				return false;
+
+			return (o.VirtualPath == VirtualPath);
+		}
+
+		public List<IFilesystemContainer> SlurpDirectories()
+		{
+			var list = dirs_;
+			dirs_ = null;
+			return list;
+		}
+
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
+		{
+			var list = new List<IFilesystemContainer>();
+
+			foreach (var d in dirs_)
+			{
+				var ds = d.GetDirectories(cx);
+				if (ds != null)
+					list.AddRange(ds);
+			}
+
+			return list;
+		}
+
+		protected override List<IFilesystemObject> DoGetFiles(Context cx)
+		{
+			var list = new List<IFilesystemObject>();
+
+			foreach (var d in dirs_)
+			{
+				var fs = d.GetFiles(cx);
+				if (fs != null)
+					list.AddRange(fs);
+			}
+
+			return list;
 		}
 	}
 }

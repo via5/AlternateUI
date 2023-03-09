@@ -28,6 +28,7 @@ namespace AUI
 			instance_ = this;
 			log_ = new Logger("aui");
 			FileManagerSecure.CreateDirectory(ConfigDir);
+			log_.Info($"starting aui {Version.String}");
 		}
 
 		static public AlternateUI Instance
@@ -60,6 +61,7 @@ namespace AUI
 				{
 					if (Input.GetKeyUp(KeyCode.F5))
 					{
+						SuperController.singleton.ClearMessages();
 						ReloadPlugin();
 						return;
 					}

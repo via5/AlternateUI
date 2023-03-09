@@ -213,6 +213,7 @@ namespace AUI.FileDialog
 				flattenPackages_.Checked = mode_.Options.FlattenPackages;
 				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
 				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
+				mergePackages_.Checked = mode_.Options.MergePackages;
 
 				VUI.RadioMenuItem item;
 
@@ -997,6 +998,9 @@ namespace AUI.FileDialog
 			if (opts.ShowHiddenFiles)
 				f |= FS.Context.ShowHiddenFilesFlags;
 
+			if (opts.MergePackages)
+				f |= FS.Context.MergePackagesFlags;
+
 			return f;
 		}
 
@@ -1173,10 +1177,10 @@ namespace AUI.FileDialog
 
 		private void OnTreeSelection(IFileTreeItem item)
 		{
-			var c = item?.Object as FS.IFilesystemContainer;
+			var c = (item as FileTreeItem)?.GetFSObject();
 			if (c == null)
 			{
-				Log.Error("selected a file tree item with a null object");
+				Log.Error($"selected a file tree item with a null object, path={(item as FileTreeItem)?.Path}");
 				return;
 			}
 

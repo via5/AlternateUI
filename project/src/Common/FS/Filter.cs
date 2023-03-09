@@ -22,6 +22,7 @@ namespace AUI.FS
 		public const int RecursiveFlags = 0x01;
 		public const int ShowHiddenFoldersFlags = 0x02;
 		public const int ShowHiddenFilesFlags = 0x04;
+		public const int MergePackagesFlags = 0x08;
 
 		private readonly string search_;
 		private readonly string searchLc_;
@@ -57,7 +58,7 @@ namespace AUI.FS
 		{
 			return
 				$"search='{search_}' " +
-				$"exts={(exts_?.ToString() ?? "(none)")} " +
+				$"exts={(exts_ == null ? "(none)" : string.Join(";", exts_))} " +
 				$"sort={sort_} " +
 				$"sortDir={sortDir_} " +
 				$"flags={flags_}";
@@ -127,6 +128,11 @@ namespace AUI.FS
 			get { return Bits.IsSet(flags_, ShowHiddenFilesFlags); }
 		}
 
+		public bool MergePackages
+		{
+			get { return Bits.IsSet(flags_, MergePackagesFlags); }
+		}
+
 		public bool ExtensionMatches(string path)
 		{
 			if (exts_ != null)
@@ -160,18 +166,6 @@ namespace AUI.FS
 
 			return true;
 		}
-
-		//public bool Matches(string path)
-		//{
-		//	if (exts_ != null && !ExtensionMatches(path))
-		//		return false;
-		//
-		//	if (!string.IsNullOrEmpty(search_) && !SearchMatches(path))
-		//		return false;
-		//
-		//	return true;
-		//}
-
 
 
 		private class FilenameComparer<EntryType> : IComparer<EntryType>

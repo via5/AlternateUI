@@ -129,6 +129,15 @@ namespace AUI.FS
 			return fs_.IsSameObject(this, o);
 		}
 
+		public virtual IFilesystemObject Resolve(
+			Context cx, string path, int flags = Filesystem.ResolveDefault)
+		{
+			if (path == Name)
+				return this;
+
+			return null;
+		}
+
 		public abstract string MakeRealPath();
 
 		public virtual void ClearCache()
@@ -170,6 +179,11 @@ namespace AUI.FS
 			get { return listing_; }
 		}
 
+		public void Clear()
+		{
+			cacheToken_ = -1;
+		}
+
 		public bool Stale(Filesystem fs)
 		{
 			if (cacheToken_ != fs.CacheToken)
@@ -200,6 +214,13 @@ namespace AUI.FS
 		private CachedListing<IFilesystemContainer> localDirs_;
 		private CachedListing<IFilesystemObject> localFiles_;
 		private CachedListing<IFilesystemObject> recursiveFiles_;
+
+		public void Clear()
+		{
+			localDirs_?.Clear();
+			localFiles_?.Clear();
+			recursiveFiles_?.Clear();
+		}
 
 		public bool StaleLocalDirectoriesCache(Filesystem fs, Context cx)
 		{
@@ -317,6 +338,7 @@ namespace AUI.FS
 
 		public override void ClearCache()
 		{
+			cache_?.Clear();
 		}
 
 		public virtual bool AlreadySorted
@@ -473,6 +495,148 @@ namespace AUI.FS
 			}
 		}
 
+		public override IFilesystemObject Resolve(
+			Context cx, string path, int flags = Filesystem.ResolveDefault)
+		{
+			try
+			{
+				if (path == null)
+					return null;
+
+				if (path == "")
+					return this;
+
+				var cs = new PathComponents(path);
+				ResolveDebug debug = ResolveDebug.Null;
+
+				if (Bits.IsSet(flags, Filesystem.ResolveDebug))
+					debug = new ResolveDebug(0);
+
+				if (debug.Enabled)
+				{
+					debug.Info(null, "");
+					debug.Info(this, $"resolve cs={cs}");
+				}
+
+				var r = ResolveInternal(cx, cs, flags, debug);
+
+				if (debug.Enabled)
+					debug.Info(null, "");
+
+				if (r.partial)
+					return null;
+				else
+					return r.o;
+			}
+			catch (Exception e)
+			{
+				AlternateUI.Instance.Log.Error(
+					$"exception while resolving '{path}':");
+
+				AlternateUI.Instance.Log.Error(e.ToString());
+
+				return null;
+			}
+		}
+
+		public virtual ResolveResult ResolveInternal(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			if (cs.Done || cs.Current != Name)
+			{
+				if (debug.Enabled)
+				{
+					debug.Info(this,
+						$"resolveinternal failed, " +
+						$"name='{Name}' cs={cs} flags={flags} ");
+				}
+
+				return ResolveResult.NotFound();
+			}
+
+			if (cs.Last)
+			{
+				if (debug.Enabled)
+					debug.Info(this, $"resolveinternal, is this final, cs={cs} <<<<<");
+
+				return ResolveResult.Found(this);
+			}
+
+			if (debug.Enabled)
+				debug.Info(this, $"resolveinternal, is this, cs={cs}");
+
+			return ResolveInternal2(cx, cs.NextCopy(), flags, debug);
+		}
+
+		public virtual ResolveResult ResolveInternal2(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			foreach (var d in GetDirectories(cx))
+			{
+				var r = d.ResolveInternal(cx, cs, flags, debug.Inc());
+
+				if (r.o == null || r.partial)
+				{
+					if (debug.Enabled)
+					{
+						//debug.Info(this,
+						//	$"resolveinternal2, not dir {d}, cs={cs}");
+					}
+
+					if (r.partial)
+						return r;
+				}
+				else
+				{
+					if (debug.Enabled)
+					{
+						debug.Info(this,
+							$"resolveinternal2, is dir {d}, cs={cs}");
+					}
+
+					return r;
+				}
+			}
+
+
+			if (!Bits.IsSet(flags, Filesystem.ResolveDirsOnly))
+			{
+				if (!cs.NextIsLast)
+				{
+					// cannot be a file
+
+					if (debug.Enabled)
+					{
+						debug.Info(this,
+							$"resolveinternal2 failed, cannot be a " +
+							$"file, cs={cs}");
+					}
+
+					return ResolveResult.NotFound();
+				}
+
+				cs.Next();
+
+				foreach (var f in GetFiles(cx))
+				{
+					if (f.Name == cs.Current)
+					{
+						return ResolveResult.Found(f);
+					}
+					else
+					{
+						if (debug.Enabled)
+						{
+							debug.Info(this,
+								$"resolveinternal2 failed, not file {f}");
+						}
+					}
+				}
+			}
+
+			return ResolveResult.NotFound();
+		}
+
 
 		protected virtual List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
@@ -517,6 +681,9 @@ namespace AUI.FS
 		{
 			var dirs = DoGetDirectories(cx);
 
+			if (ParentPackage == null && cx.MergePackages)
+				dirs = MergePackageDirectories(cx, dirs);
+
 			if (dirs != null)
 			{
 				List<IFilesystemContainer> checkedDirs = null;
@@ -552,6 +719,38 @@ namespace AUI.FS
 		private List<IFilesystemObject> GetFilesInternal(Context cx)
 		{
 			var files = DoGetFiles(cx);
+			List<IFilesystemObject> packageFiles = null;
+
+			if (ParentPackage == null && cx.MergePackages)
+			{
+				//AlternateUI.Instance.Log.Info($"!!!! {VirtualPath}");
+
+				var rp = VirtualPath;
+
+				if (rp.StartsWith(fs_.GetRootDirectory().Name))
+					rp = rp.Substring(fs_.GetRootDirectory().Name.Length);
+
+				if (rp.StartsWith("/"))
+					rp = rp.Substring(1);
+
+				foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
+				{
+					//AlternateUI.Instance.Log.Info($"   !!!! {p}");
+
+					var list = (p as Package).GetFilesForMerge(cx, rp);
+
+					if (list != null)
+					{
+						if (packageFiles == null)
+							packageFiles = new List<IFilesystemObject>();
+
+						packageFiles.AddRange(list);
+					}
+				}
+
+				if (packageFiles != null)
+					files.AddRange(packageFiles);
+			}
 
 			if (files != null)
 			{
@@ -583,6 +782,92 @@ namespace AUI.FS
 			}
 
 			return files;
+		}
+
+		private List<IFilesystemContainer> MergePackageDirectories(
+			Context cx, List<IFilesystemContainer> dirs)
+		{
+			var map = new Dictionary<string, IFilesystemContainer>();
+
+			foreach (var d in dirs)
+			{
+				IFilesystemContainer c;
+
+				if (map.TryGetValue(d.Name, out c))
+				{
+					if (c is VirtualDirectory)
+					{
+						(c as VirtualDirectory).Add(d);
+					}
+					else
+					{
+						AlternateUI.Instance.Log.Info($"{this} vd1");
+
+						var vd = new VirtualDirectory(fs_, this, c.Name);
+						vd.Add(c);
+						map.Remove(d.Name);
+						map.Add(d.Name, vd);
+					}
+				}
+				else
+				{
+					map.Add(d.Name, d);
+				}
+			}
+
+			//AlternateUI.Instance.Log.Info($"!!!! {VirtualPath}");
+
+			var rp = VirtualPath;
+
+			if (rp.StartsWith(fs_.GetRootDirectory().Name))
+				rp = rp.Substring(fs_.GetRootDirectory().Name.Length);
+
+			if (rp.StartsWith("/"))
+				rp = rp.Substring(1);
+
+			foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
+			{
+				//AlternateUI.Instance.Log.Info($"   !!!! {p}");
+
+				var list = (p as Package).GetDirectoriesForMerge(cx, rp);
+
+				if (list != null)
+				{
+					foreach (var d in list)
+					{
+						IFilesystemContainer c;
+
+						if (map.TryGetValue(d.Name, out c))
+						{
+							if (c is VirtualDirectory)
+							{
+								var vd = c as VirtualDirectory;
+
+								if (d is VirtualDirectory)
+									vd.AddRange((d as VirtualDirectory).SlurpDirectories());
+								else
+									vd.Add(d);
+							}
+							else
+							{
+								AlternateUI.Instance.Log.Info($"{this} vd1");
+								var vd = new VirtualDirectory(fs_, this, d.Name);
+								vd.Add(c);
+								map.Remove(d.Name);
+								map.Add(d.Name, vd);
+							}
+						}
+						else
+						{
+							map.Add(d.Name, d);
+						}
+					}
+				}
+
+				//break;
+			}
+
+			return new List<IFilesystemContainer>(map.Values);
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)
