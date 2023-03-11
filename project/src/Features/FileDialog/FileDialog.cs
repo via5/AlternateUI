@@ -146,7 +146,6 @@ namespace AUI.FileDialog
 
 		private readonly VUI.CheckBox flattenDirs_;
 		private readonly VUI.CheckBox flattenPackages_;
-		private readonly VUI.CheckBox mergePackages_;
 		private readonly VUI.CheckBox showHiddenFolders_;
 		private readonly VUI.CheckBox showHiddenFiles_;
 		private readonly VUI.MenuButton sortPanel_;
@@ -180,7 +179,6 @@ namespace AUI.FileDialog
 
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
-			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
 			showHiddenFolders_ = Add(new VUI.CheckBox("Show all folders", SetShowHiddenFolders));
 			showHiddenFiles_ = Add(new VUI.CheckBox("Show all files", SetShowHiddenFiles));
 			Add(sortPanel_.Button);
@@ -213,7 +211,6 @@ namespace AUI.FileDialog
 				flattenPackages_.Checked = mode_.Options.FlattenPackages;
 				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
 				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
-				mergePackages_.Checked = mode_.Options.MergePackages;
 
 				VUI.RadioMenuItem item;
 
@@ -264,14 +261,6 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenPackages = b;
-			fd_.Refresh();
-		}
-
-		private void SetMergePackages(bool b)
-		{
-			if (ignore_) return;
-
-			mode_.Options.MergePackages = b;
 			fd_.Refresh();
 		}
 
@@ -779,13 +768,13 @@ namespace AUI.FileDialog
 					return;
 				}
 
-				Log.Error($"bad directory {cwd}");
+				Log.Error($"bad initial directory {cwd}");
 			}
 
 			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
 				return;
 
-			Log.Error($"bad directory {opts.CurrentDirectory}");
+			Log.Error($"bad initial directory {opts.CurrentDirectory}");
 
 			if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
 			{
@@ -793,7 +782,7 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			Log.Error($"bad directory {mode_.DefaultDirectory}");
+			Log.Error($"bad initial directory {mode_.DefaultDirectory}");
 			opts.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
 
 			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
@@ -998,9 +987,6 @@ namespace AUI.FileDialog
 			if (opts.ShowHiddenFiles)
 				f |= FS.Context.ShowHiddenFilesFlags;
 
-			if (opts.MergePackages)
-				f |= FS.Context.MergePackagesFlags;
-
 			return f;
 		}
 
@@ -1056,7 +1042,7 @@ namespace AUI.FileDialog
 
 		private List<FS.IFilesystemObject> GetFiles()
 		{
-			List<FS.IFilesystemObject> files;
+			List<FS.IFilesystemObject> files = null;
 
 			if (dir_.ParentPackage == null)
 			{
@@ -1152,7 +1138,7 @@ namespace AUI.FileDialog
 
 		private void SetPath()
 		{
-			addressBar_.Path = dir_.VirtualPath;
+			addressBar_.Path = dir_?.VirtualPath ?? "";
 		}
 
 		private void SelectFromFilename()

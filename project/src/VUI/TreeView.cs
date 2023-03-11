@@ -85,12 +85,7 @@ namespace VUI
 
 				set
 				{
-					string s;
-
-					if (string.IsNullOrEmpty(value))
-						s = "";
-					else
-						s = value;
+					string s = value ?? "";
 
 					if (text_ != s)
 					{
@@ -632,6 +627,7 @@ namespace VUI
 
 			private void UpdatePanel(Rectangle r)
 			{
+				panel_.Tooltip.FontSize = tree_.FontSize;
 				panel_.SetBounds(r);
 				panel_.Render = true;
 			}

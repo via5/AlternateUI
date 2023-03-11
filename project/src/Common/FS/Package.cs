@@ -140,11 +140,69 @@ namespace AUI.FS
 	}
 
 
+	class VirtualPackageDirectory : VirtualDirectory
+	{
+		private readonly Package p_;
+		private List<IFilesystemContainer> children_ = null;
+
+		public VirtualPackageDirectory(Filesystem fs, Package p, IFilesystemContainer parent, string name)
+			: base(fs, parent, name)
+		{
+			p_ = p;
+		}
+
+		public override string ToString()
+		{
+			return $"VirtualPackageDirectory({p_?.ShortCut?.package}:{Name})";
+		}
+
+		public void AddChild(IFilesystemContainer c)
+		{
+			if (children_ == null)
+				children_ = new List<IFilesystemContainer>();
+
+			children_.Add(c);
+		}
+
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
+		{
+			return children_;
+		}
+	}
+
+
+	class RealPackageDirectory : FSDirectory2
+	{
+		private readonly Package p_;
+
+		public RealPackageDirectory(Filesystem fs, Package p, IFilesystemContainer parent, string name)
+			: base(fs, parent, name)
+		{
+			p_ = p;
+		}
+
+		public override string ToString()
+		{
+			return $"RealPackageDirectory({p_?.ShortCut?.path})";
+		}
+
+		public override string MakeRealPath()
+		{
+			var sc = p_.ShortCut;
+			if (sc == null)
+				return "";
+
+			return sc.path + "/";
+		}
+	}
+
+
 	class Package : BasicFilesystemContainer, IPackage
 	{
 		private readonly string name_;
 		private ShortCut sc_ = null;
 		private bool showHiddenFolders_ = false;
+		private VirtualPackageDirectory rootDir_ = null;
 
 		public Package(Filesystem fs, IFilesystemContainer parent, string name, bool showHiddenFolders)
 			: base(fs, parent, name)
@@ -155,7 +213,7 @@ namespace AUI.FS
 
 		public override string ToString()
 		{
-			return $"Package({ShortCut.path})";
+			return $"Package({ShortCut.package})";
 		}
 
 		public ShortCut ShortCut
@@ -166,10 +224,48 @@ namespace AUI.FS
 				{
 					sc_ = fs_.GetPackagesRootDirectory()
 						.GetShortCut(name_, showHiddenFolders_);
+
+					CreatePackageDirectories();
 				}
 
 				return sc_;
 			}
+		}
+
+		private void CreatePackageDirectories()
+		{
+			AlternateUI.Instance.Log.Info($"{this} create package dirs");
+
+			rootDir_ = null;
+
+			string path = sc_.path;
+			var col = path.IndexOf(":");
+			if (col != -1)
+				path = path.Substring(col + 1);
+
+			path = path.Replace('\\', '/');
+			if (path.StartsWith("/"))
+				path = path.Substring(1);
+
+			AlternateUI.Instance.Log.Info($"  - path is {path}");
+
+			var cs = path.Split('/');
+			if (cs == null)
+				return;
+
+			rootDir_ = new VirtualPackageDirectory(fs_, this, this, cs[0]);
+			AlternateUI.Instance.Log.Info($"  - root {rootDir_}");
+
+			VirtualPackageDirectory parent = rootDir_;
+			for (int i = 1; i < cs.Length - 1; ++i)
+			{
+				var d = new VirtualPackageDirectory(fs_, this, parent, cs[i]);
+				//AlternateUI.Instance.Log.Info($"  - dir {d}");
+				parent.AddChild(d);
+				parent = d;
+			}
+
+			parent.AddChild(new RealPackageDirectory(fs_, this, parent, cs[cs.Length - 1]));
 		}
 
 		public override string Tooltip
@@ -283,23 +379,27 @@ namespace AUI.FS
 
 			cs.Next();
 
+			while (!cs.Done && cs.Current == "")
+				cs.Next();
+
 			if (cs.Done)
 				return ResolveResult.Found(this);
-
+			/*
 			debug = debug.Inc();
 
-			var scPath = sc.path.Substring(col + 1);
+			//var scPath = sc.path.Substring(col + 1);
 
-			if (scPath.Length > 0)
+			if (dirs_.Count > 0)
 			{
-				var sccs = new PathComponents(scPath);
+				//var sccs = new PathComponents(scPath);
 
 				if (debug.Enabled)
-					debug.Info(this, $"checking sc path cs={cs} sccs={sccs}");
+					debug.Info(this, $"checking sc path cs={cs} dirs={dirs_}");
 
 				bool found = true;
+				int i = 0;
 
-				while (!sccs.Done && !cs.Done)
+				while (i < dirs_.Count && !cs.Done)
 				{
 					if (cs.Done)
 					{
@@ -310,10 +410,10 @@ namespace AUI.FS
 						break;
 						//return ResolveResult.FoundPartial(this);
 					}
-					else if (cs.Current != sccs.Current)
+					else if (cs.Current != dirs_[i].Name)
 					{
 						if (debug.Enabled)
-							debug.Info(this, $"resolve bad cs={cs} sccs={sccs}");
+							debug.Info(this, $"resolve bad cs={cs} dirs={dirs_}");
 
 						found = false;
 						break;
@@ -321,11 +421,16 @@ namespace AUI.FS
 					}
 
 					cs.Next();
-					sccs.Next();
+					++i;
 				}
 
-				if (found && cs.Done && sccs.Done)
-					return ResolveResult.Found(this);
+				if (found && cs.Done)
+				{
+					if (debug.Enabled)
+						debug.Info(this, $"found {dirs_[i]}");
+
+					return ResolveResult.Found(dirs_[i]);
+				}
 
 				if (debug.Enabled)
 					debug.Info(this, $"sc path failed, will fwd to base cs={cs}");
@@ -335,14 +440,16 @@ namespace AUI.FS
 				if (debug.Enabled)
 					debug.Info(this, $"resolve ok, fwd to base cs={cs}");
 			}
-
+			*/
 			return base.ResolveInternal2(cx, cs, flags, debug);
 		}
 
-		public List<IFilesystemObject> GetFilesForMerge(Context cx, string path)
-		{
+		public List<IFilesystemObject> GetFilesForMerge(string path)
+		{/*
 			var sc = ShortCut;
 			path = sc.package + ":/" + path;
+
+			var cx = Context.None;
 
 			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
 			if (o == null)
@@ -351,18 +458,21 @@ namespace AUI.FS
 				return null;
 			}
 
-			return o.GetFiles(cx);
+			return o.GetFiles(cx);*/
+			return null;
 		}
 
-		public List<IFilesystemContainer> GetDirectoriesForMerge(Context cx, string path)
+		public List<IFilesystemContainer> GetDirectoriesForMerge(string path)
 		{
 			var sc = ShortCut;
 			path = sc.package + ":/" + path;
 
+			var cx = Context.None;
+
 			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
 			if (o == null)
 			{
-				//AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
+				AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
 				return null;
 			}
 
@@ -377,9 +487,14 @@ namespace AUI.FS
 				showHiddenFolders_ = cx.ShowHiddenFolders;
 			}
 
-			return base.DoGetDirectories(cx);
-		}
+			var sc = ShortCut;
 
+			if (rootDir_ == null)
+				return base.DoGetDirectories(cx);
+			else
+				return new List<IFilesystemContainer> { rootDir_ };
+		}
+		/*
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
 			if (showHiddenFolders_ != cx.ShowHiddenFolders)
@@ -389,7 +504,7 @@ namespace AUI.FS
 			}
 
 			return base.DoGetFiles(cx);
-		}
+		}*/
 
 		protected override bool IncludeFile(Context cx, IFilesystemObject o)
 		{

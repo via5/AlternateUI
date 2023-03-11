@@ -147,7 +147,7 @@ namespace AUI.FS
 		private readonly PackagesFlatDirectory packagesFlat_;
 		private readonly PinnedFlatDirectory pinnedFlat_;
 		private readonly SavesDirectory saves_;
-		private readonly FSDirectory custom_;
+		private readonly FSDirectory2 custom_;
 		private readonly PinnedRoot pinned_;
 
 		public RootDirectory(Filesystem fs)
@@ -157,7 +157,7 @@ namespace AUI.FS
 			packagesFlat_ = new PackagesFlatDirectory(fs_, this);
 			pinnedFlat_ = new PinnedFlatDirectory(fs, this);
 			saves_ = new SavesDirectory(fs_, this);
-			custom_ = new FSDirectory(fs_, this, "Custom");
+			custom_ = new FSDirectory2(fs_, this, "Custom");
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
@@ -171,7 +171,7 @@ namespace AUI.FS
 			get { return saves_; }
 		}
 
-		public FSDirectory Custom
+		public FSDirectory2 Custom
 		{
 			get { return custom_; }
 		}
@@ -260,7 +260,7 @@ namespace AUI.FS
 	}
 
 
-	class SavesDirectory : FSDirectory
+	class SavesDirectory : FSDirectory2
 	{
 		private readonly string[] whitelist_;
 
@@ -378,137 +378,6 @@ namespace AUI.FS
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
 			return ResolveResult.NotFound();
-		}
-	}
-
-
-	class VirtualDirectory : BasicFilesystemContainer
-	{
-		private List<IFilesystemContainer> dirs_ = null;
-
-		public VirtualDirectory(Filesystem fs, IFilesystemContainer parent, string displayName = null)
-			: base(fs, parent, displayName)
-		{
-		}
-
-		public override string ToString()
-		{
-			return $"VirtualDirectory({Name})";
-		}
-
-		public void Add(IFilesystemContainer c)
-		{
-			if (dirs_ == null)
-				dirs_ = new List<IFilesystemContainer>();
-
-			dirs_.Add(c);
-		}
-
-		public void AddRange(IEnumerable<IFilesystemContainer> c)
-		{
-			if (dirs_ == null)
-				dirs_ = new List<IFilesystemContainer>();
-
-			dirs_.AddRange(c);
-		}
-
-		protected override string GetDisplayName()
-		{
-			return base.Name + $" ({dirs_?.Count})";
-		}
-
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override VUI.Icon Icon
-		{
-			get { return Icons.Get(Icons.Directory); }
-		}
-
-		public override bool CanPin
-		{
-			get { return true; }
-		}
-
-		public override bool Virtual
-		{
-			get { return true; }
-		}
-
-		public override bool ChildrenVirtual
-		{
-			get { return false; }
-		}
-
-		public override bool IsFlattened
-		{
-			get { return false; }
-		}
-
-		public override IPackage ParentPackage
-		{
-			get { return null; }
-		}
-
-		public override bool AlreadySorted
-		{
-			get { return false; }
-		}
-
-
-		public override string MakeRealPath()
-		{
-			return "";
-		}
-
-		public override bool IsSameObject(IFilesystemObject o)
-		{
-			if (o == null)
-				return false;
-
-			return (o.VirtualPath == VirtualPath);
-		}
-
-		public List<IFilesystemContainer> SlurpDirectories()
-		{
-			var list = dirs_;
-			dirs_ = null;
-			return list;
-		}
-
-		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
-		{
-			var list = new List<IFilesystemContainer>();
-
-			foreach (var d in dirs_)
-			{
-				var ds = d.GetDirectories(cx);
-				if (ds != null)
-					list.AddRange(ds);
-			}
-
-			return list;
-		}
-
-		protected override List<IFilesystemObject> DoGetFiles(Context cx)
-		{
-			var list = new List<IFilesystemObject>();
-
-			foreach (var d in dirs_)
-			{
-				var fs = d.GetFiles(cx);
-				if (fs != null)
-					list.AddRange(fs);
-			}
-
-			return list;
 		}
 	}
 }

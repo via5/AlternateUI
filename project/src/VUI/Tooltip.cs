@@ -177,6 +177,9 @@ namespace VUI
 			{
 				// tooltip would extend past the right edge
 				p.X = av.Width - size.Width;
+
+				if (p.X < 0)
+					p.X = 0;
 			}
 
 			if (p.Y + size.Height >= av.Height)
@@ -184,6 +187,9 @@ namespace VUI
 				// tooltip would extend past the bottom edge; make sure it's
 				// above the mouse cursor
 				p.Y = mp.Y - size.Height;
+
+				if (p.Y < 0)
+					p.Y = 0;
 			}
 
 			widget_.SetBounds(new Rectangle(p.X, p.Y, size));

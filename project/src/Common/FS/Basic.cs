@@ -104,6 +104,7 @@ namespace AUI.FS
 			get
 			{
 				string tt =
+					$"{base.ToString()}\n" +
 					$"Virtual path: {VirtualPath}" +
 					$"\nReal path: {(Virtual ? "(virtual)" : MakeRealPath())}";
 
@@ -423,7 +424,10 @@ namespace AUI.FS
 		public List<IFilesystemContainer> GetDirectories(Context cx)
 		{
 			if (StaleLocalDirectoriesCache(cx))
-				SetLocalDirectoriesCache(cx, GetDirectoriesInternal(cx));
+			{
+				var dirs = GetDirectoriesInternal(cx);
+				SetLocalDirectoriesCache(cx, dirs);
+			}
 
 			Filter(cx, cache_.GetLocalDirectories());
 
@@ -447,7 +451,10 @@ namespace AUI.FS
 			else
 			{
 				if (StaleLocalFilesCache(cx))
-					SetLocalFilesCache(cx, GetFilesInternal(cx));
+				{
+					var files = GetFilesInternal(cx);
+					SetLocalFilesCache(cx, files);
+				}
 
 				listing = GetLocalFilesCache();
 			}
@@ -571,6 +578,12 @@ namespace AUI.FS
 		public virtual ResolveResult ResolveInternal2(
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
+			if (GetDirectories(cx).Count == 0)
+			{
+				if (debug.Enabled)
+					debug.Info(this, $"resolveinternal, has no dirs");
+			}
+
 			foreach (var d in GetDirectories(cx))
 			{
 				var r = d.ResolveInternal(cx, cs, flags, debug.Inc());
@@ -578,10 +591,7 @@ namespace AUI.FS
 				if (r.o == null || r.partial)
 				{
 					if (debug.Enabled)
-					{
-						//debug.Info(this,
-						//	$"resolveinternal2, not dir {d}, cs={cs}");
-					}
+						debug.Info(this, $"resolveinternal, not dir {d}, cs={cs}");
 
 					if (r.partial)
 						return r;
@@ -598,6 +608,8 @@ namespace AUI.FS
 				}
 			}
 
+			if (debug.Enabled)
+				debug.Info(this, $"resolveinternal, not a directory, cs={cs}");
 
 			if (!Bits.IsSet(flags, Filesystem.ResolveDirsOnly))
 			{
@@ -646,7 +658,11 @@ namespace AUI.FS
 			if (!string.IsNullOrEmpty(path))
 			{
 				foreach (var dirPath in GetDirectoriesFromFMS(path))
-					list.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
+				{
+					var vd = new VirtualDirectory(fs_, this, Path.Filename(dirPath));
+					vd.Add(new FSDirectory2(fs_, this, Path.Filename(dirPath)));
+					list.Add(vd);
+				}
 			}
 
 			return list;
@@ -680,9 +696,6 @@ namespace AUI.FS
 		private List<IFilesystemContainer> GetDirectoriesInternal(Context cx)
 		{
 			var dirs = DoGetDirectories(cx);
-
-			if (ParentPackage == null && cx.MergePackages)
-				dirs = MergePackageDirectories(cx, dirs);
 
 			if (dirs != null)
 			{
@@ -719,38 +732,6 @@ namespace AUI.FS
 		private List<IFilesystemObject> GetFilesInternal(Context cx)
 		{
 			var files = DoGetFiles(cx);
-			List<IFilesystemObject> packageFiles = null;
-
-			if (ParentPackage == null && cx.MergePackages)
-			{
-				//AlternateUI.Instance.Log.Info($"!!!! {VirtualPath}");
-
-				var rp = VirtualPath;
-
-				if (rp.StartsWith(fs_.GetRootDirectory().Name))
-					rp = rp.Substring(fs_.GetRootDirectory().Name.Length);
-
-				if (rp.StartsWith("/"))
-					rp = rp.Substring(1);
-
-				foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
-				{
-					//AlternateUI.Instance.Log.Info($"   !!!! {p}");
-
-					var list = (p as Package).GetFilesForMerge(cx, rp);
-
-					if (list != null)
-					{
-						if (packageFiles == null)
-							packageFiles = new List<IFilesystemObject>();
-
-						packageFiles.AddRange(list);
-					}
-				}
-
-				if (packageFiles != null)
-					files.AddRange(packageFiles);
-			}
 
 			if (files != null)
 			{
@@ -782,92 +763,6 @@ namespace AUI.FS
 			}
 
 			return files;
-		}
-
-		private List<IFilesystemContainer> MergePackageDirectories(
-			Context cx, List<IFilesystemContainer> dirs)
-		{
-			var map = new Dictionary<string, IFilesystemContainer>();
-
-			foreach (var d in dirs)
-			{
-				IFilesystemContainer c;
-
-				if (map.TryGetValue(d.Name, out c))
-				{
-					if (c is VirtualDirectory)
-					{
-						(c as VirtualDirectory).Add(d);
-					}
-					else
-					{
-						AlternateUI.Instance.Log.Info($"{this} vd1");
-
-						var vd = new VirtualDirectory(fs_, this, c.Name);
-						vd.Add(c);
-						map.Remove(d.Name);
-						map.Add(d.Name, vd);
-					}
-				}
-				else
-				{
-					map.Add(d.Name, d);
-				}
-			}
-
-			//AlternateUI.Instance.Log.Info($"!!!! {VirtualPath}");
-
-			var rp = VirtualPath;
-
-			if (rp.StartsWith(fs_.GetRootDirectory().Name))
-				rp = rp.Substring(fs_.GetRootDirectory().Name.Length);
-
-			if (rp.StartsWith("/"))
-				rp = rp.Substring(1);
-
-			foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
-			{
-				//AlternateUI.Instance.Log.Info($"   !!!! {p}");
-
-				var list = (p as Package).GetDirectoriesForMerge(cx, rp);
-
-				if (list != null)
-				{
-					foreach (var d in list)
-					{
-						IFilesystemContainer c;
-
-						if (map.TryGetValue(d.Name, out c))
-						{
-							if (c is VirtualDirectory)
-							{
-								var vd = c as VirtualDirectory;
-
-								if (d is VirtualDirectory)
-									vd.AddRange((d as VirtualDirectory).SlurpDirectories());
-								else
-									vd.Add(d);
-							}
-							else
-							{
-								AlternateUI.Instance.Log.Info($"{this} vd1");
-								var vd = new VirtualDirectory(fs_, this, d.Name);
-								vd.Add(c);
-								map.Remove(d.Name);
-								map.Add(d.Name, vd);
-							}
-						}
-						else
-						{
-							map.Add(d.Name, d);
-						}
-					}
-				}
-
-				//break;
-			}
-
-			return new List<IFilesystemContainer>(map.Values);
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)

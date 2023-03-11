@@ -87,7 +87,6 @@ namespace AUI.FileDialog
 		private string lastPath_;
 		private bool flattenDirs_;
 		private bool flattenPackages_;
-		private bool mergePackages_;
 		private bool showHiddenFolders_;
 		private bool showHiddenFiles_;
 		private int sort_, sortDir_;
@@ -105,7 +104,6 @@ namespace AUI.FileDialog
 			lastPath_ = lastPath;
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
-			mergePackages_ = mergePackages;
 			showHiddenFolders_ = showHiddenFolders;
 			showHiddenFiles_ = showHiddenFiles;
 			sort_ = sort;
@@ -143,12 +141,6 @@ namespace AUI.FileDialog
 		{
 			get { return flattenPackages_; }
 			set { flattenPackages_ = value; Changed(); }
-		}
-
-		public bool MergePackages
-		{
-			get { return mergePackages_; }
-			set { mergePackages_ = value; Changed(); }
 		}
 
 		public bool ShowHiddenFolders
@@ -200,9 +192,6 @@ namespace AUI.FileDialog
 			if (j.HasKey("flattenPackages"))
 				flattenPackages_ = j["flattenPackages"].AsBool;
 
-			if (j.HasKey("mergePackages"))
-				mergePackages_ = j["mergePackages"].AsBool;
-
 			if (j.HasKey("showHiddenFolders"))
 				showHiddenFolders_ = j["showHiddenFolders"].AsBool;
 
@@ -227,7 +216,6 @@ namespace AUI.FileDialog
 			j["lastPath"] = new JSONData(lastPath_);
 			j["flattenDirectories"] = new JSONData(flattenDirs_);
 			j["flattenPackages"] = new JSONData(flattenPackages_);
-			j["mergePackages"] = new JSONData(mergePackages_);
 			j["showHiddenFolders"] = new JSONData(showHiddenFolders_);
 			j["showHiddenFiles"] = new JSONData(showHiddenFiles_);
 			j["sort"] = new JSONData(sort_);

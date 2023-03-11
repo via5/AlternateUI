@@ -82,6 +82,9 @@ namespace AUI.FileDialog
 		{
 			o_ = null;
 
+			var o = GetFSObject();
+			Text = o?.DisplayName ?? "(dead)";
+
 			if (!checkedHasChildren_)
 				return;
 
@@ -94,7 +97,6 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			var o = GetFSObject();
 			if (o == null || !HasChildren)
 			{
 				Clear();
