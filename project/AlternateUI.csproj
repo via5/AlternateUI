@@ -96,7 +96,7 @@
   <ItemGroup>
     <Compile Include="src\Common\AtomUIModifier.cs" />
     <Compile Include="src\Common\Common.cs" />
-    <Compile Include="src\Common\FS\Basic.cs" />
+    <Compile Include="src\Common\FS\BasicDirectory.cs" />
     <Compile Include="src\Common\FS\BasicObject.cs" />
     <Compile Include="src\Common\FS\Cache.cs" />
     <Compile Include="src\Common\FS\Directory.cs" />

@@ -5,7 +5,7 @@ project\src\Version.cs
 project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs
 project\src\Common\Icons.cs
-project\src\Common\FS\Basic.cs
+project\src\Common\FS\BasicDirectory.cs
 project\src\Common\FS\BasicObject.cs
 project\src\Common\FS\Cache.cs
 project\src\Common\FS\Directory.cs
