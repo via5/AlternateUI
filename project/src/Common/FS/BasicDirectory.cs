@@ -466,7 +466,7 @@ namespace AUI.FS
 		{
 			if (listing.ExtensionsStale(cx))
 			{
-				if (cx.ExtensionsString == "")
+				if (cx.ExtensionsString == "" || cx.ExtensionsString == "*.*")
 				{
 					listing.SetExtensions(cx, null);
 				}

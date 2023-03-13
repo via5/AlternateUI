@@ -158,6 +158,11 @@ namespace AUI.FS
 
 			if (dirs_ != null)
 			{
+				// see DoGetFiles() below
+				var cx2 = new Context(
+					"", null, Context.NoSort, Context.NoSortDirection,
+					cx.Flags);
+
 				foreach (var d in dirs_)
 				{
 					var ds = d.GetDirectories(cx);
@@ -175,9 +180,15 @@ namespace AUI.FS
 
 			if (dirs_ != null)
 			{
+				// this needs to get the raw files, not filtered, so get a new
+				// context with the same flags only
+				var cx2 = new Context(
+					"", null, Context.NoSort, Context.NoSortDirection,
+					cx.Flags);
+
 				foreach (var d in dirs_)
 				{
-					var fs = d.GetFiles(cx);
+					var fs = d.GetFiles(cx2);
 					if (fs != null)
 						list.AddRange(fs);
 				}
