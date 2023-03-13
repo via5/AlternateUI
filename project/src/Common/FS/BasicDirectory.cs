@@ -168,7 +168,10 @@ namespace AUI.FS
 			if (StaleLocalDirectoriesCache(cx))
 			{
 				// don't use context, it'll filter with extensions, etc.
-				dirs = GetDirectoriesInternal(Context.None);
+				dirs = GetDirectoriesInternal(new Context(
+					"", null, Context.NoSort, Context.NoSortDirection,
+					cx.Flags));
+
 				SetLocalDirectoriesCache(cx, dirs);
 			}
 			else

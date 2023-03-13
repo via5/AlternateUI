@@ -113,6 +113,11 @@ namespace AUI.FS
 			get { return sortDir_; }
 		}
 
+		public int Flags
+		{
+			get { return flags_; }
+		}
+
 		public bool Debug
 		{
 			get { return Bits.IsSet(flags_, DebugFlag); }

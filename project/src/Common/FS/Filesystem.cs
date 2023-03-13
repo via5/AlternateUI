@@ -256,7 +256,7 @@ namespace AUI.FS
 			if (cx.ShowHiddenFolders)
 				return true;
 
-			return (o != custom_);
+			return !o.IsSameObject(custom_);
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
