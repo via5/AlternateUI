@@ -19,9 +19,10 @@ namespace AUI.FS
 		public const int SortCount = 4 * 2;
 
 		public const int NoFlags = 0x00;
-		public const int RecursiveFlags = 0x01;
-		public const int ShowHiddenFoldersFlags = 0x02;
-		public const int ShowHiddenFilesFlags = 0x04;
+		public const int RecursiveFlag = 0x01;
+		public const int ShowHiddenFoldersFlag = 0x02;
+		public const int ShowHiddenFilesFlag = 0x04;
+		public const int DebugFlag = 0x08;
 
 		private readonly string search_;
 		private readonly string searchLc_;
@@ -29,7 +30,7 @@ namespace AUI.FS
 		private readonly Regex searchRe_;
 		private readonly int sort_;
 		private readonly int sortDir_;
-		private readonly int flags_;
+		private int flags_;
 
 		public Context(
 			string search, string[] extensions,
@@ -112,19 +113,35 @@ namespace AUI.FS
 			get { return sortDir_; }
 		}
 
+		public bool Debug
+		{
+			get { return Bits.IsSet(flags_, DebugFlag); }
+		}
+
 		public bool Recursive
 		{
-			get { return Bits.IsSet(flags_, RecursiveFlags); }
+			get
+			{
+				return Bits.IsSet(flags_, RecursiveFlag);
+			}
+
+			set
+			{
+				if (value)
+					flags_ |= RecursiveFlag;
+				else
+					flags_ &= ~RecursiveFlag;
+			}
 		}
 
 		public bool ShowHiddenFolders
 		{
-			get { return Bits.IsSet(flags_, ShowHiddenFoldersFlags); }
+			get { return Bits.IsSet(flags_, ShowHiddenFoldersFlag); }
 		}
 
 		public bool ShowHiddenFiles
 		{
-			get { return Bits.IsSet(flags_, ShowHiddenFilesFlags); }
+			get { return Bits.IsSet(flags_, ShowHiddenFilesFlag); }
 		}
 
 		public bool ExtensionMatches(string path)

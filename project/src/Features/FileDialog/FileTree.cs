@@ -202,9 +202,14 @@ namespace AUI.FileDialog
 
 			foreach (var i in parent.Children)
 			{
-				if (i.Text == cs[0])
+				var fi = i as FileTreeItem;
+				if (fi == null)
+					continue;
+
+				var o = fi.Object;
+
+				if (o.Name == cs[0])
 				{
-					var fi = i as FileTreeItem;
 					if (fi != null)
 					{
 						if (cs.Count == 1)
@@ -219,6 +224,7 @@ namespace AUI.FileDialog
 						else
 						{
 							cs.RemoveAt(0);
+
 							if (Select(fi, cs, expand, scrollTo))
 								return true;
 						}

@@ -7,19 +7,36 @@ namespace AUI.FS
 	{
 		private List<IFilesystemContainer> dirs_ = null;
 
-		public VirtualDirectory(Filesystem fs, IFilesystemContainer parent, string displayName = null)
-			: base(fs, parent, displayName)
+		public VirtualDirectory(
+			Filesystem fs, IFilesystemContainer parent,
+			IFilesystemContainer content)
+				: this(fs, parent, content.Name)
+		{
+			if (content != null)
+				Add(content);
+		}
+
+		public VirtualDirectory(
+			Filesystem fs, IFilesystemContainer parent, string name)
+				: base(fs, parent, name)
 		{
 		}
 
 		public override string ToString()
 		{
-			return $"VirtualDirectory({Name})";
+			return $"VirtualDirectory({VirtualPath})";
 		}
 
 		protected override string GetDisplayName()
 		{
-			return base.GetDisplayName() + $" (VD {dirs_?.Count ?? 0})";
+			string s = "";
+
+			if (dirs_ == null || dirs_.Count == 0)
+				s += Name;
+			else
+				s += dirs_[0].DisplayName;
+
+			return s + $" (VD {dirs_?.Count ?? 0})";
 		}
 
 		public override string Tooltip
@@ -43,11 +60,11 @@ namespace AUI.FS
 
 						if (pp == null)
 						{
-							dirSources += $"\n   - {d.VirtualPath}";
+							dirSources += $"\n   - {d} {d.VirtualPath} ({d.MakeRealPath()})";
 						}
 						else
 						{
-							packageSources += $"\n   - {pp.DisplayName}";
+							packageSources += $"\n   -  {d} {pp.DisplayName}, {d.VirtualPath} ({d.MakeRealPath()})";
 						}
 					}
 
@@ -60,6 +77,8 @@ namespace AUI.FS
 
 		public void Add(IFilesystemContainer c)
 		{
+			AlternateUI.Assert(!(c is VirtualDirectory));
+
 			if (dirs_ == null)
 				dirs_ = new List<IFilesystemContainer>();
 
@@ -74,7 +93,7 @@ namespace AUI.FS
 			dirs_.AddRange(c);
 		}
 
-		public List<IFilesystemContainer> VirtualChildren
+		public List<IFilesystemContainer> Content
 		{
 			get { return dirs_; }
 		}
@@ -114,11 +133,6 @@ namespace AUI.FS
 			get { return false; }
 		}
 
-		public override IPackage ParentPackage
-		{
-			get { return null; }
-		}
-
 		public override bool AlreadySorted
 		{
 			get { return false; }
@@ -140,8 +154,6 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			AlternateUI.Instance.Log.Info($"{this} DoGetDirectories {dirs_?.Count}");
-
 			var list = new List<IFilesystemContainer>();
 
 			if (dirs_ != null)
@@ -159,8 +171,6 @@ namespace AUI.FS
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
-			AlternateUI.Instance.Log.Info($"{this} DoGetFiles {dirs_?.Count}");
-
 			var list = new List<IFilesystemObject>();
 
 			if (dirs_ != null)
@@ -178,9 +188,9 @@ namespace AUI.FS
 	}
 
 
-	class FSDirectory2 : BasicFilesystemContainer, IDirectory
+	class FSDirectory : BasicFilesystemContainer, IDirectory
 	{
-		public FSDirectory2(Filesystem fs, IFilesystemContainer parent, string name)
+		public FSDirectory(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
 		}

@@ -67,8 +67,24 @@ namespace VUI
 
 			public string Tooltip
 			{
-				get { return GetTooltip(); }
-				set { tooltip_ = value; }
+				get
+				{
+					try
+					{
+						return GetTooltip();
+					}
+					catch (Exception e)
+					{
+						Glue.LogError($"tree view item exception in Tooltip");
+						Glue.LogError(e.ToString());
+						return "";
+					}
+				}
+
+				set
+				{
+					tooltip_ = value;
+				}
 			}
 
 			protected virtual string GetTooltip()
@@ -283,7 +299,16 @@ namespace VUI
 				if (!gotChildren_)
 				{
 					gotChildren_ = true;
-					GetChildren();
+
+					try
+					{
+						GetChildren();
+					}
+					catch (Exception e)
+					{
+						Glue.LogError($"tree view item NeedsChildren exception");
+						Glue.LogError(e.ToString());
+					}
 				}
 			}
 
@@ -351,21 +376,35 @@ namespace VUI
 				return false;
 			}
 
-			public virtual bool HasChildren
+			public bool HasChildren
 			{
 				get
 				{
-					if (children_ == null)
-						return false;
-
-					for (int i = 0; i < children_.Count; ++i)
+					try
 					{
-						if (children_[i].Visible)
-							return true;
+						return GetHasChildren();
 					}
-
-					return false;
+					catch (Exception e)
+					{
+						Glue.LogError("tree view item GetHasChildren exception");
+						Glue.LogError(e.ToString());
+						return false;
+					}
 				}
+			}
+
+			protected virtual bool GetHasChildren()
+			{
+				if (children_ == null)
+					return false;
+
+				for (int i = 0; i < children_.Count; ++i)
+				{
+					if (children_[i].Visible)
+						return true;
+				}
+
+				return false;
 			}
 
 			public T Add<T>(T item) where T : Item

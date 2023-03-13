@@ -31,7 +31,15 @@ namespace AUI
 			log_.Info($"starting aui {Version.String}");
 		}
 
-		static public AlternateUI Instance
+		public static void Assert(bool b)
+		{
+			if (!b)
+			{
+				AlternateUI.Instance.Log.ErrorST("assertion failed");
+			}
+		}
+
+		public static AlternateUI Instance
 		{
 			get { return instance_; }
 		}

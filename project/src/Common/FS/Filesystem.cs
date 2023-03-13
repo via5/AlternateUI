@@ -36,6 +36,7 @@ namespace AUI.FS
 
 		private static readonly Filesystem instance_ = new Filesystem();
 
+		private readonly Logger log_;
 		private readonly RootDirectory root_;
 		private readonly PackageRootDirectory packagesRoot_;
 		private int cacheToken_ = 1;
@@ -43,6 +44,7 @@ namespace AUI.FS
 
 		public Filesystem()
 		{
+			log_ = new Logger("fs");
 			root_ = new RootDirectory(this);
 			packagesRoot_ = new PackageRootDirectory(this, root_);
 
@@ -52,6 +54,11 @@ namespace AUI.FS
 		public static Filesystem Instance
 		{
 			get { return instance_; }
+		}
+
+		public Logger Log
+		{
+			get { return log_; }
 		}
 
 		public int CacheToken
@@ -147,8 +154,11 @@ namespace AUI.FS
 		private readonly PackagesFlatDirectory packagesFlat_;
 		private readonly PinnedFlatDirectory pinnedFlat_;
 		private readonly SavesDirectory saves_;
-		private readonly FSDirectory2 custom_;
+		private readonly FSDirectory custom_;
 		private readonly PinnedRoot pinned_;
+
+		private List<IFilesystemContainer> dirs_ = null;
+		private List<IFilesystemContainer> flatDirs_ = null;
 
 		public RootDirectory(Filesystem fs)
 			: base(fs, null, "VaM")
@@ -157,7 +167,7 @@ namespace AUI.FS
 			packagesFlat_ = new PackagesFlatDirectory(fs_, this);
 			pinnedFlat_ = new PinnedFlatDirectory(fs, this);
 			saves_ = new SavesDirectory(fs_, this);
-			custom_ = new FSDirectory2(fs_, this, "Custom");
+			custom_ = new FSDirectory(fs_, this, "Custom");
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
@@ -171,7 +181,7 @@ namespace AUI.FS
 			get { return saves_; }
 		}
 
-		public FSDirectory2 Custom
+		public FSDirectory Custom
 		{
 			get { return custom_; }
 		}
@@ -228,12 +238,17 @@ namespace AUI.FS
 
 		public List<IFilesystemContainer> GetDirectoriesForFlatten()
 		{
-			return new List<IFilesystemContainer>
+			if (flatDirs_ == null)
 			{
-				saves_,
-				custom_,
-				fs_.GetPackagesRootDirectory()
-			};
+				flatDirs_ = new List<IFilesystemContainer>
+				{
+					new VirtualDirectory(fs_, this, saves_),
+					new VirtualDirectory(fs_, this, custom_),
+					new VirtualDirectory(fs_, this, fs_.GetPackagesRootDirectory())
+				};
+			}
+
+			return flatDirs_;
 		}
 
 		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
@@ -246,21 +261,26 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return new List<IFilesystemContainer>()
+			if (dirs_ == null)
 			{
-				allFlat_,
-				packagesFlat_,
-				pinnedFlat_,
-				pinned_,
-				saves_,
-				custom_,
-				fs_.GetPackagesRootDirectory()
-			};
+				dirs_ = new List<IFilesystemContainer>()
+				{
+					new VirtualDirectory(fs_, this, allFlat_),
+					new VirtualDirectory(fs_, this, packagesFlat_),
+					new VirtualDirectory(fs_, this, pinnedFlat_),
+					new VirtualDirectory(fs_, this, pinned_),
+					new VirtualDirectory(fs_, this, saves_),
+					new VirtualDirectory(fs_, this, custom_),
+					new VirtualDirectory(fs_, this, fs_.GetPackagesRootDirectory())
+				};
+			}
+
+			return dirs_;
 		}
 	}
 
 
-	class SavesDirectory : FSDirectory2
+	class SavesDirectory : FSDirectory
 	{
 		private readonly string[] whitelist_;
 

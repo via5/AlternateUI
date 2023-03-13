@@ -155,19 +155,16 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public override bool HasChildren
+		protected override bool GetHasChildren()
 		{
-			get
+			if (!checkedHasChildren_)
 			{
-				if (!checkedHasChildren_)
-				{
-					var d = GetFSObject();
-					hasChildren_ = (d != null && !d.IsFlattened && HasSubDirectories(d));
-					checkedHasChildren_ = true;
-				}
-
-				return hasChildren_;
+				var d = GetFSObject();
+				hasChildren_ = (d != null && !d.IsFlattened && HasSubDirectories(d));
+				checkedHasChildren_ = true;
 			}
+
+			return hasChildren_;
 		}
 
 		protected override void GetChildren()

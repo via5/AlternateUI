@@ -18,6 +18,11 @@ namespace AUI.FS
 			displayName_ = displayName;
 		}
 
+		public Logger Log
+		{
+			get { return fs_.Log; }
+		}
+
 		public IFilesystemContainer Parent
 		{
 			get { return parent_; }
@@ -64,20 +69,7 @@ namespace AUI.FS
 
 		public virtual IPackage ParentPackage
 		{
-			get
-			{
-				IFilesystemObject o = this;
-
-				while (o != null)
-				{
-					if (o is IPackage)
-						return o as IPackage;
-
-					o = o.Parent;
-				}
-
-				return null;
-			}
+			get { return parent_?.ParentPackage ?? null; }
 		}
 
 		public abstract string Name { get; }

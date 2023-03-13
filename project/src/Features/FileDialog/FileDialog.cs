@@ -768,13 +768,13 @@ namespace AUI.FileDialog
 					return;
 				}
 
-				Log.Error($"bad initial directory {cwd}");
+				Log.Error($"(1) bad initial directory {cwd}");
 			}
 
 			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
 				return;
 
-			Log.Error($"bad initial directory {opts.CurrentDirectory}");
+			Log.Error($"(2) bad initial directory {opts.CurrentDirectory}");
 
 			if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
 			{
@@ -782,7 +782,7 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			Log.Error($"bad initial directory {mode_.DefaultDirectory}");
+			Log.Error($"(3) bad initial directory {mode_.DefaultDirectory}");
 			opts.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
 
 			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
@@ -979,13 +979,13 @@ namespace AUI.FileDialog
 			int f = FS.Context.NoFlags;
 
 			if (recursive)
-				f |= FS.Context.RecursiveFlags;
+				f |= FS.Context.RecursiveFlag;
 
 			if (opts.ShowHiddenFolders)
-				f |= FS.Context.ShowHiddenFoldersFlags;
+				f |= FS.Context.ShowHiddenFoldersFlag;
 
 			if (opts.ShowHiddenFiles)
-				f |= FS.Context.ShowHiddenFilesFlags;
+				f |= FS.Context.ShowHiddenFilesFlag;
 
 			return f;
 		}

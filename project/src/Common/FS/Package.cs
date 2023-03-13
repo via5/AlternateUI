@@ -151,6 +151,16 @@ namespace AUI.FS
 			p_ = p;
 		}
 
+		public override string MakeRealPath()
+		{
+			string s = Name + "/";
+
+			if (Parent != null)
+				s = Parent.MakeRealPath() + s;
+
+			return s;
+		}
+
 		public override string ToString()
 		{
 			return $"VirtualPackageDirectory({p_?.ShortCut?.package}:{Name})";
@@ -171,14 +181,17 @@ namespace AUI.FS
 	}
 
 
-	class RealPackageDirectory : FSDirectory2
+	class RealPackageDirectory : VirtualDirectory
 	{
 		private readonly Package p_;
+		private readonly FSDirectory dir_;
 
 		public RealPackageDirectory(Filesystem fs, Package p, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
 			p_ = p;
+			dir_ = new FSDirectory(fs, parent, name);
+			Add(dir_);
 		}
 
 		public override string ToString()
@@ -188,11 +201,7 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			var sc = p_.ShortCut;
-			if (sc == null)
-				return "";
-
-			return sc.path + "/";
+			return dir_.MakeRealPath();
 		}
 	}
 
@@ -216,26 +225,33 @@ namespace AUI.FS
 			return $"Package({ShortCut.package})";
 		}
 
+		public override IPackage ParentPackage
+		{
+			get { return this; }
+		}
+
 		public ShortCut ShortCut
 		{
 			get
 			{
-				if (sc_ == null)
-				{
-					sc_ = fs_.GetPackagesRootDirectory()
-						.GetShortCut(name_, showHiddenFolders_);
-
-					CreatePackageDirectories();
-				}
-
+				Get();
 				return sc_;
+			}
+		}
+
+		private void Get()
+		{
+			if (sc_ == null)
+			{
+				sc_ = fs_.GetPackagesRootDirectory()
+					.GetShortCut(name_, showHiddenFolders_);
+
+				CreatePackageDirectories();
 			}
 		}
 
 		private void CreatePackageDirectories()
 		{
-			AlternateUI.Instance.Log.Info($"{this} create package dirs");
-
 			rootDir_ = null;
 
 			string path = sc_.path;
@@ -247,25 +263,24 @@ namespace AUI.FS
 			if (path.StartsWith("/"))
 				path = path.Substring(1);
 
-			AlternateUI.Instance.Log.Info($"  - path is {path}");
-
 			var cs = path.Split('/');
 			if (cs == null)
 				return;
 
 			rootDir_ = new VirtualPackageDirectory(fs_, this, this, cs[0]);
-			AlternateUI.Instance.Log.Info($"  - root {rootDir_}");
 
 			VirtualPackageDirectory parent = rootDir_;
 			for (int i = 1; i < cs.Length - 1; ++i)
 			{
 				var d = new VirtualPackageDirectory(fs_, this, parent, cs[i]);
-				//AlternateUI.Instance.Log.Info($"  - dir {d}");
 				parent.AddChild(d);
 				parent = d;
 			}
 
-			parent.AddChild(new RealPackageDirectory(fs_, this, parent, cs[cs.Length - 1]));
+			{
+				var d = new RealPackageDirectory(fs_, this, parent, cs[cs.Length - 1]);
+				parent.AddChild(d);
+			}
 		}
 
 		public override string Tooltip
@@ -328,7 +343,13 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			return ShortCut.path + "/";
+			var path = ShortCut.path;
+
+			int col = path.IndexOf(':');
+			if (col == -1)
+				return path;
+			else
+				return path.Substring(0, col) + ":/";
 		}
 
 		public override ResolveResult ResolveInternal(
@@ -336,6 +357,8 @@ namespace AUI.FS
 		{
 			if (debug.Enabled)
 				debug.Info(this, $"resolveinternal cs={cs} flags={flags}");
+
+			Get();
 
 			if (cs.Done)
 			{
@@ -346,16 +369,14 @@ namespace AUI.FS
 			var sc = ShortCut;
 			if (sc == null)
 			{
-				AlternateUI.Instance.Log.Error(
-					$"{this} ResolveInternal: null shortcut");
-
+				Log.Error($"{this} ResolveInternal: null shortcut");
 				return ResolveResult.NotFound();
 			}
 
 			var col = sc.path.IndexOf(":");
 			if (col == -1)
 			{
-				AlternateUI.Instance.Log.Error(
+				Log.Error(
 					$"{this} ResolveInternal: shortcut path has no " +
 					$"colon '{sc.path}'");
 
@@ -444,41 +465,6 @@ namespace AUI.FS
 			return base.ResolveInternal2(cx, cs, flags, debug);
 		}
 
-		public List<IFilesystemObject> GetFilesForMerge(string path)
-		{/*
-			var sc = ShortCut;
-			path = sc.package + ":/" + path;
-
-			var cx = Context.None;
-
-			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
-			if (o == null)
-			{
-				//AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
-				return null;
-			}
-
-			return o.GetFiles(cx);*/
-			return null;
-		}
-
-		public List<IFilesystemContainer> GetDirectoriesForMerge(string path)
-		{
-			var sc = ShortCut;
-			path = sc.package + ":/" + path;
-
-			var cx = Context.None;
-
-			var o = Resolve(cx, path, Filesystem.ResolveDirsOnly) as IFilesystemContainer;
-			if (o == null)
-			{
-				AlternateUI.Instance.Log.Info($"{this}: can't resolve {path}");
-				return null;
-			}
-
-			return o.GetDirectories(cx);
-		}
-
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			if (showHiddenFolders_ != cx.ShowHiddenFolders)
@@ -487,16 +473,18 @@ namespace AUI.FS
 				showHiddenFolders_ = cx.ShowHiddenFolders;
 			}
 
-			var sc = ShortCut;
+			Get();
 
 			if (rootDir_ == null)
 				return base.DoGetDirectories(cx);
 			else
 				return new List<IFilesystemContainer> { rootDir_ };
 		}
-		/*
+
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
+			Get();
+
 			if (showHiddenFolders_ != cx.ShowHiddenFolders)
 			{
 				sc_ = null;
@@ -504,7 +492,7 @@ namespace AUI.FS
 			}
 
 			return base.DoGetFiles(cx);
-		}*/
+		}
 
 		protected override bool IncludeFile(Context cx, IFilesystemObject o)
 		{

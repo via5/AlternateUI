@@ -167,7 +167,8 @@ namespace AUI.FS
 
 			if (StaleLocalDirectoriesCache(cx))
 			{
-				dirs = GetDirectoriesInternal(cx);
+				// don't use context, it'll filter with extensions, etc.
+				dirs = GetDirectoriesInternal(Context.None);
 				SetLocalDirectoriesCache(cx, dirs);
 			}
 			else
@@ -222,10 +223,8 @@ namespace AUI.FS
 			}
 			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.Error(
-					$"exception while resolving '{path}':");
-
-				AlternateUI.Instance.Log.Error(e.ToString());
+				Log.Error($"exception while resolving '{path}':");
+				Log.Error(e.ToString());
 
 				return null;
 			}
@@ -342,10 +341,12 @@ namespace AUI.FS
 
 			if (!string.IsNullOrEmpty(path))
 			{
-				foreach (var dirPath in GetDirectoriesFromFMS(path))
+				var dirs = GetDirectoriesFromFMS(path);
+
+				foreach (var dirPath in dirs)
 				{
 					var vd = new VirtualDirectory(fs_, this, Path.Filename(dirPath));
-					vd.Add(new FSDirectory2(fs_, this, Path.Filename(dirPath)));
+					vd.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
 					list.Add(vd);
 				}
 			}
@@ -376,7 +377,6 @@ namespace AUI.FS
 		{
 			return true;
 		}
-
 
 		private List<IFilesystemContainer> GetDirectoriesInternal(Context cx)
 		{
@@ -416,7 +416,15 @@ namespace AUI.FS
 
 		private List<IFilesystemObject> GetFilesInternal(Context cx)
 		{
-			var files = DoGetFiles(cx);
+			List<IFilesystemObject> files;
+
+			{
+				// unset recursive, this is just for this container
+				bool oldRecursive = cx.Recursive;
+				cx.Recursive = false;
+				files = DoGetFiles(cx);
+				cx.Recursive = oldRecursive;
+			}
 
 			if (files != null)
 			{
@@ -543,7 +551,8 @@ namespace AUI.FS
 			}
 			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"{this}: bad directory '{path}': {e.Message}");
+				Log.Error($"{this}: get dirs bad directory '{path}'");
+				Log.ErrorST($"{e.Message}");
 				return new string[0];
 			}
 		}
@@ -556,7 +565,8 @@ namespace AUI.FS
 			}
 			catch (Exception e)
 			{
-				AlternateUI.Instance.Log.ErrorST($"{this}: bad directory '{path}': {e.Message}");
+				Log.Error($"{this}: get files bad directory '{path}'");
+				Log.ErrorST($"{e.Message}");
 				return new string[0];
 			}
 		}
