@@ -22,7 +22,8 @@ namespace AUI.FS
 		public const int RecursiveFlag = 0x01;
 		public const int ShowHiddenFoldersFlag = 0x02;
 		public const int ShowHiddenFilesFlag = 0x04;
-		public const int DebugFlag = 0x08;
+		public const int MergePackagesFlag = 0x08;
+		public const int DebugFlag = 0x10;
 
 		private readonly string search_;
 		private readonly string searchLc_;
@@ -147,6 +148,11 @@ namespace AUI.FS
 		public bool ShowHiddenFiles
 		{
 			get { return Bits.IsSet(flags_, ShowHiddenFilesFlag); }
+		}
+
+		public bool MergePackages
+		{
+			get { return Bits.IsSet(flags_,MergePackagesFlag); }
 		}
 
 		public bool ExtensionMatches(string path)

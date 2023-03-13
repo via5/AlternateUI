@@ -349,7 +349,12 @@ namespace AUI.FS
 				foreach (var dirPath in dirs)
 				{
 					var vd = new VirtualDirectory(fs_, this, Path.Filename(dirPath));
+
 					vd.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
+
+					if (cx.MergePackages)
+						MergePackages(cx, vd);
+
 					list.Add(vd);
 				}
 			}
@@ -459,6 +464,24 @@ namespace AUI.FS
 			}
 
 			return files;
+		}
+
+		private void MergePackages(Context cx, VirtualDirectory vd)
+		{
+			var rootName = fs_.GetRootDirectory().Name + "/";
+
+			var path = vd.VirtualPath;
+			if (path.StartsWith(rootName))
+				path = path.Substring(rootName.Length);
+
+			foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
+			{
+				string rpath = p.Name + ":/" + path;
+				var o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);
+				var d = o as IFilesystemContainer;
+				if (d != null)
+					vd.Add(d);
+			}
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)

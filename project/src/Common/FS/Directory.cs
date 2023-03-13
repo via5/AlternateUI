@@ -34,9 +34,10 @@ namespace AUI.FS
 			if (dirs_ == null || dirs_.Count == 0)
 				s += Name;
 			else
-				s += dirs_[0].DisplayName;
+				s += dirs_[0].Name;
 
-			return s + $" (VD {dirs_?.Count ?? 0})";
+			return s;
+			//return s + $" (VD {GetFlattenedContent()?.Count ?? 0})";
 		}
 
 		public override string Tooltip
@@ -51,38 +52,57 @@ namespace AUI.FS
 				}
 				else
 				{
-					string dirSources = "";
-					string packageSources = "";
-
-					foreach (var d in dirs_)
-					{
-						var pp = d.ParentPackage;
-
-						if (pp == null)
-						{
-							dirSources += $"\n   - {d} {d.VirtualPath} ({d.MakeRealPath()})";
-						}
-						else
-						{
-							packageSources += $"\n   -  {d} {pp.DisplayName}, {d.VirtualPath} ({d.MakeRealPath()})";
-						}
-					}
-
-					s += $"\nMerged sources:{dirSources}{packageSources}";
+					string dirSources = MakeTooltip(dirs_, 0);
+					s += $"\nMerged sources:{dirSources}";
 				}
 
 				return s;
 			}
 		}
 
+		private string MakeTooltip(List<IFilesystemContainer> dirs, int indent)
+		{
+			string s = "";
+
+			foreach (var d in dirs)
+			{
+				s += "\n" + new string(' ', indent * 2) + "- " + d.ToString();
+
+				if (d is VirtualDirectory)
+					s += MakeTooltip((d as VirtualDirectory).dirs_, indent + 1);
+			}
+
+			return s;
+		}
+
+		private List<IFilesystemContainer> GetFlattenedContent()
+		{
+			var list = new List<IFilesystemContainer>();
+			GetFlattenedContent(list);
+			return list;
+		}
+
+		private void GetFlattenedContent(List<IFilesystemContainer> list)
+		{
+			if (dirs_ != null)
+			{
+				foreach (var d in dirs_)
+				{
+					if (d is VirtualDirectory)
+						(d as VirtualDirectory).GetFlattenedContent(list);
+					else
+						list.Add(d);
+				}
+			}
+		}
+
 		public void Add(IFilesystemContainer c)
 		{
-			AlternateUI.Assert(!(c is VirtualDirectory));
-
 			if (dirs_ == null)
 				dirs_ = new List<IFilesystemContainer>();
 
-			dirs_.Add(c);
+			if (!dirs_.Contains(c))
+				dirs_.Add(c);
 		}
 
 		public void AddRange(IEnumerable<IFilesystemContainer> c)
@@ -171,7 +191,55 @@ namespace AUI.FS
 				}
 			}
 
-			return list;
+			var map = new Dictionary<string, IFilesystemContainer>();
+			Merge(list, map);
+
+
+			var list2 = new List<IFilesystemContainer>();
+
+			foreach (var ss in map)
+				list2.Add(ss.Value);
+
+			return list2;
+		}
+
+		private void Merge(
+			List<IFilesystemContainer> list,
+			Dictionary<string, IFilesystemContainer> map)
+		{
+			foreach (var d in list)
+			{
+				if (d is VirtualDirectory)
+				{
+					var vd = d as VirtualDirectory;
+					if (vd.dirs_ != null)
+						Merge(vd.dirs_, map);
+				}
+				else
+				{
+					IFilesystemContainer c;
+					if (map.TryGetValue(d.Name, out c))
+					{
+						if (c is VirtualDirectory)
+						{
+							(c as VirtualDirectory).Add(d);
+						}
+						else
+						{
+							var vd = new VirtualDirectory(fs_, this, d.Name);
+							vd.Add(d);
+							vd.Add(c);
+
+							map.Remove(d.Name);
+							map.Add(d.Name, vd);
+						}
+					}
+					else
+					{
+						map.Add(d.Name, d);
+					}
+				}
+			}
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)

@@ -181,27 +181,19 @@ namespace AUI.FS
 	}
 
 
-	class RealPackageDirectory : VirtualDirectory
+	class RealPackageDirectory : FSDirectory
 	{
 		private readonly Package p_;
-		private readonly FSDirectory dir_;
 
 		public RealPackageDirectory(Filesystem fs, Package p, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
 			p_ = p;
-			dir_ = new FSDirectory(fs, parent, name);
-			Add(dir_);
 		}
 
 		public override string ToString()
 		{
 			return $"RealPackageDirectory({p_?.ShortCut?.path})";
-		}
-
-		public override string MakeRealPath()
-		{
-			return dir_.MakeRealPath();
 		}
 	}
 
@@ -405,63 +397,7 @@ namespace AUI.FS
 
 			if (cs.Done)
 				return ResolveResult.Found(this);
-			/*
-			debug = debug.Inc();
 
-			//var scPath = sc.path.Substring(col + 1);
-
-			if (dirs_.Count > 0)
-			{
-				//var sccs = new PathComponents(scPath);
-
-				if (debug.Enabled)
-					debug.Info(this, $"checking sc path cs={cs} dirs={dirs_}");
-
-				bool found = true;
-				int i = 0;
-
-				while (i < dirs_.Count && !cs.Done)
-				{
-					if (cs.Done)
-					{
-						if (debug.Enabled)
-							debug.Info(this, $"resolve bad, at end");
-
-						found = false;
-						break;
-						//return ResolveResult.FoundPartial(this);
-					}
-					else if (cs.Current != dirs_[i].Name)
-					{
-						if (debug.Enabled)
-							debug.Info(this, $"resolve bad cs={cs} dirs={dirs_}");
-
-						found = false;
-						break;
-						//return ResolveResult.FoundPartial(this);
-					}
-
-					cs.Next();
-					++i;
-				}
-
-				if (found && cs.Done)
-				{
-					if (debug.Enabled)
-						debug.Info(this, $"found {dirs_[i]}");
-
-					return ResolveResult.Found(dirs_[i]);
-				}
-
-				if (debug.Enabled)
-					debug.Info(this, $"sc path failed, will fwd to base cs={cs}");
-			}
-			else
-			{
-				if (debug.Enabled)
-					debug.Info(this, $"resolve ok, fwd to base cs={cs}");
-			}
-			*/
 			return base.ResolveInternal2(cx, cs, flags, debug);
 		}
 

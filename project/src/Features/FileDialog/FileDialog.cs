@@ -146,6 +146,7 @@ namespace AUI.FileDialog
 
 		private readonly VUI.CheckBox flattenDirs_;
 		private readonly VUI.CheckBox flattenPackages_;
+		private readonly VUI.CheckBox mergePackages_;
 		private readonly VUI.CheckBox showHiddenFolders_;
 		private readonly VUI.CheckBox showHiddenFiles_;
 		private readonly VUI.MenuButton sortPanel_;
@@ -179,8 +180,10 @@ namespace AUI.FileDialog
 
 			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
 			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
+			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
 			showHiddenFolders_ = Add(new VUI.CheckBox("Show all folders", SetShowHiddenFolders));
 			showHiddenFiles_ = Add(new VUI.CheckBox("Show all files", SetShowHiddenFiles));
+
 			Add(sortPanel_.Button);
 		}
 
@@ -209,6 +212,7 @@ namespace AUI.FileDialog
 
 				flattenDirs_.Checked = mode_.Options.FlattenDirectories;
 				flattenPackages_.Checked = mode_.Options.FlattenPackages;
+				mergePackages_.Checked = mode_.Options.MergePackages;
 				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
 				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
 
@@ -261,6 +265,14 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenPackages = b;
+			fd_.Refresh();
+		}
+
+		private void SetMergePackages(bool b)
+		{
+			if (ignore_) return;
+
+			mode_.Options.MergePackages = b;
 			fd_.Refresh();
 		}
 
@@ -987,6 +999,9 @@ namespace AUI.FileDialog
 			if (opts.ShowHiddenFiles)
 				f |= FS.Context.ShowHiddenFilesFlag;
 
+			if (opts.MergePackages)
+				f |= FS.Context.MergePackagesFlag;
+
 			return f;
 		}
 
@@ -1040,20 +1055,37 @@ namespace AUI.FileDialog
 			RefreshFiles();
 		}
 
+		private bool DirIsInPackageRoot()
+		{
+			var p = tree_.Selected as FileTreeItem;
+
+			while (p != null)
+			{
+				var po = p.Object;
+				if (po.IsSameObject(FS.Filesystem.Instance.GetPackagesRootDirectory()))
+					return true;
+
+				p = p.Parent as FileTreeItem;
+			}
+
+			return false;
+		}
+
 		private List<FS.IFilesystemObject> GetFiles()
 		{
 			List<FS.IFilesystemObject> files = null;
 
-			if (dir_.ParentPackage == null)
+			if (DirIsInPackageRoot())
 			{
-				var cx = CreateFileContext(
-					mode_.Options.FlattenDirectories && !mode_.IsWritable);
+				var cx = CreateFileContext(mode_.Options.FlattenPackages);
 
 				files = dir_.GetFiles(cx);
 			}
 			else
 			{
-				var cx = CreateFileContext(mode_.Options.FlattenPackages);
+				var cx = CreateFileContext(
+					mode_.Options.FlattenDirectories && !mode_.IsWritable);
+
 				files = dir_.GetFiles(cx);
 			}
 
