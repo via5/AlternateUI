@@ -259,6 +259,7 @@ namespace AUI.FileDialog
 
 		string Title { get; }
 		ExtensionItem[] Extensions { get; }
+		string PackageRoot { get; }
 		string DefaultDirectory { get; }
 		string ActionText { get; }
 		bool IsWritable { get; }
@@ -274,17 +275,20 @@ namespace AUI.FileDialog
 		private readonly string name_;
 		private readonly string title_;
 		private readonly ExtensionItem[] exts_;
+		private readonly string packageRoot_;
 		private readonly string defaultPath_;
 		private readonly Options opts_;
 
 		protected BasicMode(
-			string name, string title, ExtensionItem[] exts, string defaultPath,
+			string name, string title, ExtensionItem[] exts,
+			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
 			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 		{
 			name_ = name;
 			title_ = title;
 			exts_ = exts;
+			packageRoot_ = packageRoot;
 			defaultPath_ = defaultPath;
 
 			opts_ = Options.Get(name_);
@@ -316,6 +320,11 @@ namespace AUI.FileDialog
 			get { return exts_; }
 		}
 
+		public string PackageRoot
+		{
+			get { return packageRoot_; }
+		}
+
 		public string DefaultDirectory
 		{
 			get { return defaultPath_; }
@@ -344,8 +353,9 @@ namespace AUI.FileDialog
 	{
 		public NoMode()
 			: base(
-				  null, "", new ExtensionItem[0], "", false, false, false,
-				  false, false, FS.Context.NoSort, FS.Context.NoSortDirection)
+				  null, "", new ExtensionItem[0], "", "",
+				  false, false, false, false, false,
+				  FS.Context.NoSort, FS.Context.NoSortDirection)
 		{
 		}
 
@@ -374,11 +384,12 @@ namespace AUI.FileDialog
 	class OpenMode : BasicMode
 	{
 		public OpenMode(
-			string name, string title, ExtensionItem[] exts, string defaultPath,
+			string name, string title, ExtensionItem[] exts,
+			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
 			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 				: base(
-					  name, title, exts, defaultPath,
+					  name, title, exts, packageRoot, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
 					  showHiddenFolders, showHiddenFiles, sort, sortDir)
 		{
@@ -440,11 +451,12 @@ namespace AUI.FileDialog
 	class SaveMode : BasicMode
 	{
 		public SaveMode(
-			string name, string title, ExtensionItem[] exts, string defaultPath,
+			string name, string title, ExtensionItem[] exts,
+			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
 			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 				: base(
-					  name, title, exts, defaultPath,
+					  name, title, exts, packageRoot, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
 					  showHiddenFolders, showHiddenFiles, sort, sortDir)
 		{
@@ -533,7 +545,8 @@ namespace AUI.FileDialog
 				openScene_ = new OpenMode(
 					"scene", "Open scene",
 					FileDialogFeature.GetSceneExtensions(true),
-					"VaM/Saves/scene", true, true, true, false, false,
+					"Saves/scene", "VaM/Saves/scene",
+					true, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
@@ -547,7 +560,8 @@ namespace AUI.FileDialog
 				saveScene_ = new SaveMode(
 					"scene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
-					"VaM/Saves/scene", false, false, false, false, false,
+					"Saves/scene", "VaM/Saves/scene",
+					false, false, false, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
@@ -561,7 +575,8 @@ namespace AUI.FileDialog
 				openCUA_ = new OpenMode(
 					"openCUA", "Open asset bundle",
 					FileDialogFeature.GetCUAExtensions(true),
-					"VaM/Custom/Assets", true, true, true, false, false,
+					"Custom/Assets", "VaM/Custom/Assets",
+					true, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 
@@ -575,7 +590,8 @@ namespace AUI.FileDialog
 				openPlugin_ = new OpenMode(
 					"openPlugin", "Open plugin",
 					FileDialogFeature.GetPluginExtensions(true),
-					"VaM/Custom/Scripts", false, true, true, false, false,
+					"Custom/Scripts", "VaM/Custom/Scripts",
+					false, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending);
 			}
 

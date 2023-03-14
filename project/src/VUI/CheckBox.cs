@@ -34,26 +34,24 @@ namespace VUI
 
 		public bool Checked
 		{
-			get
-			{
-				return checked_;
-			}
-
-			set
-			{
-				if (checked_ != value)
-				{
-					checked_ = value;
-
-					if (toggle_ != null)
-						toggle_.toggle.isOn = value;
-				}
-			}
+			get { return checked_; }
+			set { SetChecked(value); }
 		}
 
 		public void Toggle()
 		{
 			Checked = !Checked;
+		}
+
+		protected virtual void SetChecked(bool b)
+		{
+			if (checked_ != b)
+			{
+				checked_ = b;
+
+				if (toggle_ != null)
+					toggle_.toggle.isOn = b;
+			}
 		}
 
 		protected override GameObject CreateGameObject()
@@ -147,7 +145,6 @@ namespace VUI
 			: base(text, changed, initial)
 		{
 			group_ = group;
-			Changed += OnChecked;
 		}
 
 		public void UncheckInternal()
@@ -163,8 +160,10 @@ namespace VUI
 			}
 		}
 
-		private void OnChecked(bool b)
+		protected override void SetChecked(bool b)
 		{
+			base.SetChecked(b);
+
 			if (ignore_) return;
 
 			if (b)

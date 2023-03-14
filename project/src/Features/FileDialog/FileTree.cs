@@ -34,6 +34,11 @@ namespace AUI.FileDialog
 			tree_.SelectionChanged += OnSelection;
 		}
 
+		public VUI.TreeView TreeView
+		{
+			get { return tree_; }
+		}
+
 		public void Init()
 		{
 			var fsRoot = FS.Filesystem.Instance.GetRootDirectory();

@@ -92,7 +92,7 @@ namespace AUI.FS
 
 		public void Pin(string s, string display = null)
 		{
-			var o = fs_.Resolve<IFilesystemContainer>(
+			/*var o = fs_.Resolve<IFilesystemContainer>(
 				Context.None, s, Filesystem.ResolveDirsOnly);
 
 			if (o == null)
@@ -101,7 +101,7 @@ namespace AUI.FS
 				return;
 			}
 
-			Pin(o, display);
+			Pin(o, display);*/
 		}
 
 		public void Pin(IFilesystemContainer o, string display = null)

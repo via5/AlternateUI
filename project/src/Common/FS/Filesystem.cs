@@ -86,17 +86,6 @@ namespace AUI.FS
 			return root_.PinnedRoot.IsPinned(o);
 		}
 
-		public IPackage GetPackage(string name)
-		{
-			foreach (var f in packagesRoot_.GetDirectories(Context.None))
-			{
-				if (f.Name == name)
-					return f as IPackage;
-			}
-
-			return null;
-		}
-
 		public bool DirectoryInPackage(string path)
 		{
 			return FMS.IsDirectoryInPackage(path);
@@ -256,7 +245,13 @@ namespace AUI.FS
 			if (cx.ShowHiddenFolders)
 				return true;
 
-			return !o.IsSameObject(custom_);
+			// todo
+			if (cx.PackagesRoot == "Saves/scene")
+				return !o.IsSameObject(custom_);
+			else if (cx.PackagesRoot == "Custom/Scripts")
+				return !o.IsSameObject(saves_);
+			else
+				return true;
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
@@ -374,6 +369,11 @@ namespace AUI.FS
 		}
 
 		public string MakeRealPath()
+		{
+			return "";
+		}
+
+		public string MakeRealPathForUser()
 		{
 			return "";
 		}

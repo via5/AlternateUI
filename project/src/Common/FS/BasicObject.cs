@@ -91,18 +91,41 @@ namespace AUI.FS
 		{
 			get
 			{
-				string tt =
-					$"{base.ToString()}\n" +
-					$"Virtual path: {VirtualPath}" +
-					$"\nReal path: {(Virtual ? "(virtual)" : MakeRealPath())}";
+				string tt;
 
-				var p = ParentPackage;
+				if (U.DevMode)
+				{
+					tt =
+						$"{base.ToString()}\n" +
+						$"Virtual path: {VirtualPath}\n" +
+						$"Real path: {MakeRealPath()}\n" +
+						$"User path: {MakeRealPathForUser()}";
 
-				if (p != null)
-					tt += $"\nPackage: {p.DisplayName}";
+					var p = ParentPackage;
 
-				tt += $"\nCreated: {FormatDT(DateCreated)}";
-				tt += $"\nLast modified: {FormatDT(DateModified)}";
+					if (p != null)
+						tt += $"\nPackage: {p.DisplayName}";
+
+					tt += $"\nCreated: {FormatDT(DateCreated)}";
+					tt += $"\nLast modified: {FormatDT(DateModified)}";
+				}
+				else
+				{
+					var rp = MakeRealPathForUser();
+					if (string.IsNullOrEmpty(rp))
+						rp = "(virtual folder)";
+
+					tt =
+						$"Virtual path: {VirtualPath}" +
+						$"\nReal path: {rp}";
+
+					var p = ParentPackage;
+					if (p != null)
+						tt += $"\nPackage: {p.DisplayName}";
+
+					tt += $"\nCreated: {FormatDT(DateCreated)}";
+					tt += $"\nLast modified: {FormatDT(DateModified)}";
+				}
 
 				return tt;
 			}
@@ -110,7 +133,10 @@ namespace AUI.FS
 
 		private string FormatDT(DateTime dt)
 		{
-			return dt.ToString(CultureInfo.CurrentCulture);
+			if (dt == DateTime.MaxValue)
+				return "(none)";
+			else
+				return dt.ToString(CultureInfo.CurrentCulture);
 		}
 
 		public virtual bool IsSameObject(IFilesystemObject o)
@@ -128,6 +154,12 @@ namespace AUI.FS
 		}
 
 		public abstract string MakeRealPath();
+
+		public virtual string MakeRealPathForUser()
+		{
+			return MakeRealPath();
+		}
+
 
 		public virtual void ClearCache()
 		{

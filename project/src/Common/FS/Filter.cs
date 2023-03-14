@@ -28,17 +28,19 @@ namespace AUI.FS
 		private readonly string search_;
 		private readonly string searchLc_;
 		private readonly string[] exts_;
+		private string packagesRoot_;
 		private readonly Regex searchRe_;
 		private readonly int sort_;
 		private readonly int sortDir_;
 		private int flags_;
 
 		public Context(
-			string search, string[] extensions,
+			string search, string[] extensions, string packagesRoot,
 			int sort, int sortDir, int flags)
 		{
 			search_ = search;
 			exts_ = extensions;
+			packagesRoot_ = packagesRoot;
 			sort_ = sort;
 			sortDir_ = sortDir;
 			flags_ = flags;
@@ -65,13 +67,14 @@ namespace AUI.FS
 				$"flags={flags_}";
 		}
 
-		public static Context None
-		{
-			get
-			{
-				return new Context(	"", null, NoSort, NoSortDirection, NoFlags);
-			}
-		}
+		//public static Context None
+		//{
+		//	get
+		//	{
+		//		return new Context(
+		//			"", null, NoSort, NoSortDirection, NoFlags, "");
+		//	}
+		//}
 
 		public bool Empty
 		{
@@ -91,6 +94,11 @@ namespace AUI.FS
 		public string[] Extensions
 		{
 			get { return exts_; }
+		}
+
+		public string PackagesRoot
+		{
+			get { return packagesRoot_; }
 		}
 
 		public string ExtensionsString

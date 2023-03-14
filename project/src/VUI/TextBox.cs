@@ -534,6 +534,8 @@ namespace VUI
 			placeholder_ = placeholder;
 			ac_ = new AutoComplete(this);
 
+			Borders = new Insets(1);
+
 			if (edited != null)
 				Edited += edited;
 

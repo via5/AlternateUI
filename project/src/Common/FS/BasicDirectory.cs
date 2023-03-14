@@ -114,7 +114,8 @@ namespace AUI.FS
 				SetLocalDirectoriesCache(cx, dirs);
 			}
 
-			Filter(cx, cache_.GetLocalDirectories());
+			// dirs are not filtered for now
+			//Filter(cx, cache_.GetLocalDirectories());
 
 			return cache_.GetLocalDirectories().Last;
 		}
@@ -168,10 +169,12 @@ namespace AUI.FS
 			if (StaleLocalDirectoriesCache(cx))
 			{
 				// don't use context, it'll filter with extensions, etc.
-				dirs = GetDirectoriesInternal(new Context(
-					"", null, Context.NoSort, Context.NoSortDirection,
-					cx.Flags));
 
+				var cx2 = new Context(
+					"", null, cx.PackagesRoot,
+					Context.NoSort, Context.NoSortDirection, cx.Flags);
+
+				dirs = GetDirectoriesInternal(cx2);
 				SetLocalDirectoriesCache(cx, dirs);
 			}
 			else

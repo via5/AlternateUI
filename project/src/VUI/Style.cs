@@ -237,12 +237,12 @@ namespace VUI
 
 		public Color EditableTextColor
 		{
-			get { return Color.black; }
+			get { return TextColor; }
 		}
 
 		public Color DisabledEditableTextColor
 		{
-			get { return Color.black; }
+			get { return new Color(0.6f, 0.6f, 0.6f); }
 		}
 
 		public Color PlaceholderTextColor
@@ -257,12 +257,12 @@ namespace VUI
 
 		public Color EditableBackgroundColor
 		{
-			get { return new Color(0.84f, 0.84f, 0.84f); }
+			get { return new Color(0, 0, 0, 0); }
 		}
 
 		public Color DisabledEditableBackgroundColor
 		{
-			get { return new Color(0.60f, 0.60f, 0.60f); }
+			get { return new Color(0, 0, 0, 0); }
 		}
 
 		public Color EditableSelectionBackgroundColor

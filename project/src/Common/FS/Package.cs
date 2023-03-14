@@ -8,11 +8,57 @@ namespace AUI.FS
 
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
-		private List<IFilesystemContainer> packagesScene_ = null;
-		private Dictionary<string, ShortCut> shortCutsScene_ = null;
+		class PackagesInfo
+		{
+			public PackageRootDirectory pr;
+			public readonly string root;
+			public List<IFilesystemContainer> packages = null;
+			public Dictionary<string, ShortCut> shortCuts = null;
 
-		private List<IFilesystemContainer> packagesAll_ = null;
-		private Dictionary<string, ShortCut> shortCutsAll_ = null;
+			public PackagesInfo(PackageRootDirectory pr, string root)
+			{
+				this.pr = pr;
+				this.root = root;
+			}
+
+			public Logger Log
+			{
+				get { return pr.Log; }
+			}
+
+			public void Refresh(bool showHiddenFolders)
+			{
+				if (packages == null)
+					packages = new List<IFilesystemContainer>();
+				else
+					packages.Clear();
+
+				if (shortCuts == null)
+					shortCuts = new Dictionary<string, ShortCut>();
+				else
+					shortCuts.Clear();
+
+				Log.Info($"PackagesInfo.Refresh root={root} showhidden={showHiddenFolders}");
+
+				foreach (var sc in FMS.GetShortCutsForDirectory(root))
+				{
+					if (string.IsNullOrEmpty(sc.package))
+						continue;
+
+					if (!string.IsNullOrEmpty(sc.packageFilter))
+						continue;
+
+					if (sc.path == "AddonPackages")
+						continue;
+
+					packages.Add(new Package(pr.fs_, pr, sc.package, root, showHiddenFolders));
+					shortCuts.Add(sc.package, sc);
+				}
+			}
+		}
+
+		private readonly Dictionary<string, PackagesInfo> packages_ =
+			new Dictionary<string, PackagesInfo>();
 
 
 		public PackageRootDirectory(Filesystem fs, IFilesystemContainer parent)
@@ -67,17 +113,19 @@ namespace AUI.FS
 
 		public List<IFilesystemContainer> GetPackages(Context cx)
 		{
-			return RefreshPackages(cx);
+			var pi = GetPackagesInfo(cx.PackagesRoot, cx.ShowHiddenFolders);
+			return pi?.packages;
 		}
 
-		public ShortCut GetShortCut(string name, bool showHiddenFolders)
+		public ShortCut GetShortCut(
+			string name, string packagesRoot, bool showHiddenFolders)
 		{
-			ShortCut sc;
+			var pi = GetPackagesInfo(packagesRoot, showHiddenFolders);
+			if (pi == null)
+				return null;
 
-			if (showHiddenFolders)
-				shortCutsAll_.TryGetValue(name, out sc);
-			else
-				shortCutsScene_.TryGetValue(name, out sc);
+			ShortCut sc;
+			pi.shortCuts.TryGetValue(name, out sc);
 
 			return sc;
 		}
@@ -87,55 +135,20 @@ namespace AUI.FS
 			return GetPackages(cx);
 		}
 
-		private List<IFilesystemContainer> RefreshPackages(Context cx)
+		private PackagesInfo GetPackagesInfo(
+			string packagesRoot, bool showHiddenFolders)
 		{
-			var ps = (cx.ShowHiddenFolders ? packagesAll_ : packagesScene_);
-			if (ps != null)
-				return ps;
+			PackagesInfo pi;
 
-			ps = new List<IFilesystemContainer>();
+			if (packages_.TryGetValue(packagesRoot, out pi))
+				return pi;
 
-			Dictionary<string, ShortCut> map;
+			pi = new PackagesInfo(this, packagesRoot);
+			packages_.Add(packagesRoot, pi);
 
-			if (cx.ShowHiddenFolders)
-			{
-				if (shortCutsAll_ == null)
-					shortCutsAll_ = new Dictionary<string, ShortCut>();
+			pi.Refresh(showHiddenFolders);
 
-				map = shortCutsAll_;
-			}
-			else
-			{
-				if (shortCutsScene_ == null)
-					shortCutsScene_ = new Dictionary<string, ShortCut>();
-
-				map = shortCutsScene_;
-			}
-
-			string path = (cx.ShowHiddenFolders ? "" : "Saves/scene");
-			map.Clear();
-
-			foreach (var sc in FMS.GetShortCutsForDirectory(path))
-			{
-				if (string.IsNullOrEmpty(sc.package))
-					continue;
-
-				if (!string.IsNullOrEmpty(sc.packageFilter))
-					continue;
-
-				if (sc.path == "AddonPackages")
-					continue;
-
-				ps.Add(new Package(fs_, this, sc.package, cx.ShowHiddenFolders));
-				map.Add(sc.package, sc);
-			}
-
-			if (cx.ShowHiddenFolders)
-				packagesAll_ = ps;
-			else
-				packagesScene_ = ps;
-
-			return ps;
+			return pi;
 		}
 	}
 
@@ -202,13 +215,17 @@ namespace AUI.FS
 	{
 		private readonly string name_;
 		private ShortCut sc_ = null;
+		private string packagesRoot_;
 		private bool showHiddenFolders_ = false;
 		private VirtualPackageDirectory rootDir_ = null;
 
-		public Package(Filesystem fs, IFilesystemContainer parent, string name, bool showHiddenFolders)
+		public Package(
+			Filesystem fs, IFilesystemContainer parent, string name,
+			string packagesRoot, bool showHiddenFolders)
 			: base(fs, parent, name)
 		{
 			name_ = name;
+			packagesRoot_ = packagesRoot;
 			showHiddenFolders_ = showHiddenFolders;
 		}
 
@@ -236,7 +253,7 @@ namespace AUI.FS
 			if (sc_ == null)
 			{
 				sc_ = fs_.GetPackagesRootDirectory()
-					.GetShortCut(name_, showHiddenFolders_);
+					.GetShortCut(name_, packagesRoot_, showHiddenFolders_);
 
 				CreatePackageDirectories();
 			}

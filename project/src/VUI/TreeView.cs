@@ -1211,7 +1211,7 @@ namespace VUI
 				cx.y = cx.av.Top + Style.Metrics.TreeViewTopMargin;
 				cx.indent = 0;
 
-				int nodeCount = (int)(cx.av.Height / FullItemHeight);
+				int nodeCount = Math.Max(0, (int)(cx.av.Height / FullItemHeight));
 
 				while (nodes_.Count < nodeCount)
 					nodes_.Add(new Node(this));

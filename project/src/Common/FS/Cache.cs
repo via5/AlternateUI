@@ -7,6 +7,7 @@ namespace AUI.FS
 		private int cacheToken_ = -1;
 		private bool showHiddenFolders_ = false;
 		private bool showHiddenFiles_ = false;
+		private string packagesRoot_ = null;
 		private Listing<T> listing_ = null;
 
 		public bool ShowHiddenFolders
@@ -17,6 +18,11 @@ namespace AUI.FS
 		public bool ShowHiddenFiles
 		{
 			get { return showHiddenFiles_; }
+		}
+
+		public string PackagesRoot
+		{
+			get { return packagesRoot_; }
 		}
 
 		public Listing<T> Listing
@@ -45,6 +51,7 @@ namespace AUI.FS
 			cacheToken_ = fs.CacheToken;
 			showHiddenFolders_ = cx.ShowHiddenFolders;
 			showHiddenFiles_ = cx.ShowHiddenFiles;
+			packagesRoot_ = cx.PackagesRoot;
 
 			if (listing_ == null)
 				listing_ = new Listing<T>();
@@ -73,6 +80,9 @@ namespace AUI.FS
 				return true;
 
 			if (localDirs_.ShowHiddenFolders != cx.ShowHiddenFolders)
+				return true;
+
+			if (localDirs_.PackagesRoot != cx.PackagesRoot)
 				return true;
 
 			return false;
@@ -142,6 +152,9 @@ namespace AUI.FS
 				return true;
 
 			if (recursiveFiles_.ShowHiddenFiles != cx.ShowHiddenFiles)
+				return true;
+
+			if (recursiveFiles_.PackagesRoot != cx.PackagesRoot)
 				return true;
 
 			return false;

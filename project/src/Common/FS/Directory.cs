@@ -1,11 +1,15 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
 {
+	using FMS = FileManagerSecure;
+
 	class VirtualDirectory : BasicFilesystemContainer, IDirectory
 	{
 		private List<IFilesystemContainer> dirs_ = null;
+		private List<IFilesystemContainer> sortedDirs_ = null;
 
 		public VirtualDirectory(
 			Filesystem fs, IFilesystemContainer parent,
@@ -37,7 +41,6 @@ namespace AUI.FS
 				s += dirs_[0].Name;
 
 			return s;
-			//return s + $" (VD {GetFlattenedContent()?.Count ?? 0})";
 		}
 
 		public override string Tooltip
@@ -46,54 +49,83 @@ namespace AUI.FS
 			{
 				var s = base.Tooltip;
 
-				if (dirs_ == null || dirs_.Count == 0)
+				if (dirs_ != null && dirs_.Count > 0)
 				{
-					s += $"\nNo sources";
-				}
-				else
-				{
-					string dirSources = MakeTooltip(dirs_, 0);
-					s += $"\nMerged sources:{dirSources}";
+					string dirSources = MakeTooltip(SortedDirs(), 0, U.DevMode);
+					s += $"\nSources:{dirSources}";
 				}
 
 				return s;
 			}
 		}
 
-		private string MakeTooltip(List<IFilesystemContainer> dirs, int indent)
+		private List<IFilesystemContainer> SortedDirs()
 		{
+			if (sortedDirs_ == null)
+			{
+				sortedDirs_ = new List<IFilesystemContainer>(dirs_);
+				sortedDirs_.Sort((a, b) =>
+				{
+					if (!a.Virtual && b.Virtual)
+					{
+						return -1;
+					}
+					else if (a.Virtual && !b.Virtual)
+					{
+						return 1;
+					}
+					else
+					{
+						var ap = a.ParentPackage;
+						var bp = b.ParentPackage;
+
+						if (ap == null && bp != null)
+						{
+							return -1;
+						}
+						else if (ap != null && bp == null)
+						{
+							return 1;
+						}
+						else
+						{
+							return U.CompareNatural(a.VirtualPath, b.VirtualPath);
+						}
+					}
+				});
+			}
+
+			return sortedDirs_;
+		}
+
+		private string MakeTooltip(List<IFilesystemContainer> dirs, int indent, bool devMode)
+		{
+
 			string s = "";
 
 			foreach (var d in dirs)
 			{
-				s += "\n" + new string(' ', indent * 2) + "- " + d.ToString();
+				s += "\n" + new string(' ', indent * 2) + "- ";
+
+				if (devMode)
+				{
+					s += d.ToString();
+				}
+				else
+				{
+					var p = d.ParentPackage;
+
+					if (p == null)
+						s += d.VirtualPath;
+					else
+						s += p.DisplayName;
+				}
 
 				if (d is VirtualDirectory)
-					s += MakeTooltip((d as VirtualDirectory).dirs_, indent + 1);
+					s += MakeTooltip((d as VirtualDirectory).SortedDirs(), indent + 1, devMode);
 			}
 
 			return s;
-		}
-
-		private List<IFilesystemContainer> GetFlattenedContent()
-		{
-			var list = new List<IFilesystemContainer>();
-			GetFlattenedContent(list);
-			return list;
-		}
-
-		private void GetFlattenedContent(List<IFilesystemContainer> list)
-		{
-			if (dirs_ != null)
-			{
-				foreach (var d in dirs_)
-				{
-					if (d is VirtualDirectory)
-						(d as VirtualDirectory).GetFlattenedContent(list);
-					else
-						list.Add(d);
-				}
-			}
 		}
 
 		public void Add(IFilesystemContainer c)
@@ -102,7 +134,10 @@ namespace AUI.FS
 				dirs_ = new List<IFilesystemContainer>();
 
 			if (!dirs_.Contains(c))
+			{
 				dirs_.Add(c);
+				sortedDirs_ = null;
+			}
 		}
 
 		public void AddRange(IEnumerable<IFilesystemContainer> c)
@@ -111,6 +146,7 @@ namespace AUI.FS
 				dirs_ = new List<IFilesystemContainer>();
 
 			dirs_.AddRange(c);
+			sortedDirs_ = null;
 		}
 
 		public List<IFilesystemContainer> Content
@@ -120,12 +156,24 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return DateTime.MaxValue; }
+			get
+			{
+				if (dirs_ != null && dirs_.Count == 1)
+					return dirs_[0].DateCreated;
+
+				return DateTime.MaxValue;
+			}
 		}
 
 		public override DateTime DateModified
 		{
-			get { return DateTime.MaxValue; }
+			get
+			{
+				if (dirs_ != null && dirs_.Count == 1)
+					return dirs_[0].DateModified;
+
+				return DateTime.MaxValue;
+			}
 		}
 
 		public override VUI.Icon Icon
@@ -164,6 +212,24 @@ namespace AUI.FS
 			return "";
 		}
 
+		public override string MakeRealPathForUser()
+		{
+			if (dirs_ != null)
+			{
+				for (int i = 0; i < dirs_.Count; ++i)
+				{
+					if (!dirs_[i].Virtual && dirs_[i].ParentPackage == null)
+					{
+						var rp = dirs_[i].MakeRealPathForUser();
+						if (rp != "")
+							return rp;
+					}
+				}
+			}
+
+			return base.MakeRealPathForUser();
+		}
+
 		public override bool IsSameObject(IFilesystemObject o)
 		{
 			if (o == null)
@@ -180,12 +246,12 @@ namespace AUI.FS
 			{
 				// see DoGetFiles() below
 				var cx2 = new Context(
-					"", null, Context.NoSort, Context.NoSortDirection,
-					cx.Flags);
+					"", null, cx.PackagesRoot,
+					Context.NoSort, Context.NoSortDirection, cx.Flags);
 
 				foreach (var d in dirs_)
 				{
-					var ds = d.GetDirectories(cx);
+					var ds = d.GetDirectories(cx2);
 					if (ds != null)
 						list.AddRange(ds);
 				}
@@ -251,8 +317,8 @@ namespace AUI.FS
 				// this needs to get the raw files, not filtered, so get a new
 				// context with the same flags only
 				var cx2 = new Context(
-					"", null, Context.NoSort, Context.NoSortDirection,
-					cx.Flags);
+					"", null, cx.PackagesRoot,
+					Context.NoSort, Context.NoSortDirection, cx.Flags);
 
 				foreach (var d in dirs_)
 				{
@@ -269,6 +335,9 @@ namespace AUI.FS
 
 	class FSDirectory : BasicFilesystemContainer, IDirectory
 	{
+		private DateTime dateCreated_ = DateTime.MaxValue;
+		private DateTime dateModified_ = DateTime.MaxValue;
+
 		public FSDirectory(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
@@ -281,12 +350,28 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return DateTime.MaxValue; }
+			get
+			{
+#if VAM_GT_1_22
+				if (dateCreated_ == DateTime.MaxValue)
+					dateCreated_ = FMS.DirectoryCreationTime(MakeRealPath());
+#endif
+
+				return DateTime.MaxValue;
+			}
 		}
 
 		public override DateTime DateModified
 		{
-			get { return DateTime.MaxValue; }
+			get
+			{
+#if VAM_GT_1_22
+				if (dateModified_ == DateTime.MaxValue)
+					dateModified_ = FMS.DirectoryLastWriteTime(MakeRealPath());
+#endif
+
+				return DateTime.MaxValue;
+			}
 		}
 
 		public override VUI.Icon Icon

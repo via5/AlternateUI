@@ -1,5 +1,4 @@
-﻿using SimpleJSON;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -406,7 +405,7 @@ namespace AUI.FileDialog
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
 				drop_.Button.Enabled = (fd_.CanGoBack() || fd_.CanGoNext());
-				openInExplorer_.Enabled = !dir.Virtual;
+				openInExplorer_.Enabled = CanOpenInExplorer(dir);
 
 				UpdatePin();
 			}
@@ -458,8 +457,23 @@ namespace AUI.FileDialog
 		{
 			var dir = fd_.SelectedDirectory;
 
-			if (dir != null && !dir.Virtual)
-				SuperController.singleton.OpenFolderInExplorer(dir.MakeRealPath());
+			if (dir != null)
+			{
+				var rp = dir.MakeRealPathForUser();
+				if (rp != "")
+					SuperController.singleton.OpenFolderInExplorer(rp);
+			}
+		}
+
+		private bool CanOpenInExplorer(FS.IFilesystemContainer dir)
+		{
+			if (dir == null)
+				return false;
+
+			if (dir.ParentPackage != null)
+				return false;
+
+			return (dir.MakeRealPathForUser() != "");
 		}
 
 		private void UpdatePin()
@@ -735,6 +749,7 @@ namespace AUI.FileDialog
 
 		public void Show(IFileDialogMode mode, Action<string> callback, string cwd = null)
 		{
+			bool refreshDirs = (mode_ != mode);
 			mode_ = mode;
 
 			if (root_ == null)
@@ -750,7 +765,14 @@ namespace AUI.FileDialog
 			optionsPanel_.Set(mode_);
 			buttonsPanel_.Set(mode_);
 
-			SelectInitialDirectory(cwd);
+			tree_.Enable();
+
+			if (refreshDirs)
+				RefreshDirectories();
+			else
+				tree_.SetFlags(GetTreeFlags());
+
+			SelectInitialDirectory(cwd ?? mode.DefaultDirectory);
 
 			if (dir_ == null)
 			{
@@ -760,9 +782,6 @@ namespace AUI.FileDialog
 			}
 
 			SelectFile(null);
-
-			tree_.Enable();
-			tree_.SetFlags(GetTreeFlags());
 
 			buttonsPanel_.FocusFilename();
 		}
@@ -1010,15 +1029,16 @@ namespace AUI.FileDialog
 			return new FS.Context(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
-				mode_.Options.Sort,
-				mode_.Options.SortDirection,
+				mode_.PackageRoot,
+				mode_.Options.Sort, mode_.Options.SortDirection,
 				MakeContextFlags(recursive, mode_.Options));
 		}
 
 		public FS.Context CreateTreeContext(bool recursive)
 		{
 			return new FS.Context(
-				"", null,
+				"", buttonsPanel_.SelectedExtension?.Extensions,
+				mode_.PackageRoot,
 				FS.Context.SortFilename, FS.Context.SortAscending,
 				MakeContextFlags(recursive, mode_.Options));
 		}
@@ -1145,6 +1165,11 @@ namespace AUI.FileDialog
 
 			var p = new VUI.Panel(new VUI.BorderLayout());
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
+
+			// needs work
+			//var s = p.Add(new SearchBox("Search folders"), VUI.BorderLayout.Bottom);
+			//s.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
+			//s.Changed += (ss) => tree_.TreeView.Filter = ss;
 
 			return p;
 		}
