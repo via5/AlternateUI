@@ -178,7 +178,13 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Directory); }
+			get
+			{
+				if (HasRealDir())
+					return Icons.Get(Icons.Directory);
+				else
+					return Icons.Get(Icons.Package);
+			}
 		}
 
 		public override bool CanPin
@@ -260,13 +266,34 @@ namespace AUI.FS
 			var map = new Dictionary<string, IFilesystemContainer>();
 			Merge(list, map);
 
-
 			var list2 = new List<IFilesystemContainer>();
-
 			foreach (var ss in map)
 				list2.Add(ss.Value);
 
 			return list2;
+		}
+
+		protected override List<IFilesystemObject> DoGetFiles(Context cx)
+		{
+			var list = new List<IFilesystemObject>();
+
+			if (dirs_ != null)
+			{
+				// this needs to get the raw files, not filtered, so get a new
+				// context with the same flags only
+				var cx2 = new Context(
+					"", null, cx.PackagesRoot,
+					Context.NoSort, Context.NoSortDirection, cx.Flags);
+
+				foreach (var d in dirs_)
+				{
+					var fs = d.GetFiles(cx2);
+					if (fs != null)
+						list.AddRange(fs);
+				}
+			}
+
+			return list;
 		}
 
 		private void Merge(
@@ -275,7 +302,10 @@ namespace AUI.FS
 		{
 			foreach (var d in list)
 			{
-				if (d is VirtualDirectory)
+				// todo; a VirtualPackageDirectory isn't a real virtual
+				// directory, it has no content, but it has its own children,
+				// so treat is separately for now
+				if (d is VirtualDirectory && !(d is VirtualPackageDirectory))
 				{
 					var vd = d as VirtualDirectory;
 					if (vd.dirs_ != null)
@@ -302,33 +332,26 @@ namespace AUI.FS
 					}
 					else
 					{
-						map.Add(d.Name, d);
+						var vd = new VirtualDirectory(fs_, this, d.Name);
+						vd.Add(d);
+						map.Add(d.Name, vd);
 					}
 				}
 			}
 		}
 
-		protected override List<IFilesystemObject> DoGetFiles(Context cx)
+		private bool HasRealDir()
 		{
-			var list = new List<IFilesystemObject>();
-
 			if (dirs_ != null)
 			{
-				// this needs to get the raw files, not filtered, so get a new
-				// context with the same flags only
-				var cx2 = new Context(
-					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags);
-
-				foreach (var d in dirs_)
+				for (int i = 0; i < dirs_.Count; ++i)
 				{
-					var fs = d.GetFiles(cx2);
-					if (fs != null)
-						list.AddRange(fs);
+					if (dirs_[i].ParentPackage == null)
+						return true;
 				}
 			}
 
-			return list;
+			return false;
 		}
 	}
 

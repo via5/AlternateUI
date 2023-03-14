@@ -38,8 +38,6 @@ namespace AUI.FS
 				else
 					shortCuts.Clear();
 
-				Log.Info($"PackagesInfo.Refresh root={root} showhidden={showHiddenFolders}");
-
 				foreach (var sc in FMS.GetShortCutsForDirectory(root))
 				{
 					if (string.IsNullOrEmpty(sc.package))

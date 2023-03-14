@@ -1077,7 +1077,7 @@ namespace AUI.FileDialog
 
 		private bool DirIsInPackageRoot()
 		{
-			var p = tree_.Selected as FileTreeItem;
+			var p = tree_.TreeView.Selected as FileTreeItem;
 
 			while (p != null)
 			{
@@ -1098,7 +1098,6 @@ namespace AUI.FileDialog
 			if (DirIsInPackageRoot())
 			{
 				var cx = CreateFileContext(mode_.Options.FlattenPackages);
-
 				files = dir_.GetFiles(cx);
 			}
 			else
