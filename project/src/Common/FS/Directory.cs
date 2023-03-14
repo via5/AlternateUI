@@ -61,7 +61,7 @@ namespace AUI.FS
 
 		private List<IFilesystemContainer> SortedDirs()
 		{
-			if (sortedDirs_ == null)
+			if (sortedDirs_ == null && dirs_ != null)
 			{
 				sortedDirs_ = new List<IFilesystemContainer>(dirs_);
 				sortedDirs_.Sort((a, b) =>
@@ -100,6 +100,8 @@ namespace AUI.FS
 
 		private string MakeTooltip(List<IFilesystemContainer> dirs, int indent, bool devMode)
 		{
+			if (dirs == null)
+				return "";
 
 			string s = "";
 
@@ -329,6 +331,10 @@ namespace AUI.FS
 							map.Remove(d.Name);
 							map.Add(d.Name, vd);
 						}
+					}
+					else if (!d.UnderlyingCanChange)
+					{
+						map.Add(d.Name, d);
 					}
 					else
 					{

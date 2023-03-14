@@ -92,7 +92,7 @@ namespace AUI.FS
 
 		public void Pin(string s, string display = null)
 		{
-			/*var o = fs_.Resolve<IFilesystemContainer>(
+			var o = fs_.Resolve<IFilesystemContainer>(
 				Context.None, s, Filesystem.ResolveDirsOnly);
 
 			if (o == null)
@@ -101,7 +101,7 @@ namespace AUI.FS
 				return;
 			}
 
-			Pin(o, display);*/
+			Pin(o, display);
 		}
 
 		public void Pin(IFilesystemContainer o, string display = null)
@@ -212,18 +212,32 @@ namespace AUI.FS
 			return $"PinnedObject({c_})";
 		}
 
+		protected override string GetDisplayName()
+		{
+			var p = c_.ParentPackage;
+
+			if (p == null || (p == c_))
+				return base.GetDisplayName();
+			else
+				return p.DisplayName + ":" + base.GetDisplayName();
+		}
+
 		public override string Name { get { return c_.Name; } }
 		public override string VirtualPath { get { return c_.VirtualPath; } }
 		public override DateTime DateCreated { get { return c_.DateCreated; } }
 		public override DateTime DateModified { get { return c_.DateModified; } }
 		public override VUI.Icon Icon { get { return c_.Icon; } }
-		public override bool CanPin { get { return false; } }
+		public override bool CanPin { get { return true; } }
 		public override bool Virtual { get { return c_.Virtual; } }
 		public override bool ChildrenVirtual { get { return c_.ChildrenVirtual; } }
 		public override bool IsFlattened { get { return c_.IsFlattened; } }
 		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 
+		public override bool UnderlyingCanChange
+		{
+			get { return false; }
+		}
 
 		public override string MakeRealPath()
 		{

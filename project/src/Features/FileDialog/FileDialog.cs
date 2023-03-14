@@ -814,7 +814,7 @@ namespace AUI.FileDialog
 			}
 
 			Log.Error($"(3) bad initial directory {mode_.DefaultDirectory}");
-			opts.CurrentDirectory = FS.Filesystem.Instance.GetRootDirectory().VirtualPath;
+			opts.CurrentDirectory = FS.Filesystem.Instance.GetRoot().VirtualPath;
 
 			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
 				return;
@@ -1075,18 +1075,44 @@ namespace AUI.FileDialog
 			RefreshFiles();
 		}
 
-		private bool DirIsInPackageRoot()
+		private bool IsInPackage()
 		{
-			var p = tree_.TreeView.Selected as FileTreeItem;
+			// can't just check for ParentPackage because this may be a merged
+			// directory, which should obey FlattenDirectories, not
+			// FlattenPackages
 
-			while (p != null)
+			// note: that's disabled for now, pinned packages are treated as
+			// directories, not sure which one makes more sense
+
+			var item = tree_.TreeView.Selected as FileTreeItem;
+
 			{
-				var po = p.Object;
-				if (po.IsSameObject(FS.Filesystem.Instance.GetPackagesRootDirectory()))
-					return true;
+				// first, check if it's a child of the packages root node
 
-				p = p.Parent as FileTreeItem;
+				var p = item;
+				while (p != null)
+				{
+					var po = p.Object;
+					if (po.IsSameObject(FS.Filesystem.Instance.GetPackagesRoot()))
+						return true;
+
+					p = p.Parent as FileTreeItem;
+				}
 			}
+			/*
+			{
+				// then check if it's a pinned object
+
+				var p = item;
+				while (p != null)
+				{
+					var po = p.Object;
+					if (po.IsSameObject(FS.Filesystem.Instance.GetPinnedRoot()))
+						return true;
+
+					p = p.Parent as FileTreeItem;
+				}
+			}*/
 
 			return false;
 		}
@@ -1095,7 +1121,7 @@ namespace AUI.FileDialog
 		{
 			List<FS.IFilesystemObject> files = null;
 
-			if (DirIsInPackageRoot())
+			if (IsInPackage())
 			{
 				var cx = CreateFileContext(mode_.Options.FlattenPackages);
 				files = dir_.GetFiles(cx);

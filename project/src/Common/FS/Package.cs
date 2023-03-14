@@ -250,7 +250,7 @@ namespace AUI.FS
 		{
 			if (sc_ == null)
 			{
-				sc_ = fs_.GetPackagesRootDirectory()
+				sc_ = fs_.GetPackagesRoot()
 					.GetShortCut(name_, packagesRoot_, showHiddenFolders_);
 
 				CreatePackageDirectories();
@@ -271,7 +271,7 @@ namespace AUI.FS
 				path = path.Substring(1);
 
 			var cs = path.Split('/');
-			if (cs == null)
+			if (cs == null || cs.Length == 0 || (cs.Length == 1 && cs[0] == ""))
 				return;
 
 			rootDir_ = new VirtualPackageDirectory(fs_, this, this, cs[0]);

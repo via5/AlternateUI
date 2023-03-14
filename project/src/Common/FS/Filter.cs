@@ -67,14 +67,14 @@ namespace AUI.FS
 				$"flags={flags_}";
 		}
 
-		//public static Context None
-		//{
-		//	get
-		//	{
-		//		return new Context(
-		//			"", null, NoSort, NoSortDirection, NoFlags, "");
-		//	}
-		//}
+		public static Context None
+		{
+			get
+			{
+				return new Context(
+					"", null, "", NoSort, NoSortDirection, NoFlags);
+			}
+		}
 
 		public bool Empty
 		{

@@ -225,6 +225,7 @@ namespace AUI.FS
 		bool ChildrenVirtual { get; }
 		bool IsFlattened { get; }
 		bool IsRedundant { get; }
+		bool UnderlyingCanChange { get; }
 		IPackage ParentPackage { get; }
 
 		string MakeRealPath();

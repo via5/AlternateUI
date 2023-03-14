@@ -57,7 +57,7 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return fs_.GetRootDirectory().GetDirectoriesForFlatten();
+			return fs_.GetRoot().GetDirectoriesForFlatten();
 		}
 	}
 
@@ -121,7 +121,7 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return fs_.GetPackagesRootDirectory().GetPackages(cx);
+			return fs_.GetPackagesRoot().GetPackages(cx);
 		}
 	}
 
@@ -151,7 +151,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Directory); }
+			get { return Icons.Get(Icons.UnpinnedDark); }
 		}
 
 		public override bool CanPin
@@ -181,7 +181,7 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return fs_.GetRootDirectory().PinnedRoot.Pinned;
+			return fs_.GetRoot().PinnedRoot.Pinned;
 		}
 	}
 }

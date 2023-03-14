@@ -91,14 +91,19 @@ namespace AUI.FS
 			return FMS.IsDirectoryInPackage(path);
 		}
 
-		public RootDirectory GetRootDirectory()
+		public RootDirectory GetRoot()
 		{
 			return root_;
 		}
 
-		public PackageRootDirectory GetPackagesRootDirectory()
+		public PackageRootDirectory GetPackagesRoot()
 		{
 			return packagesRoot_;
+		}
+
+		public PinnedRoot GetPinnedRoot()
+		{
+			return root_.PinnedRoot;
 		}
 
 		public void FireObjectChanged(IFilesystemObject o)
@@ -233,7 +238,7 @@ namespace AUI.FS
 				{
 					new VirtualDirectory(fs_, this, saves_),
 					new VirtualDirectory(fs_, this, custom_),
-					new VirtualDirectory(fs_, this, fs_.GetPackagesRootDirectory())
+					new VirtualDirectory(fs_, this, fs_.GetPackagesRoot())
 				};
 			}
 
@@ -262,11 +267,11 @@ namespace AUI.FS
 				{
 					new VirtualDirectory(fs_, this, allFlat_),
 					new VirtualDirectory(fs_, this, packagesFlat_),
-					new VirtualDirectory(fs_, this, pinnedFlat_),
-					new VirtualDirectory(fs_, this, pinned_),
+					pinnedFlat_,
+					pinned_,
 					new VirtualDirectory(fs_, this, saves_),
 					new VirtualDirectory(fs_, this, custom_),
-					new VirtualDirectory(fs_, this, fs_.GetPackagesRootDirectory())
+					fs_.GetPackagesRoot()
 				};
 			}
 
@@ -325,6 +330,7 @@ namespace AUI.FS
 		public bool IsRedundant { get { return false; } }
 		public IPackage ParentPackage { get { return null; } }
 		public bool AlreadySorted { get { return false; } }
+		public bool UnderlyingCanChange { get { return false; } }
 
 		public override string ToString()
 		{

@@ -471,13 +471,13 @@ namespace AUI.FS
 
 		private void MergePackages(Context cx, VirtualDirectory vd)
 		{
-			var rootName = fs_.GetRootDirectory().Name + "/";
+			var rootName = fs_.GetRoot().Name + "/";
 
 			var path = vd.VirtualPath;
 			if (path.StartsWith(rootName))
 				path = path.Substring(rootName.Length);
 
-			foreach (var p in fs_.GetPackagesRootDirectory().GetPackages(cx))
+			foreach (var p in fs_.GetPackagesRoot().GetPackages(cx))
 			{
 				string rpath = p.Name + ":/" + path;
 				var o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);

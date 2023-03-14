@@ -26,7 +26,7 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			var fsRoot = FS.Filesystem.Instance.GetRootDirectory();
+			var fsRoot = FS.Filesystem.Instance.GetRoot();
 
 			root_ = new FileTreeItem(this, fsRoot);
 			tree_.RootItem.Add(root_);
@@ -41,7 +41,7 @@ namespace AUI.FileDialog
 
 		public void Init()
 		{
-			var fsRoot = FS.Filesystem.Instance.GetRootDirectory();
+			var fsRoot = FS.Filesystem.Instance.GetRoot();
 
 			root_.Expanded = true;
 			Expand(fsRoot.PinnedRoot);

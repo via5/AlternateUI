@@ -86,6 +86,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public virtual bool UnderlyingCanChange
+		{
+			get { return true; }
+		}
+
 
 		public virtual string Tooltip
 		{
@@ -96,7 +101,7 @@ namespace AUI.FS
 				if (U.DevMode)
 				{
 					tt =
-						$"{base.ToString()}\n" +
+						$"{ToString()}\n" +
 						$"Virtual path: {VirtualPath}\n" +
 						$"Real path: {MakeRealPath()}\n" +
 						$"User path: {MakeRealPathForUser()}";

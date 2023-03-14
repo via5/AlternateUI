@@ -17,13 +17,20 @@ namespace AUI.FileDialog
 		private bool checkedHasChildren_ = false;
 		private bool hasChildren_ = false;
 		private FS.IFilesystemContainer o_ = null;
+		private FS.IFilesystemContainer hardObject_ = null;
 
-		public FileTreeItem(FileTree tree, FS.IFilesystemObject o)
-			: base(o.DisplayName)
+		public FileTreeItem(FileTree tree, FS.IFilesystemContainer c)
+			: this(tree, c.VirtualPath, c.DisplayName, c.Icon)
+		{
+			hardObject_ = c;
+		}
+
+		public FileTreeItem(FileTree tree, string path, string displayName, VUI.Icon icon)
+			: base(displayName)
 		{
 			tree_ = tree;
-			path_ = o.VirtualPath;
-			o.Icon.GetTexture(t => Icon = t);
+			path_ = path;
+			icon?.GetTexture(t => Icon = t);
 		}
 
 		public override string ToString()
@@ -53,6 +60,9 @@ namespace AUI.FileDialog
 
 		public FS.IFilesystemContainer GetFSObject(int moreFlags = 0)
 		{
+			if (hardObject_ != null)
+				return hardObject_;
+
 			if (o_ == null)
 			{
 				o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
@@ -150,7 +160,7 @@ namespace AUI.FileDialog
 				for (int i = 0; i < dirs.Count; ++i)
 				{
 					if (i >= cs.Count || !(cs[i] as FileTreeItem).GetFSObject().IsSameObject(dirs[i]))
-						Insert(i, new FileTreeItem(tree_, dirs[i]));
+						Insert(i, CreateItem(dirs[i]));
 				}
 			}
 		}
@@ -174,7 +184,20 @@ namespace AUI.FileDialog
 			if (d != null && !d.IsFlattened)
 			{
 				foreach (var c in GetSubDirectories(d))
-					Add(new FileTreeItem(tree_, c));
+					Add(CreateItem(c));
+			}
+		}
+
+		private FileTreeItem CreateItem(FS.IFilesystemContainer o)
+		{
+			if (o.UnderlyingCanChange)
+			{
+				return new FileTreeItem(
+					tree_, o.VirtualPath, o.DisplayName, o.Icon);
+			}
+			else
+			{
+				return new FileTreeItem(tree_, o);
 			}
 		}
 
