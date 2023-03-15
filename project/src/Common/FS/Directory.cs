@@ -10,6 +10,7 @@ namespace AUI.FS
 	{
 		private List<IFilesystemContainer> dirs_ = null;
 		private List<IFilesystemContainer> sortedDirs_ = null;
+		private List<string> tooltip_ = null;
 
 		public VirtualDirectory(
 			Filesystem fs, IFilesystemContainer parent,
@@ -51,7 +52,21 @@ namespace AUI.FS
 
 				if (dirs_ != null && dirs_.Count > 0)
 				{
-					string dirSources = MakeTooltip(SortedDirs(), 0, U.DevMode);
+					if (tooltip_ == null)
+						tooltip_ = new List<string>();
+					else
+						tooltip_.Clear();
+
+					MakeTooltip(SortedDirs(), U.DevMode);
+
+					string dirSources = "";
+
+					for (int i = 0; i < Math.Min(tooltip_.Count, 20); ++i)
+						dirSources += $"\n  - {tooltip_[i]}";
+
+					if (tooltip_.Count > 20)
+						dirSources += $"\n  - +{tooltip_.Count - 20} more";
+
 					s += $"\nSources:{dirSources}";
 				}
 
@@ -98,16 +113,14 @@ namespace AUI.FS
 			return sortedDirs_;
 		}
 
-		private string MakeTooltip(List<IFilesystemContainer> dirs, int indent, bool devMode)
+		private void MakeTooltip(List<IFilesystemContainer> dirs, bool devMode)
 		{
 			if (dirs == null)
-				return "";
-
-			string s = "";
+				return;
 
 			foreach (var d in dirs)
 			{
-				s += "\n" + new string(' ', indent * 2) + "- ";
+				string s = "";
 
 				if (devMode)
 				{
@@ -123,11 +136,11 @@ namespace AUI.FS
 						s += p.DisplayName;
 				}
 
-				if (d is VirtualDirectory)
-					s += MakeTooltip((d as VirtualDirectory).SortedDirs(), indent + 1, devMode);
-			}
+				tooltip_.Add(s);
 
-			return s;
+				if (d is VirtualDirectory)
+					MakeTooltip((d as VirtualDirectory).SortedDirs(), devMode);
+			}
 		}
 
 		public void Add(IFilesystemContainer c)
