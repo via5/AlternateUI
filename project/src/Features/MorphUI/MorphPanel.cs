@@ -37,7 +37,7 @@ namespace AUI.MorphUI
 			Padding = new VUI.Insets(5);
 			Borders = new VUI.Insets(1);
 			Layout = new VUI.VerticalFlow(
-				2, true, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
+				5, true, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(
 				3, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
