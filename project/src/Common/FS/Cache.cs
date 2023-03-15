@@ -7,6 +7,7 @@ namespace AUI.FS
 		private int cacheToken_ = -1;
 		private bool showHiddenFolders_ = false;
 		private bool showHiddenFiles_ = false;
+		private bool mergePackages_ = false;
 		private string packagesRoot_ = null;
 		private Listing<T> listing_ = null;
 
@@ -18,6 +19,11 @@ namespace AUI.FS
 		public bool ShowHiddenFiles
 		{
 			get { return showHiddenFiles_; }
+		}
+
+		public bool MergePackages
+		{
+			get { return mergePackages_; }
 		}
 
 		public string PackagesRoot
@@ -51,6 +57,7 @@ namespace AUI.FS
 			cacheToken_ = fs.CacheToken;
 			showHiddenFolders_ = cx.ShowHiddenFolders;
 			showHiddenFiles_ = cx.ShowHiddenFiles;
+			mergePackages_ = cx.MergePackages;
 			packagesRoot_ = cx.PackagesRoot;
 
 			if (listing_ == null)
@@ -80,6 +87,9 @@ namespace AUI.FS
 				return true;
 
 			if (localDirs_.ShowHiddenFolders != cx.ShowHiddenFolders)
+				return true;
+
+			if (localDirs_.MergePackages != cx.MergePackages)
 				return true;
 
 			if (localDirs_.PackagesRoot != cx.PackagesRoot)
@@ -122,6 +132,9 @@ namespace AUI.FS
 			if (localFiles_.ShowHiddenFiles != cx.ShowHiddenFiles)
 				return true;
 
+			if (localFiles_.MergePackages != cx.MergePackages)
+				return true;
+
 			return false;
 		}
 
@@ -152,6 +165,9 @@ namespace AUI.FS
 				return true;
 
 			if (recursiveFiles_.ShowHiddenFiles != cx.ShowHiddenFiles)
+				return true;
+
+			if (recursiveFiles_.MergePackages != cx.MergePackages)
 				return true;
 
 			if (recursiveFiles_.PackagesRoot != cx.PackagesRoot)

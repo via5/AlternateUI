@@ -164,14 +164,16 @@ namespace AUI.FileDialog
 			fd_ = fd;
 
 			var sortMenu = new VUI.Menu();
+			var sortGroup = new VUI.RadioButton.Group("sort");
+			var sortOrderGroup = new VUI.RadioButton.Group("sortOrder");
 
-			AddSortItem(sortMenu, "Filename", FS.Context.SortFilename);
-			AddSortItem(sortMenu, "Type", FS.Context.SortType);
-			AddSortItem(sortMenu, "Date modified", FS.Context.SortDateModified);
-			AddSortItem(sortMenu, "Date created", FS.Context.SortDateCreated);
+			AddSortItem(sortMenu, sortGroup, "Filename", FS.Context.SortFilename);
+			AddSortItem(sortMenu, sortGroup, "Type", FS.Context.SortType);
+			AddSortItem(sortMenu, sortGroup, "Date modified", FS.Context.SortDateModified);
+			AddSortItem(sortMenu, sortGroup, "Date created", FS.Context.SortDateCreated);
 			sortMenu.AddSeparator();
-			AddSortDirItem(sortMenu, "Ascending", FS.Context.SortAscending);
-			AddSortDirItem(sortMenu, "Descending", FS.Context.SortDescending);
+			AddSortDirItem(sortMenu, sortOrderGroup, "Ascending", FS.Context.SortAscending);
+			AddSortDirItem(sortMenu, sortOrderGroup, "Descending", FS.Context.SortDescending);
 
 			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
 
@@ -186,15 +188,15 @@ namespace AUI.FileDialog
 			Add(sortPanel_.Button);
 		}
 
-		private void AddSortItem(VUI.Menu menu, string text, int sort)
+		private void AddSortItem(VUI.Menu menu, VUI.RadioButton.Group g, string text, int sort)
 		{
-			var item = menu.AddMenuItem(MakeSortItem(text, sort));
+			var item = menu.AddMenuItem(MakeSortItem(text, sort, g));
 			sortItems_.Add(sort, item);
 		}
 
-		private void AddSortDirItem(VUI.Menu menu, string text, int sort)
+		private void AddSortDirItem(VUI.Menu menu, VUI.RadioButton.Group g, string text, int sort)
 		{
-			var item = menu.AddMenuItem(MakeSortDirItem(text, sort));
+			var item = menu.AddMenuItem(MakeSortDirItem(text, sort, g));
 			sortDirItems_.Add(sort, item);
 		}
 
@@ -229,7 +231,7 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private VUI.RadioMenuItem MakeSortItem(string text, int sort)
+		private VUI.RadioMenuItem MakeSortItem(string text, int sort, VUI.RadioButton.Group g)
 		{
 			VUI.RadioButton.ChangedCallback cb = (bool b) =>
 			{
@@ -237,10 +239,10 @@ namespace AUI.FileDialog
 					SetSort(sort);
 			};
 
-			return new VUI.RadioMenuItem(text, cb, false, "sort");
+			return new VUI.RadioMenuItem(text, cb, false, g);
 		}
 
-		private VUI.RadioMenuItem MakeSortDirItem(string text, int sortDir)
+		private VUI.RadioMenuItem MakeSortDirItem(string text, int sortDir, VUI.RadioButton.Group g)
 		{
 			VUI.RadioButton.ChangedCallback cb = (bool b) =>
 			{
@@ -248,7 +250,7 @@ namespace AUI.FileDialog
 					SetSortDirection(sortDir);
 			};
 
-			return new VUI.RadioMenuItem(text, cb, false, "sortDir");
+			return new VUI.RadioMenuItem(text, cb, false, g);
 		}
 
 		private void SetFlattenDirectories(bool b)
@@ -256,7 +258,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenDirectories = b;
-			fd_.Refresh();
+			fd_.RefreshBoth();
 		}
 
 		private void SetFlattenPackages(bool b)
@@ -264,7 +266,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.FlattenPackages = b;
-			fd_.Refresh();
+			fd_.RefreshBoth();
 		}
 
 		private void SetMergePackages(bool b)
@@ -272,7 +274,7 @@ namespace AUI.FileDialog
 			if (ignore_) return;
 
 			mode_.Options.MergePackages = b;
-			fd_.Refresh();
+			fd_.RefreshBoth();
 		}
 
 		private void SetShowHiddenFolders(bool b)
@@ -283,7 +285,7 @@ namespace AUI.FileDialog
 
 			// this can also affect files for flattened folders where some
 			// folders are hidden
-			fd_.Refresh();
+			fd_.RefreshBoth();
 		}
 
 		private void SetShowHiddenFiles(bool b)
@@ -438,6 +440,8 @@ namespace AUI.FileDialog
 			dropMenu_.Clear();
 
 			var entries = fd_.History.Entries;
+			var group = new VUI.RadioButton.Group("history");
+
 			for (int ri=0; ri<entries.Length; ++ri)
 			{
 				int i = entries.Length - ri - 1;
@@ -447,7 +451,7 @@ namespace AUI.FileDialog
 				{
 					if (b)
 						OnHistoryEntry(i);
-				}, check, "history"));
+				}, check, group));
 
 				mi.RadioButton.FontSize = FileDialog.FontSize;
 			}
@@ -1053,6 +1057,12 @@ namespace AUI.FileDialog
 			AlternateUI.Instance.StartCoroutine(CoRefresh());
 		}
 
+		public void RefreshBoth()
+		{
+			RefreshDirectories();
+			RefreshFiles();
+		}
+
 		public void RefreshFiles()
 		{
 			files_ = GetFiles();
@@ -1065,14 +1075,16 @@ namespace AUI.FileDialog
 		{
 			tree_.SetFlags(GetTreeFlags());
 			tree_.Refresh();
+
+			var s = tree_.Selected as FS.IFilesystemContainer;
+			if (s != null)
+				dir_ = s;
 		}
 
 		private IEnumerator CoRefresh()
 		{
 			yield return new WaitForEndOfFrame();
-
-			RefreshDirectories();
-			RefreshFiles();
+			RefreshBoth();
 		}
 
 		private bool IsInPackage()

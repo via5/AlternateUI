@@ -116,6 +116,7 @@ namespace AUI.FS
 
 			// dirs are not filtered for now
 			//Filter(cx, cache_.GetLocalDirectories());
+			SortInternal(cx, cache_.GetLocalDirectories());
 
 			return cache_.GetLocalDirectories().Last;
 		}
