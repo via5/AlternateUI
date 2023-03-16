@@ -512,10 +512,10 @@ namespace AUI.FileDialog
 		public override string GetPath(FileDialog fd)
 		{
 			var cwd = fd.SelectedDirectory;
-			if (cwd == null || cwd.Virtual)
+			if (cwd == null)
 				return "";
 
-			var dir = cwd.MakeRealPath()?.Trim() ?? "";
+			var dir = cwd.DeVirtualize()?.Trim() ?? "";
 			if (dir == "")
 				return "";
 

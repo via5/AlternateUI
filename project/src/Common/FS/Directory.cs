@@ -233,7 +233,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		public override string MakeRealPathForUser()
+		public override string DeVirtualize()
 		{
 			if (dirs_ != null)
 			{
@@ -241,14 +241,14 @@ namespace AUI.FS
 				{
 					if (!dirs_[i].Virtual && dirs_[i].ParentPackage == null)
 					{
-						var rp = dirs_[i].MakeRealPathForUser();
+						var rp = dirs_[i].DeVirtualize();
 						if (rp != "")
 							return rp;
 					}
 				}
 			}
 
-			return base.MakeRealPathForUser();
+			return base.DeVirtualize();
 		}
 
 		public override bool IsSameObject(IFilesystemObject o)

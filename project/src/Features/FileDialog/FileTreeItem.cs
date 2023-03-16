@@ -157,10 +157,13 @@ namespace AUI.FileDialog
 			{
 				var cs = GetInternalChildren();
 
-				for (int i = 0; i < dirs.Count; ++i)
+				if (cs != null)
 				{
-					if (i >= cs.Count || !(cs[i] as FileTreeItem).GetFSObject().IsSameObject(dirs[i]))
-						Insert(i, CreateItem(dirs[i]));
+					for (int i = 0; i < dirs.Count; ++i)
+					{
+						if (i >= cs.Count || !(cs[i] as FileTreeItem).GetFSObject().IsSameObject(dirs[i]))
+							Insert(i, CreateItem(dirs[i]));
+					}
 				}
 			}
 		}

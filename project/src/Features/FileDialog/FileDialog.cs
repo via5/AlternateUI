@@ -463,7 +463,7 @@ namespace AUI.FileDialog
 
 			if (dir != null)
 			{
-				var rp = dir.MakeRealPathForUser();
+				var rp = dir.DeVirtualize();
 				if (rp != "")
 					SuperController.singleton.OpenFolderInExplorer(rp);
 			}
@@ -477,7 +477,7 @@ namespace AUI.FileDialog
 			if (dir.ParentPackage != null)
 				return false;
 
-			return (dir.MakeRealPathForUser() != "");
+			return (dir.DeVirtualize() != "");
 		}
 
 		private void UpdatePin()
@@ -716,7 +716,7 @@ namespace AUI.FileDialog
 
 		public int Columns
 		{
-			get { return 5; }
+			get { return 4; }
 		}
 
 		public int Rows

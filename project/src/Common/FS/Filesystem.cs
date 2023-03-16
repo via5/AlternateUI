@@ -379,7 +379,7 @@ namespace AUI.FS
 			return "";
 		}
 
-		public string MakeRealPathForUser()
+		public string DeVirtualize()
 		{
 			return "";
 		}

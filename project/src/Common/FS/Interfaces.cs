@@ -229,7 +229,7 @@ namespace AUI.FS
 		IPackage ParentPackage { get; }
 
 		string MakeRealPath();
-		string MakeRealPathForUser();
+		string DeVirtualize();
 		bool IsSameObject(IFilesystemObject o);
 		void ClearCache();
 	}

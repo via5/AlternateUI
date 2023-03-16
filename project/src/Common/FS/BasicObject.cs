@@ -104,7 +104,7 @@ namespace AUI.FS
 						$"{ToString()}\n" +
 						$"Virtual path: {VirtualPath}\n" +
 						$"Real path: {MakeRealPath()}\n" +
-						$"User path: {MakeRealPathForUser()}";
+						$"Devirt: {DeVirtualize()}";
 
 					var p = ParentPackage;
 
@@ -116,7 +116,7 @@ namespace AUI.FS
 				}
 				else
 				{
-					var rp = MakeRealPathForUser();
+					var rp = DeVirtualize();
 					if (string.IsNullOrEmpty(rp))
 						rp = "(virtual folder)";
 
@@ -160,7 +160,7 @@ namespace AUI.FS
 
 		public abstract string MakeRealPath();
 
-		public virtual string MakeRealPathForUser()
+		public virtual string DeVirtualize()
 		{
 			return MakeRealPath();
 		}
