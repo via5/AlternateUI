@@ -156,17 +156,29 @@ namespace AUI.FileDialog
 			if (item == null)
 				return;
 
-			item.Refresh(false);
+			Instrumentation.Start(I.FTRefreshOnObjectchanged);
+			{
+				item.Refresh(false);
+			}
+			Instrumentation.End();
 		}
 
 		private FileTreeItem FindItem(FS.IFilesystemObject o)
 		{
-			return FindItem(tree_.RootItem, o);
+			FileTreeItem item;
+
+			Instrumentation.Start(I.FTFindItem);
+			{
+				item = FindItem(tree_.RootItem, o);
+			}
+			Instrumentation.End();
+
+			return item;
 		}
 
 		private FileTreeItem FindItem(VUI.TreeView.Item parent, FS.IFilesystemObject o)
 		{
-			var cs = parent.Children;
+			var cs = parent.GetInternalChildren();
 
 			if (cs != null)
 			{

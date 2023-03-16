@@ -208,6 +208,15 @@ namespace AUI.FS
 					I.PackageResolveInternal,
 					I.ResolveInternalInDirectories,
 					I.ResolveInternalInFiles,
+
+					I.IsPinned,
+					I.Unpin,
+					I.Pin,
+					I.PinSave,
+					I.FirePinsChanged,
+					I.FireObjectChanged,
+					I.FTFindItem,
+					I.FTRefreshOnObjectchanged,
 				};
 			}
 		}
@@ -257,7 +266,16 @@ namespace AUI.FS
 		public static InstrumentationType ResolveInternalInDirectories = new InstrumentationType("ResolveInternalInDirectories", 35);
 		public static InstrumentationType ResolveInternalInFiles = new InstrumentationType("ResolveInternalInFiles", 36);
 
-		public const int Count = 37;
+		public static InstrumentationType IsPinned = new InstrumentationType("IsPinned", 37);
+		public static InstrumentationType Unpin = new InstrumentationType("Unpin", 38);
+		public static InstrumentationType Pin = new InstrumentationType("Pin", 39);
+		public static InstrumentationType PinSave = new InstrumentationType("PinSave", 40);
+		public static InstrumentationType FirePinsChanged = new InstrumentationType("FirePinsChanged", 41);
+		public static InstrumentationType FireObjectChanged = new InstrumentationType("FireObjectChanged", 42);
+		public static InstrumentationType FTFindItem = new InstrumentationType("FTFindItem", 43);
+		public static InstrumentationType FTRefreshOnObjectchanged = new InstrumentationType("FTRefreshOnObjectchanged", 44);
+
+		public const int Count = 45;
 	}
 
 
@@ -275,7 +293,8 @@ namespace AUI.FS
 			1,
 				2, 2, 2, 2,
 			1,
-				2, 2, 2
+				2, 2, 2,
+			1, 1, 1, 1, 1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

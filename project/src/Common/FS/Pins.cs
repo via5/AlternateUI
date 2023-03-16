@@ -66,25 +66,29 @@ namespace AUI.FS
 
 		public void Save()
 		{
-			var j = new JSONClass();
-
-			var pins = new JSONArray();
-
-			foreach (var p in pinned_)
+			Instrumentation.Start(I.PinSave);
 			{
-				var po = new JSONClass();
+				var j = new JSONClass();
 
-				po.Add("path", p.VirtualPath);
+				var pins = new JSONArray();
 
-				if (p.HasCustomDisplayName)
-					po.Add("display", p.DisplayName);
+				foreach (var p in pinned_)
+				{
+					var po = new JSONClass();
 
-				pins.Add(po);
+					po.Add("path", p.VirtualPath);
+
+					if (p.HasCustomDisplayName)
+						po.Add("display", p.DisplayName);
+
+					pins.Add(po);
+				}
+
+				j["pins"] = pins;
+
+				SuperController.singleton.SaveJSON(j, GetConfigFile());
 			}
-
-			j["pins"] = pins;
-
-			SuperController.singleton.SaveJSON(j, GetConfigFile());
+			Instrumentation.End();
 		}
 
 		public void Pin(string s, string display = null)
@@ -103,35 +107,52 @@ namespace AUI.FS
 
 		public void Pin(IFilesystemContainer o, string display = null)
 		{
-			if (!IsPinned(o))
+			Instrumentation.Start(I.Pin);
 			{
-				pinned_.Add(new PinnedObject(fs_, this, o, display));
-				Changed();
+				if (!IsPinned(o))
+				{
+					pinned_.Add(new PinnedObject(fs_, this, o, display));
+					Changed();
+				}
 			}
+			Instrumentation.End();
 		}
 
 		public void Unpin(IFilesystemContainer c)
 		{
-			for (int i = 0; i < pinned_.Count; ++i)
+			Instrumentation.Start(I.Unpin);
 			{
-				if (pinned_[i].IsSameObject(c) || pinned_[i] == c)
+				for (int i = 0; i < pinned_.Count; ++i)
 				{
-					pinned_.RemoveAt(i);
-					Changed();
-					break;
+					if (pinned_[i].IsSameObject(c) || pinned_[i] == c)
+					{
+						pinned_.RemoveAt(i);
+						Changed();
+						break;
+					}
 				}
 			}
+			Instrumentation.End();
 		}
 
 		public bool IsPinned(IFilesystemContainer o)
 		{
-			foreach (var p in pinned_)
-			{
-				if (o.IsSameObject(p) || p == o)
-					return true;
-			}
+			bool b = false;
 
-			return false;
+			Instrumentation.Start(I.IsPinned);
+			{
+				foreach (var p in pinned_)
+				{
+					if (o.IsSameObject(p) || p == o)
+					{
+						b = true;
+						break;
+					}
+				}
+			}
+			Instrumentation.End();
+
+			return b;
 		}
 
 		private void Changed()

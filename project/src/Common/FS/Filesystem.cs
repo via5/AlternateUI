@@ -105,12 +105,20 @@ namespace AUI.FS
 
 		public void FireObjectChanged(IFilesystemObject o)
 		{
-			ObjectChanged?.Invoke(o);
+			Instrumentation.Start(I.FireObjectChanged);
+			{
+				ObjectChanged?.Invoke(o);
+			}
+			Instrumentation.End();
 		}
 
 		public void FirePinsChanged()
 		{
-			PinsChanged?.Invoke();
+			Instrumentation.Start(I.FirePinsChanged);
+			{
+				PinsChanged?.Invoke();
+			}
+			Instrumentation.End();
 		}
 
 		public bool IsSameObject(IFilesystemObject a, IFilesystemObject b)
