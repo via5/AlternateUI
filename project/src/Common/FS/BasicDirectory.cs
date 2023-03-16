@@ -1,11 +1,9 @@
-﻿using MVR.FileManagementSecure;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	abstract class BasicFilesystemContainer : BasicFilesystemObject, IFilesystemContainer
 	{
 		private readonly string name_;
@@ -35,7 +33,13 @@ namespace AUI.FS
 
 		public bool HasDirectories(Context cx)
 		{
-			return (GetDirectories(cx).Count > 0);
+			if (!StaleLocalDirectoriesCache(cx))
+			{
+				var dirs = cache_.GetLocalDirectories().Last;
+				return (dirs != null && dirs.Count > 0);
+			}
+
+			return HasDirectoriesInternal(cx);
 		}
 
 
@@ -198,6 +202,20 @@ namespace AUI.FS
 		public override IFilesystemObject Resolve(
 			Context cx, string path, int flags = Filesystem.ResolveDefault)
 		{
+			IFilesystemObject o;
+
+			Instrumentation.Start(I.Resolve);
+			{
+				o = ResolveImpl(cx, path, flags);
+			}
+			Instrumentation.End();
+
+			return o;
+		}
+
+		private IFilesystemObject ResolveImpl(
+			Context cx, string path, int flags = Filesystem.ResolveDefault)
+		{
 			try
 			{
 				if (path == null)
@@ -205,6 +223,13 @@ namespace AUI.FS
 
 				if (path == "")
 					return this;
+
+				if (cache_ != null)
+				{
+					IFilesystemObject o;
+					if (cache_.Resolve(path, out o))
+						return o;
+				}
 
 				var cs = new PathComponents(path);
 				ResolveDebug debug = ResolveDebug.Null;
@@ -223,10 +248,11 @@ namespace AUI.FS
 				if (debug.Enabled)
 					debug.Info(null, "");
 
-				if (r.partial)
-					return null;
-				else
-					return r.o;
+				if (cache_ == null)
+					cache_ = new Cache();
+
+				cache_.AddResolve(path, r.o);
+				return r.o;
 			}
 			catch (Exception e)
 			{
@@ -266,26 +292,55 @@ namespace AUI.FS
 			return ResolveInternal2(cx, cs.NextCopy(), flags, debug);
 		}
 
-		public virtual ResolveResult ResolveInternal2(
+		public ResolveResult ResolveInternal2(
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
-			if (GetDirectories(cx).Count == 0)
+			ResolveResult rr;
+
+
+			Instrumentation.Start(I.ResolveInternalInDirectories);
+			{
+				rr = ResolveInternalInDirectories(cx, cs, flags, debug);
+			}
+			Instrumentation.End();
+
+			if (rr.o != null)
+				return rr;
+
+
+			Instrumentation.Start(I.ResolveInternalInFiles);
+			{
+				rr = ResolveInternalInFiles(cx, cs, flags, debug);
+			}
+			Instrumentation.End();
+
+			if (rr.o != null)
+				return rr;
+
+
+			return ResolveResult.NotFound();
+		}
+
+		private ResolveResult ResolveInternalInDirectories(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
+			var dirs = GetDirectories(cx);
+
+			if (dirs.Count == 0)
 			{
 				if (debug.Enabled)
 					debug.Info(this, $"resolveinternal, has no dirs");
 			}
 
-			foreach (var d in GetDirectories(cx))
+			for (int i = 0; i < dirs.Count; ++i)
 			{
+				var d = dirs[i];
 				var r = d.ResolveInternal(cx, cs, flags, debug.Inc());
 
-				if (r.o == null || r.partial)
+				if (r.o == null)
 				{
 					if (debug.Enabled)
 						debug.Info(this, $"resolveinternal, not dir {d}, cs={cs}");
-
-					if (r.partial)
-						return r;
 				}
 				else
 				{
@@ -302,6 +357,12 @@ namespace AUI.FS
 			if (debug.Enabled)
 				debug.Info(this, $"resolveinternal, not a directory, cs={cs}");
 
+			return ResolveResult.NotFound();
+		}
+
+		public ResolveResult ResolveInternalInFiles(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
 			if (!Bits.IsSet(flags, Filesystem.ResolveDirsOnly))
 			{
 				if (!cs.NextIsLast)
@@ -340,45 +401,46 @@ namespace AUI.FS
 			return ResolveResult.NotFound();
 		}
 
+		protected abstract List<IFilesystemContainer> DoGetDirectories(Context cx);
 
-		protected virtual List<IFilesystemContainer> DoGetDirectories(Context cx)
+		protected virtual bool DoHasDirectories(Context cx)
 		{
-			var list = new List<IFilesystemContainer>();
-			var path = MakeRealPath();
+			bool b = false;
 
-			if (!string.IsNullOrEmpty(path))
+			Instrumentation.Start(I.BasicDoHasDirectories);
 			{
-				var dirs = GetDirectoriesFromFMS(path);
+				var path = MakeRealPath();
 
-				foreach (var dirPath in dirs)
+				if (!string.IsNullOrEmpty(path))
 				{
-					var vd = new VirtualDirectory(fs_, this, Path.Filename(dirPath));
-
-					vd.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
-
-					if (cx.MergePackages)
-						MergePackages(cx, vd);
-
-					list.Add(vd);
+					var dirs = Sys.GetDirectories(this, path);
+					b = (dirs != null && dirs.Length > 0);
 				}
 			}
+			Instrumentation.End();
 
-			return list;
+			return b;
 		}
 
 		protected virtual List<IFilesystemObject> DoGetFiles(Context cx)
 		{
 			var list = new List<IFilesystemObject>();
-			var path = MakeRealPath();
 
-			if (!string.IsNullOrEmpty(path))
+			Instrumentation.Start(I.BasicDoGetFiles);
 			{
-				foreach (var filePath in GetFilesFromFMS(path))
-					list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
+				var path = MakeRealPath();
+
+				if (!string.IsNullOrEmpty(path))
+				{
+					foreach (var filePath in Sys.GetFiles(this, path))
+						list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
+				}
 			}
+			Instrumentation.End();
 
 			return list;
 		}
+
 
 		protected virtual bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
@@ -390,37 +452,79 @@ namespace AUI.FS
 			return true;
 		}
 
+		private bool HasDirectoriesInternal(Context cx)
+		{
+			bool b;
+
+			Instrumentation.Start(I.CallingDoHasDirectories);
+			{
+				b = DoHasDirectories(cx);
+			}
+			Instrumentation.End();
+
+			return b;
+		}
+
 		private List<IFilesystemContainer> GetDirectoriesInternal(Context cx)
 		{
-			var dirs = DoGetDirectories(cx);
+			List<IFilesystemContainer> dirs;
 
-			if (dirs != null)
+			Instrumentation.Start(I.CallingDoGetDirectories);
 			{
-				List<IFilesystemContainer> checkedDirs = null;
+				dirs = DoGetDirectories(cx);
+			}
+			Instrumentation.End();
 
-				for (int i = 0; i < dirs.Count; ++i)
+			Instrumentation.Start(I.CheckDirectories);
+			{
+				if (dirs != null)
 				{
-					var d = dirs[i];
+					List<IFilesystemContainer> checkedDirs = null;
 
-					if (checkedDirs == null)
+					for (int i = 0; i < dirs.Count; ++i)
 					{
-						if (!IncludeDirectory(cx, d))
-						{
-							checkedDirs = new List<IFilesystemContainer>();
+						var d = dirs[i];
 
-							for (int j = 0; j < i; ++j)
-								checkedDirs.Add(dirs[j]);
+						if (checkedDirs == null)
+						{
+							if (!IncludeDirectory(cx, d))
+							{
+								checkedDirs = new List<IFilesystemContainer>();
+
+								for (int j = 0; j < i; ++j)
+									checkedDirs.Add(dirs[j]);
+							}
+						}
+						else
+						{
+							if (IncludeDirectory(cx, d))
+								checkedDirs.Add(d);
 						}
 					}
-					else
+
+					if (checkedDirs != null)
+						dirs = checkedDirs;
+				}
+			}
+			Instrumentation.End();
+
+
+			if (cx.MergePackages)
+			{
+				if (ParentPackage == null && !Virtual)
+				{
+					foreach (var d in dirs)
 					{
-						if (IncludeDirectory(cx, d))
-							checkedDirs.Add(d);
+						if (d.IsInternal)
+							continue;
+
+						if (d is VirtualDirectory)
+						{
+							var vd = d as VirtualDirectory;
+							MergePackages(cx, vd);
+						}
 					}
 				}
-
-				if (checkedDirs != null)
-					dirs = checkedDirs;
 			}
 
 			return dirs;
@@ -430,6 +534,7 @@ namespace AUI.FS
 		{
 			List<IFilesystemObject> files;
 
+			Instrumentation.Start(I.CallingDoGetFiles);
 			{
 				// unset recursive, this is just for this container
 				bool oldRecursive = cx.Recursive;
@@ -437,55 +542,89 @@ namespace AUI.FS
 				files = DoGetFiles(cx);
 				cx.Recursive = oldRecursive;
 			}
+			Instrumentation.End();
 
-			if (files != null)
+			Instrumentation.Start(I.CheckFiles);
 			{
-				List<IFilesystemObject> checkedFiles = null;
-
-				for (int i = 0; i < files.Count; ++i)
+				if (files != null)
 				{
-					var f = files[i];
+					List<IFilesystemObject> checkedFiles = null;
 
-					if (checkedFiles == null)
+					for (int i = 0; i < files.Count; ++i)
 					{
-						if (!IncludeFile(cx, f))
-						{
-							checkedFiles = new List<IFilesystemObject>();
+						var f = files[i];
 
-							for (int j = 0; j < i; ++j)
-								checkedFiles.Add(files[j]);
+						if (checkedFiles == null)
+						{
+							if (!IncludeFile(cx, f))
+							{
+								checkedFiles = new List<IFilesystemObject>();
+
+								for (int j = 0; j < i; ++j)
+									checkedFiles.Add(files[j]);
+							}
+						}
+						else
+						{
+							if (IncludeFile(cx, f))
+								checkedFiles.Add(f);
 						}
 					}
-					else
-					{
-						if (IncludeFile(cx, f))
-							checkedFiles.Add(f);
-					}
-				}
 
-				if (checkedFiles != null)
-					files = checkedFiles;
+					if (checkedFiles != null)
+						files = checkedFiles;
+				}
 			}
+			Instrumentation.End();
 
 			return files;
 		}
 
 		private void MergePackages(Context cx, VirtualDirectory vd)
 		{
-			var rootName = fs_.GetRoot().Name + "/";
-
-			var path = vd.VirtualPath;
-			if (path.StartsWith(rootName))
-				path = path.Substring(rootName.Length);
-
-			foreach (var p in fs_.GetPackagesRoot().GetPackages(cx))
+			Instrumentation.Start(I.MergePackages);
 			{
-				string rpath = p.Name + ":/" + path;
-				var o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);
-				var d = o as IFilesystemContainer;
-				if (d != null)
-					vd.Add(d);
+				string rootName, path;
+
+				Instrumentation.Start(I.MergePackagesStart);
+				{
+					rootName = fs_.GetRoot().Name + "/";
+
+					path = vd.VirtualPath;
+					if (path.StartsWith(rootName))
+						path = path.Substring(rootName.Length);
+				}
+				Instrumentation.End();
+
+				List<IFilesystemContainer> packages;
+
+				Instrumentation.Start(I.MergePackagesGetPackages);
+				{
+					packages = fs_.GetPackagesRoot().GetPackages(cx);
+				}
+				Instrumentation.End();
+
+				foreach (var p in packages)
+				{
+					string rpath = p.Name + ":/" + path;
+					IFilesystemObject o;
+
+					Instrumentation.Start(I.MergePackagesResolve);
+					{
+						o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);
+					}
+					Instrumentation.End();
+
+					Instrumentation.Start(I.MergePackagesAdd);
+					{
+						var d = o as IFilesystemContainer;
+						if (d != null)
+							vd.Add(d);
+					}
+					Instrumentation.End();
+				}
 			}
+			Instrumentation.End();
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)
@@ -570,34 +709,6 @@ namespace AUI.FS
 						listing.SetSorted(cx, sorted);
 					}
 				}
-			}
-		}
-
-		private string[] GetDirectoriesFromFMS(string path)
-		{
-			try
-			{
-				return FMS.GetDirectories(path);
-			}
-			catch (Exception e)
-			{
-				Log.Error($"{this}: get dirs bad directory '{path}'");
-				Log.ErrorST($"{e.Message}");
-				return new string[0];
-			}
-		}
-
-		private string[] GetFilesFromFMS(string path)
-		{
-			try
-			{
-				return FMS.GetFiles(path);
-			}
-			catch (Exception e)
-			{
-				Log.Error($"{this}: get files bad directory '{path}'");
-				Log.ErrorST($"{e.Message}");
-				return new string[0];
 			}
 		}
 	}

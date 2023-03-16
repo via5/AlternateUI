@@ -104,9 +104,11 @@
     <Compile Include="src\Common\FS\Filesystem.cs" />
     <Compile Include="src\Common\FS\Filter.cs" />
     <Compile Include="src\Common\FS\Flat.cs" />
+    <Compile Include="src\Common\FS\Instrumentation.cs" />
     <Compile Include="src\Common\FS\Interfaces.cs" />
     <Compile Include="src\Common\FS\Package.cs" />
     <Compile Include="src\Common\FS\Pins.cs" />
+    <Compile Include="src\Common\FS\Sys.cs" />
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />

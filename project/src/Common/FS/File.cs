@@ -1,10 +1,7 @@
-﻿using MVR.FileManagementSecure;
-using System;
+﻿using System;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	class FSFile : BasicFilesystemObject, IFile
 	{
 		private readonly string name_;
@@ -32,7 +29,7 @@ namespace AUI.FS
 			get
 			{
 				if (dateCreated_ == DateTime.MaxValue)
-					dateCreated_ = FMS.FileCreationTime(MakeRealPath());
+					dateCreated_ = Sys.FileCreationTime(this, MakeRealPath());
 
 				return dateCreated_;
 			}
@@ -43,7 +40,7 @@ namespace AUI.FS
 			get
 			{
 				if (dateModified_ == DateTime.MaxValue)
-					dateModified_ = FMS.FileLastWriteTime(MakeRealPath());
+					dateModified_ = Sys.FileLastWriteTime(this, MakeRealPath());
 
 				return dateModified_;
 			}
@@ -65,6 +62,11 @@ namespace AUI.FS
 		}
 
 		public override bool IsFlattened
+		{
+			get { return false; }
+		}
+
+		public override bool IsInternal
 		{
 			get { return false; }
 		}

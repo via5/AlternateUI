@@ -1,11 +1,8 @@
-﻿using MVR.FileManagementSecure;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	public struct Extension
 	{
 		public string name;
@@ -88,7 +85,7 @@ namespace AUI.FS
 
 		public bool DirectoryInPackage(string path)
 		{
-			return FMS.IsDirectoryInPackage(path);
+			return Sys.IsDirectoryInPackage(null, path);
 		}
 
 		public RootDirectory GetRoot()
@@ -137,7 +134,15 @@ namespace AUI.FS
 			Context cx, string path, int flags = ResolveDefault)
 				where T : class, IFilesystemObject
 		{
-			return root_.Resolve(cx, path, flags) as T;
+			T t;
+
+			Instrumentation.Start(I.Resolve);
+			{
+				t = root_.Resolve(cx, path, flags) as T;
+			}
+			Instrumentation.End();
+
+			return t;
 		}
 	}
 
@@ -225,6 +230,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -277,6 +287,11 @@ namespace AUI.FS
 
 			return dirs_;
 		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return true;
+		}
 	}
 
 
@@ -316,6 +331,7 @@ namespace AUI.FS
 		private readonly List<IFilesystemObject> emptyFiles_ = new List<IFilesystemObject>();
 		private readonly List<IFilesystemContainer> emptyDirs_ = new List<IFilesystemContainer>();
 
+		public Logger Log { get { return AlternateUI.Instance.Log; } }
 		public string Name { get { return ""; } }
 		public string VirtualPath { get { return ""; } }
 		public string DisplayName { get { return ""; } set { } }
@@ -331,6 +347,7 @@ namespace AUI.FS
 		public IPackage ParentPackage { get { return null; } }
 		public bool AlreadySorted { get { return false; } }
 		public bool UnderlyingCanChange { get { return false; } }
+		public bool IsInternal { get { return true; } }
 
 		public override string ToString()
 		{

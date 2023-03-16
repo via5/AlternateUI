@@ -690,6 +690,7 @@ namespace AUI.FileDialog
 		public FileDialog()
 		{
 			log_ = new Logger("filedialog");
+			//FS.Instrumentation.Instance.Enabled = true;
 		}
 
 
@@ -706,6 +707,42 @@ namespace AUI.FileDialog
 		public void Update(float s)
 		{
 			root_?.Update();
+
+			if (FS.Instrumentation.Instance.Enabled)
+				DumpInstrumentation(s);
+		}
+
+		private void DumpInstrumentation(float s)
+		{
+			FS.Instrumentation.Instance.UpdateTickers(s);
+
+			if (FS.Instrumentation.Instance.Updated)
+			{
+				Log.Info("times:");
+				int longestLabel = 0;
+
+				foreach (var i in FS.InstrumentationType.Values)
+				{
+					string label =
+						new string(' ', FS.Instrumentation.Instance.Depth(i)) +
+						FS.Instrumentation.Instance.Name(i) + " ";
+
+					longestLabel = Math.Max(longestLabel, label.Length);
+				}
+
+				foreach (var i in FS.InstrumentationType.Values)
+				{
+					string label =
+						new string(' ', FS.Instrumentation.Instance.Depth(i)) +
+						FS.Instrumentation.Instance.Name(i) + " ";
+
+					label = label.PadRight(longestLabel, ' ');
+
+					Log.Info($"{label}{FS.Instrumentation.Instance.Get(i)}");
+				}
+
+				FS.Instrumentation.Reset();
+			}
 		}
 
 
@@ -772,9 +809,17 @@ namespace AUI.FileDialog
 			tree_.Enable();
 
 			if (refreshDirs)
+			{
 				RefreshDirectories();
+			}
 			else
-				tree_.SetFlags(GetTreeFlags());
+			{
+				FS.Instrumentation.Start(FS.I.FDTreeSetFlags);
+				{
+					tree_.SetFlags(GetTreeFlags());
+				}
+				FS.Instrumentation.End();
+			}
 
 			SelectInitialDirectory(cwd ?? mode.DefaultDirectory);
 
@@ -866,7 +911,15 @@ namespace AUI.FileDialog
 			string vpath, bool expand = true,
 			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
-			if (!tree_.Select(vpath, expand, scrollTo))
+			bool b;
+
+			FS.Instrumentation.Start(FS.I.FDTreeSelect);
+			{
+				b = tree_.Select(vpath, expand, scrollTo);
+			}
+			FS.Instrumentation.End();
+
+			if (!b)
 			{
 				SetPath();
 				return false;
@@ -1065,16 +1118,35 @@ namespace AUI.FileDialog
 
 		public void RefreshFiles()
 		{
-			files_ = GetFiles();
-			filesPanel_.SetFiles(files_);
+			FS.Instrumentation.Start(FS.I.FDGetFiles);
+			{
+				files_ = GetFiles();
+			}
+			FS.Instrumentation.End();
+
+			FS.Instrumentation.Start(FS.I.FDSetFiles);
+			{
+				filesPanel_.SetFiles(files_);
+			}
+			FS.Instrumentation.End();
+
 			SetPath();
 			UpdateActionButton();
 		}
 
 		public void RefreshDirectories()
 		{
-			tree_.SetFlags(GetTreeFlags());
-			tree_.Refresh();
+			FS.Instrumentation.Start(FS.I.FDTreeSetFlags);
+			{
+				tree_.SetFlags(GetTreeFlags());
+			}
+			FS.Instrumentation.End();
+
+			FS.Instrumentation.Start(FS.I.FDTreeRefresh);
+			{
+				tree_.Refresh();
+			}
+			FS.Instrumentation.End();
 
 			var s = tree_.Selected as FS.IFilesystemContainer;
 			if (s != null)
@@ -1227,12 +1299,20 @@ namespace AUI.FileDialog
 
 		private void UpdateActionButton()
 		{
-			buttonsPanel_.SetActionButton(mode_.CanExecute(this));
+			FS.Instrumentation.Start(FS.I.FDUpdateButton);
+			{
+				buttonsPanel_.SetActionButton(mode_.CanExecute(this));
+			}
+			FS.Instrumentation.End();
 		}
 
 		private void SetPath()
 		{
-			addressBar_.Path = dir_?.VirtualPath ?? "";
+			FS.Instrumentation.Start(FS.I.FDSetPath);
+			{
+				addressBar_.Path = dir_?.VirtualPath ?? "";
+			}
+			FS.Instrumentation.End();
 		}
 
 		private void SelectFromFilename()

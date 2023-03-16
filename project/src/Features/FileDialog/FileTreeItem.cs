@@ -113,7 +113,7 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			var dirs = GetSubDirectories(o);
+			var dirs = GetDirectories(o);
 
 			{
 				var cs = GetInternalChildren();
@@ -173,7 +173,7 @@ namespace AUI.FileDialog
 			if (!checkedHasChildren_)
 			{
 				var d = GetFSObject();
-				hasChildren_ = (d != null && !d.IsFlattened && HasSubDirectories(d));
+				hasChildren_ = (d != null && !d.IsFlattened && HasDirectories(d));
 				checkedHasChildren_ = true;
 			}
 
@@ -186,32 +186,56 @@ namespace AUI.FileDialog
 
 			if (d != null && !d.IsFlattened)
 			{
-				foreach (var c in GetSubDirectories(d))
+				foreach (var c in GetDirectories(d))
 					Add(CreateItem(c));
 			}
 		}
 
 		private FileTreeItem CreateItem(FS.IFilesystemContainer o)
 		{
-			if (o.UnderlyingCanChange)
+			FileTreeItem item;
+
+			FS.Instrumentation.Start(FS.I.FTICreateItem);
 			{
-				return new FileTreeItem(
-					tree_, o.VirtualPath, o.DisplayName, o.Icon);
+				if (o.UnderlyingCanChange)
+				{
+					item = new FileTreeItem(
+						tree_, o.VirtualPath, o.DisplayName, o.Icon);
+				}
+				else
+				{
+					item = new FileTreeItem(tree_, o);
+				}
 			}
-			else
-			{
-				return new FileTreeItem(tree_, o);
-			}
+			FS.Instrumentation.End();
+
+			return item;
 		}
 
-		private List<FS.IFilesystemContainer> GetSubDirectories(FS.IFilesystemContainer o)
+		private List<FS.IFilesystemContainer> GetDirectories(FS.IFilesystemContainer o)
 		{
-			return o.GetDirectories(CreateContext());
+			List<FS.IFilesystemContainer> list;
+
+			FS.Instrumentation.Start(FS.I.FTIGetDirectories);
+			{
+				list = o.GetDirectories(CreateContext());
+			}
+			FS.Instrumentation.End();
+
+			return list;
 		}
 
-		private bool HasSubDirectories(FS.IFilesystemContainer o)
+		private bool HasDirectories(FS.IFilesystemContainer o)
 		{
-			return o.HasDirectories(CreateContext());
+			bool b = false;
+
+			FS.Instrumentation.Start(FS.I.FTIHasDirectories);
+			{
+				b = o.HasDirectories(CreateContext());
+			}
+			FS.Instrumentation.End();
+
+			return b;
 		}
 
 		private FS.Context CreateContext()

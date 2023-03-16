@@ -4,8 +4,6 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
 		class PackagesInfo
@@ -28,30 +26,34 @@ namespace AUI.FS
 
 			public void Refresh(bool showHiddenFolders)
 			{
-				if (packages == null)
-					packages = new List<IFilesystemContainer>();
-				else
-					packages.Clear();
-
-				if (shortCuts == null)
-					shortCuts = new Dictionary<string, ShortCut>();
-				else
-					shortCuts.Clear();
-
-				foreach (var sc in FMS.GetShortCutsForDirectory(root))
+				Instrumentation.Start(I.RefreshPackages);
 				{
-					if (string.IsNullOrEmpty(sc.package))
-						continue;
+					if (packages == null)
+						packages = new List<IFilesystemContainer>();
+					else
+						packages.Clear();
 
-					if (!string.IsNullOrEmpty(sc.packageFilter))
-						continue;
+					if (shortCuts == null)
+						shortCuts = new Dictionary<string, ShortCut>();
+					else
+						shortCuts.Clear();
 
-					if (sc.path == "AddonPackages")
-						continue;
+					foreach (var sc in Sys.GetShortCutsForDirectory(pr, root))
+					{
+						if (string.IsNullOrEmpty(sc.package))
+							continue;
 
-					packages.Add(new Package(pr.fs_, pr, sc.package, root, showHiddenFolders));
-					shortCuts.Add(sc.package, sc);
+						if (!string.IsNullOrEmpty(sc.packageFilter))
+							continue;
+
+						if (sc.path == "AddonPackages")
+							continue;
+
+						packages.Add(new Package(pr.fs_, pr, sc.package, root, showHiddenFolders));
+						shortCuts.Add(sc.package, sc);
+					}
 				}
+				Instrumentation.End();
 			}
 		}
 
@@ -104,6 +106,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -131,6 +138,12 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return GetPackages(cx);
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			var ps = GetPackages(cx);
+			return (ps != null && ps.Count > 0);
 		}
 
 		private PackagesInfo GetPackagesInfo(
@@ -188,6 +201,11 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return children_;
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return (children_ != null && children_.Count > 0);
 		}
 	}
 
@@ -315,12 +333,12 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return FMS.FileCreationTime(ShortCut.path); }
+			get { return Sys.FileCreationTime(this, ShortCut.path); }
 		}
 
 		public override DateTime DateModified
 		{
-			get { return FMS.FileLastWriteTime(ShortCut.path); }
+			get { return Sys.FileLastWriteTime(this, ShortCut.path); }
 		}
 
 		public override VUI.Icon Icon
@@ -348,6 +366,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			var path = ShortCut.path;
@@ -362,6 +385,20 @@ namespace AUI.FS
 		public override ResolveResult ResolveInternal(
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
+			ResolveResult rr;
+
+			Instrumentation.Start(I.PackageResolveInternal);
+			{
+				rr = DoResolveInternal(cx, cs, flags, debug);
+			}
+			Instrumentation.End();
+
+			return rr;
+		}
+
+		private ResolveResult DoResolveInternal(
+			Context cx, PathComponents cs, int flags, ResolveDebug debug)
+		{
 			if (debug.Enabled)
 				debug.Info(this, $"resolveinternal cs={cs} flags={flags}");
 
@@ -369,24 +406,15 @@ namespace AUI.FS
 
 			if (cs.Done)
 			{
-				debug.Info(this, $"done, cs={cs}");
+				if (debug.Enabled)
+					debug.Info(this, $"done, cs={cs}");
+
 				return ResolveResult.NotFound();
 			}
 
-			var sc = ShortCut;
-			if (sc == null)
+			if (sc_ == null)
 			{
 				Log.Error($"{this} ResolveInternal: null shortcut");
-				return ResolveResult.NotFound();
-			}
-
-			var col = sc.path.IndexOf(":");
-			if (col == -1)
-			{
-				Log.Error(
-					$"{this} ResolveInternal: shortcut path has no " +
-					$"colon '{sc.path}'");
-
 				return ResolveResult.NotFound();
 			}
 
@@ -394,10 +422,10 @@ namespace AUI.FS
 			if (pn.EndsWith(":"))
 				pn = pn.Substring(0, pn.Length - 1);
 
-			if (pn != sc.package)
+			if (pn != sc_.package)
 			{
 				if (debug.Enabled)
-					debug.Info(this, $"resolve bad, {pn}!={sc.package}");
+					debug.Info(this, $"resolve bad, {pn}!={sc_.package}");
 
 				return ResolveResult.NotFound();
 			}
@@ -427,9 +455,14 @@ namespace AUI.FS
 			Get();
 
 			if (rootDir_ == null)
-				return base.DoGetDirectories(cx);
+				return new List<IFilesystemContainer>();
 			else
 				return new List<IFilesystemContainer> { rootDir_ };
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return (rootDir_ != null);
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)

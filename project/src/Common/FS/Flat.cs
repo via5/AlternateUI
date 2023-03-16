@@ -50,6 +50,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -58,6 +63,11 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return fs_.GetRoot().GetDirectoriesForFlatten();
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return false;
 		}
 	}
 
@@ -114,6 +124,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -122,6 +137,11 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return fs_.GetPackagesRoot().GetPackages(cx);
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return false;
 		}
 	}
 
@@ -174,6 +194,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -182,6 +207,11 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return fs_.GetRoot().PinnedRoot.Pinned;
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return false;
 		}
 	}
 }

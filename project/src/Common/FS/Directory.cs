@@ -1,14 +1,12 @@
-﻿using MVR.FileManagementSecure;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	class VirtualDirectory : BasicFilesystemContainer, IDirectory
 	{
-		private List<IFilesystemContainer> dirs_ = null;
+		private HashSet<IFilesystemContainer> dirs_ = null;
 		private List<IFilesystemContainer> sortedDirs_ = null;
 		private List<string> tooltip_ = null;
 
@@ -32,16 +30,20 @@ namespace AUI.FS
 			return $"VirtualDirectory({VirtualPath})";
 		}
 
+		private IFilesystemContainer SingleContent
+		{
+			get
+			{
+				if (dirs_ == null || dirs_.Count != 1)
+					return null;
+				else
+					return dirs_.First();
+			}
+		}
+
 		protected override string GetDisplayName()
 		{
-			string s = "";
-
-			if (dirs_ == null || dirs_.Count == 0)
-				s += Name;
-			else
-				s += dirs_[0].Name;
-
-			return s;
+			return SingleContent?.Name ?? Name;
 		}
 
 		public override string Tooltip
@@ -146,7 +148,7 @@ namespace AUI.FS
 		public void Add(IFilesystemContainer c)
 		{
 			if (dirs_ == null)
-				dirs_ = new List<IFilesystemContainer>();
+				dirs_ = new HashSet<IFilesystemContainer>();
 
 			if (!dirs_.Contains(c))
 			{
@@ -158,13 +160,13 @@ namespace AUI.FS
 		public void AddRange(IEnumerable<IFilesystemContainer> c)
 		{
 			if (dirs_ == null)
-				dirs_ = new List<IFilesystemContainer>();
+				dirs_ = new HashSet<IFilesystemContainer>();
 
-			dirs_.AddRange(c);
+			dirs_.UnionWith(c);
 			sortedDirs_ = null;
 		}
 
-		public List<IFilesystemContainer> Content
+		public HashSet<IFilesystemContainer> Content
 		{
 			get { return dirs_; }
 		}
@@ -173,10 +175,11 @@ namespace AUI.FS
 		{
 			get
 			{
-				if (dirs_ != null && dirs_.Count == 1)
-					return dirs_[0].DateCreated;
-
-				return DateTime.MaxValue;
+				var c = SingleContent;
+				if (c == null)
+					return DateTime.MaxValue;
+				else
+					return c.DateCreated;
 			}
 		}
 
@@ -184,10 +187,11 @@ namespace AUI.FS
 		{
 			get
 			{
-				if (dirs_ != null && dirs_.Count == 1)
-					return dirs_[0].DateModified;
-
-				return DateTime.MaxValue;
+				var c = SingleContent;
+				if (c == null)
+					return DateTime.MaxValue;
+				else
+					return c.DateModified;
 			}
 		}
 
@@ -227,6 +231,23 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsInternal
+		{
+			get
+			{
+				if (dirs_ != null)
+				{
+					foreach (var d in dirs_)
+					{
+						if (!d.IsInternal)
+							return false;
+					}
+				}
+
+				return true;
+			}
+		}
+
 
 		public override string MakeRealPath()
 		{
@@ -237,11 +258,11 @@ namespace AUI.FS
 		{
 			if (dirs_ != null)
 			{
-				for (int i = 0; i < dirs_.Count; ++i)
+				foreach (var d in dirs_)
 				{
-					if (!dirs_[i].Virtual && dirs_[i].ParentPackage == null)
+					if (!d.Virtual && d.ParentPackage == null)
 					{
-						var rp = dirs_[i].DeVirtualize();
+						var rp = d.DeVirtualize();
 						if (rp != "")
 							return rp;
 					}
@@ -261,7 +282,7 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			var list = new List<IFilesystemContainer>();
+			var list = new HashSet<IFilesystemContainer>();
 
 			if (dirs_ != null)
 			{
@@ -274,7 +295,7 @@ namespace AUI.FS
 				{
 					var ds = d.GetDirectories(cx2);
 					if (ds != null)
-						list.AddRange(ds);
+						list.UnionWith(ds);
 				}
 			}
 
@@ -286,6 +307,25 @@ namespace AUI.FS
 				list2.Add(ss.Value);
 
 			return list2;
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			if (dirs_ == null)
+				return false;
+
+			// see DoGetFiles() below
+			var cx2 = new Context(
+				"", null, cx.PackagesRoot,
+				Context.NoSort, Context.NoSortDirection, cx.Flags);
+
+			foreach (var d in dirs_)
+			{
+				if (d.HasDirectories(cx2))
+					return true;
+			}
+
+			return false;
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
@@ -312,7 +352,7 @@ namespace AUI.FS
 		}
 
 		private void Merge(
-			List<IFilesystemContainer> list,
+			HashSet<IFilesystemContainer> list,
 			Dictionary<string, IFilesystemContainer> map)
 		{
 			foreach (var d in list)
@@ -363,9 +403,9 @@ namespace AUI.FS
 		{
 			if (dirs_ != null)
 			{
-				for (int i = 0; i < dirs_.Count; ++i)
+				foreach (var d in dirs_)
 				{
-					if (dirs_[i].ParentPackage == null)
+					if (d.ParentPackage == null)
 						return true;
 				}
 			}
@@ -394,10 +434,8 @@ namespace AUI.FS
 		{
 			get
 			{
-#if VAM_GT_1_22
 				if (dateCreated_ == DateTime.MaxValue)
-					dateCreated_ = FMS.DirectoryCreationTime(MakeRealPath());
-#endif
+					dateCreated_ = Sys.DirectoryCreationTime(this, MakeRealPath());
 
 				return DateTime.MaxValue;
 			}
@@ -407,10 +445,8 @@ namespace AUI.FS
 		{
 			get
 			{
-#if VAM_GT_1_22
 				if (dateModified_ == DateTime.MaxValue)
-					dateModified_ = FMS.DirectoryLastWriteTime(MakeRealPath());
-#endif
+					dateModified_ = Sys.DirectoryLastWriteTime(this, MakeRealPath());
 
 				return DateTime.MaxValue;
 			}
@@ -441,6 +477,11 @@ namespace AUI.FS
 			get { return false; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			string s = Name + "/";
@@ -449,6 +490,33 @@ namespace AUI.FS
 				s = Parent.MakeRealPath() + s;
 
 			return s;
+		}
+
+		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
+		{
+			var list = new List<IFilesystemContainer>();
+
+			Instrumentation.Start(I.BasicDoGetDirectories);
+			{
+				var path = MakeRealPath();
+
+				if (!string.IsNullOrEmpty(path))
+				{
+					var dirs = Sys.GetDirectories(this, path);
+
+					foreach (var dirPath in dirs)
+					{
+						var vd = new VirtualDirectory(fs_, this, Path.Filename(dirPath));
+
+						vd.Add(new FSDirectory(fs_, this, Path.Filename(dirPath)));
+
+						list.Add(vd);
+					}
+				}
+			}
+			Instrumentation.End();
+
+			return list;
 		}
 	}
 }

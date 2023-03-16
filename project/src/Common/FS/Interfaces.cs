@@ -211,6 +211,7 @@ namespace AUI.FS
 	{
 		IFilesystemContainer Parent { get; }
 
+		Logger Log { get; }
 		string Name { get; }
 		string VirtualPath { get; }
 		string DisplayName { get; set; }
@@ -226,6 +227,7 @@ namespace AUI.FS
 		bool IsFlattened { get; }
 		bool IsRedundant { get; }
 		bool UnderlyingCanChange { get; }
+		bool IsInternal { get; }
 		IPackage ParentPackage { get; }
 
 		string MakeRealPath();
@@ -301,12 +303,10 @@ namespace AUI.FS
 	struct ResolveResult
 	{
 		public IFilesystemObject o;
-		public bool partial;
 
 		private ResolveResult(IFilesystemObject o, bool partial)
 		{
 			this.o = o;
-			this.partial = partial;
 		}
 
 		public static ResolveResult NotFound()
@@ -317,11 +317,6 @@ namespace AUI.FS
 		public static ResolveResult Found(IFilesystemObject o)
 		{
 			return new ResolveResult(o, false);
-		}
-
-		public static ResolveResult FoundPartial(IFilesystemObject o)
-		{
-			return new ResolveResult(o, true);
 		}
 	}
 

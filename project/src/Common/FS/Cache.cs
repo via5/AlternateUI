@@ -70,16 +70,43 @@ namespace AUI.FS
 
 	class Cache
 	{
-		private CachedListing<IFilesystemContainer> localDirs_;
-		private CachedListing<IFilesystemObject> localFiles_;
-		private CachedListing<IFilesystemObject> recursiveFiles_;
+		private CachedListing<IFilesystemContainer> localDirs_ = null;
+		private CachedListing<IFilesystemObject> localFiles_ = null;
+		private CachedListing<IFilesystemObject> recursiveFiles_ = null;
+		private Dictionary<string, IFilesystemObject> resolved_ = null;
 
 		public void Clear()
 		{
 			localDirs_?.Clear();
 			localFiles_?.Clear();
 			recursiveFiles_?.Clear();
+			resolved_?.Clear();
 		}
+
+
+		public bool Resolve(string path, out IFilesystemObject o)
+		{
+			if (resolved_ == null)
+			{
+				o = null;
+				return false;
+			}
+
+			return resolved_.TryGetValue(path, out o);
+		}
+
+		public void AddResolve(string path, IFilesystemObject o)
+		{
+			if (resolved_ == null)
+				resolved_ = new Dictionary<string, IFilesystemObject>();
+
+			IFilesystemObject oo;
+			if (resolved_.TryGetValue(path, out oo))
+				AlternateUI.Assert(oo == o);
+			else
+				resolved_.Add(path, o);
+		}
+
 
 		public bool StaleLocalDirectoriesCache(Filesystem fs, Context cx)
 		{
@@ -105,6 +132,7 @@ namespace AUI.FS
 				localDirs_ = new CachedListing<IFilesystemContainer>();
 
 			localDirs_.SetRaw(fs, cx, list);
+			resolved_?.Clear();
 		}
 
 		public Listing<IFilesystemContainer> GetLocalDirectories()
@@ -145,6 +173,7 @@ namespace AUI.FS
 				localFiles_ = new CachedListing<IFilesystemObject>();
 
 			localFiles_.SetRaw(fs, cx, list);
+			resolved_?.Clear();
 		}
 
 		public Listing<IFilesystemObject> GetLocalFilesCache()
@@ -182,6 +211,7 @@ namespace AUI.FS
 				recursiveFiles_ = new CachedListing<IFilesystemObject>();
 
 			recursiveFiles_.SetRaw(fs, cx, null);
+			resolved_?.Clear();
 		}
 
 		public Listing<IFilesystemObject> GetRecursiveFilesCache()

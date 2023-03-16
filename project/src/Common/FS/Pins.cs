@@ -1,12 +1,9 @@
-﻿using MVR.FileManagementSecure;
-using SimpleJSON;
+﻿using SimpleJSON;
 using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
 	class PinnedRoot : BasicFilesystemContainer
 	{
 		private readonly List<IFilesystemContainer> pinned_ =
@@ -40,7 +37,7 @@ namespace AUI.FS
 
 		public void Load()
 		{
-			if (FMS.FileExists(GetConfigFile()))
+			if (Sys.FileExists(this, GetConfigFile()))
 			{
 				var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
 				var pins = j?["pins"]?.AsArray;
@@ -180,6 +177,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsInternal
+		{
+			get { return true; }
+		}
+
 		public override VUI.Icon Icon
 		{
 			get { return Icons.Get(Icons.UnpinnedDark); }
@@ -193,6 +195,11 @@ namespace AUI.FS
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			return pinned_;
+		}
+
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return (pinned_ != null && pinned_.Count > 0);
 		}
 	}
 
@@ -233,6 +240,7 @@ namespace AUI.FS
 		public override bool IsFlattened { get { return c_.IsFlattened; } }
 		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
+		public override bool IsInternal { get { return c_.IsInternal; } }
 
 		public override bool UnderlyingCanChange
 		{

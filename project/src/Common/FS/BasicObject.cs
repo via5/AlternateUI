@@ -80,6 +80,7 @@ namespace AUI.FS
 		public abstract bool Virtual { get; }
 		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
+		public abstract bool IsInternal { get; }
 
 		public virtual bool IsRedundant
 		{
