@@ -156,22 +156,22 @@ namespace AUI.FileDialog
 			if (item == null)
 				return;
 
-			Instrumentation.Start(I.FTRefreshOnObjectchanged);
+			FS.Instrumentation.Start(FS.I.FTRefreshOnObjectchanged);
 			{
 				item.Refresh(false);
 			}
-			Instrumentation.End();
+			FS.Instrumentation.End();
 		}
 
 		private FileTreeItem FindItem(FS.IFilesystemObject o)
 		{
 			FileTreeItem item;
 
-			Instrumentation.Start(I.FTFindItem);
+			FS.Instrumentation.Start(FS.I.FTFindItem);
 			{
 				item = FindItem(tree_.RootItem, o);
 			}
-			Instrumentation.End();
+			FS.Instrumentation.End();
 
 			return item;
 		}

@@ -821,7 +821,7 @@ namespace AUI.FileDialog
 				FS.Instrumentation.End();
 			}
 
-			SelectInitialDirectory(cwd ?? mode.DefaultDirectory);
+			SelectInitialDirectory(cwd);
 
 			if (dir_ == null)
 			{

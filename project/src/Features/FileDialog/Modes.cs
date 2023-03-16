@@ -543,7 +543,7 @@ namespace AUI.FileDialog
 			if (openScene_ == null)
 			{
 				openScene_ = new OpenMode(
-					"scene", "Open scene",
+					"openScene", "Open scene",
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
 					true, true, true, false, false,
@@ -558,7 +558,7 @@ namespace AUI.FileDialog
 			if (saveScene_ == null)
 			{
 				saveScene_ = new SaveMode(
-					"scene", "Save scene",
+					"saveScene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
 					"Saves/scene", "VaM/Saves/scene",
 					false, false, false, false, false,
