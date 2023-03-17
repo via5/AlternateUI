@@ -800,6 +800,11 @@ namespace AUI.DynamicItemsUI
 			get { return parent_; }
 		}
 
+		public void ForwardPageWheel(VUI.WheelEvent e)
+		{
+			pages_.Slider.HandleWheelInternal(e);
+		}
+
 		public void Set(int current, int count)
 		{
 			try

@@ -37,7 +37,7 @@ namespace AUI.DynamicItemsUI
 		private int disableTries_ = 0;
 
 		private int page_ = 0;
-		private readonly DynamicItemsUI.Filter filter_;
+		private readonly Filter filter_;
 		private DAZDynamicItem[] items_ = new DAZDynamicItem[0];
 
 
@@ -47,6 +47,7 @@ namespace AUI.DynamicItemsUI
 			name_ = name;
 			uiMod_ = uiMod;
 			filter_ = new Filter(this);
+
 			LoadOptions();
 		}
 
@@ -358,10 +359,17 @@ namespace AUI.DynamicItemsUI
 			controls_ = new Controls(this);
 			grid_ = new VUI.Panel();
 
+			grid_.Events.Wheel += OnWheel;
+
 			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
 			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
 
 			GridChanged(false);
+		}
+
+		private void OnWheel(VUI.WheelEvent e)
+		{
+			controls_.ForwardPageWheel(e);
 		}
 
 		private void GridChanged(bool notify = true)
