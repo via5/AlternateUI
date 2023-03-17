@@ -41,16 +41,18 @@ namespace AUI.DynamicItemsUI
 
 			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
 			thumbnail_ = right.Add(new VUI.Image());
+			thumbnail_.Tooltip.TextFunc = () => parent.MakeTooltip(item_);
+			thumbnail_.Tooltip.FontSize = parent.FontSize;
 
 			Add(center, VUI.BorderLayout.Center);
 			Add(right, VUI.BorderLayout.Right);
 
-			author_.FontSize = 24;
+			author_.FontSize = parent.FontSize;
 			author_.WrapMode = VUI.Label.ClipEllipsis;
 			author_.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignTop;
 			author_.AutoTooltip = true;
 
-			name_.FontSize = 24;
+			name_.FontSize = parent.FontSize;
 			name_.WrapMode = VUI.Label.ClipEllipsis;
 			name_.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignTop;
 			name_.AutoTooltip = true;
@@ -160,7 +162,7 @@ namespace AUI.DynamicItemsUI
 
 			if (b)
 			{
-				BackgroundColor = new Color(0.12f, 0.12f, 0.20f);
+				BackgroundColor = new Color(0.2f, 0.2f, 0.5f);
 				BorderColor = new Color(1, 1, 1);
 			}
 			else

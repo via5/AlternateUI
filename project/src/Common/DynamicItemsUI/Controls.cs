@@ -500,6 +500,8 @@ namespace AUI.DynamicItemsUI
 
 				active_ = left.Add(new VUI.CheckBox("", (b) => ToggleActive(), false, "Active"));
 				thumbnail_ = left.Add(new VUI.Image());
+				thumbnail_.Tooltip.TextFunc = () => c_.AtomUI.MakeTooltip(item_);
+				thumbnail_.Tooltip.FontSize = c.AtomUI.FontSize;
 
 				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(
 					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
@@ -512,6 +514,7 @@ namespace AUI.DynamicItemsUI
 				name_.MaximumSize = new VUI.Size(300, DontCare);
 				name_.WrapMode = VUI.Label.ClipEllipsis;
 				name_.AutoTooltip = true;
+				name_.FontSize = c.AtomUI.FontSize;
 
 				Layout = new VUI.BorderLayout(10);
 				Padding = new VUI.Insets(10, 5, 10, 5);
@@ -636,7 +639,7 @@ namespace AUI.DynamicItemsUI
 			p.Add(buttons_);
 			p.Add(itemsPanel_);
 
-			panel_.Panel.Padding = new VUI.Insets(10);
+			panel_.Panel.Padding = new VUI.Insets(5);
 			panel_.Panel.Add(p, VUI.BorderLayout.Top);
 			panel_.Toggled += OnToggled;
 

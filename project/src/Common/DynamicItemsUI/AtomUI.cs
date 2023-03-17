@@ -51,6 +51,26 @@ namespace AUI.DynamicItemsUI
 			LoadOptions();
 		}
 
+		public virtual int FontSize
+		{
+			get { return 24; }
+		}
+
+		public virtual string MakeTooltip(DAZDynamicItem ci)
+		{
+			if (ci == null)
+				return null;
+
+			string s = "";
+
+			s +=
+				$"Name: {ci.displayName}\n" +
+				$"Package: {ci.packageUid}\n" +
+				$"UID: {ci.uid}\n" +
+				$"Creator: {ci.creatorName}";
+
+			return s;
+		}
 
 		public static void OpenUI(DAZDynamicItem ci, string tab = null)
 		{
