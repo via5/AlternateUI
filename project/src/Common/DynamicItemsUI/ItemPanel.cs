@@ -36,7 +36,7 @@ namespace AUI.DynamicItemsUI
 			name_ = center.Add(new VUI.Label());
 
 			buttons_ = new VUI.Panel(new VUI.HorizontalFlow(5));
-			customize_ = AddButton(new VUI.ToolButton("...", OpenCustomize, "Customize"));
+			customize_ = AddWidget(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 			center.Add(buttons_);
 
 			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
@@ -64,9 +64,9 @@ namespace AUI.DynamicItemsUI
 			get { return item_; }
 		}
 
-		public VUI.Button AddButton(VUI.Button b)
+		public T AddWidget<T>(T w) where T : VUI.Widget
 		{
-			return buttons_.Add(b);
+			return buttons_.Add(w);
 		}
 
 		public void Set(DAZDynamicItem item)

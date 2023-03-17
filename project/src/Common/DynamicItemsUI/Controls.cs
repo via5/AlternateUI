@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace AUI.DynamicItemsUI
 {
@@ -497,7 +498,7 @@ namespace AUI.DynamicItemsUI
 				var left = new VUI.Panel(new VUI.HorizontalFlow(
 					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
 
-				active_ = left.Add(new VUI.CheckBox("", OnActive, false, "Active"));
+				active_ = left.Add(new VUI.CheckBox("", (b) => ToggleActive(), false, "Active"));
 				thumbnail_ = left.Add(new VUI.Image());
 
 				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(
@@ -519,6 +520,9 @@ namespace AUI.DynamicItemsUI
 				Add(center, VUI.BorderLayout.Center);
 				Add(buttons_, VUI.BorderLayout.Right);
 
+				Clickthrough = false;
+				Events.PointerClick += (e) => ToggleActive();
+
 				thumbnail_.MinimumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 				thumbnail_.MaximumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 			}
@@ -537,6 +541,28 @@ namespace AUI.DynamicItemsUI
 			{
 				item_ = item;
 				Update();
+			}
+
+			public void ToggleActive()
+			{
+				if (ignore_) return;
+
+				try
+				{
+					ignore_ = true;
+
+					if (item_ != null)
+					{
+						active_.Checked = !item_.active;
+						c_.AtomUI.SetActive(item_, !item_.active);
+						c_.AtomUI.UpdatePanels();
+						ActiveChanged();
+					}
+				}
+				finally
+				{
+					ignore_ = false;
+				}
 			}
 
 			public void Update()
@@ -578,18 +604,17 @@ namespace AUI.DynamicItemsUI
 				item_?.OpenUI();
 			}
 
-			private void OnActive(bool b)
+			private void ActiveChanged()
 			{
-				if (ignore_) return;
+				bool b = (item_ != null && item_.active);
 
-				if (item_ != null)
-				{
-					c_.AtomUI.SetActive(item_, b);
-					c_.AtomUI.UpdatePanels();
-				}
+				customize_.Enabled = b;
+
+				DoActiveChanged(b);
 			}
 
 			protected abstract void DoUpdate();
+			protected abstract void DoActiveChanged(bool b);
 		}
 
 

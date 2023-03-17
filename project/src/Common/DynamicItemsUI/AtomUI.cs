@@ -1,6 +1,7 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -48,6 +49,42 @@ namespace AUI.DynamicItemsUI
 			filter_ = new Filter(this);
 			LoadOptions();
 		}
+
+
+		public static void OpenUI(DAZDynamicItem ci, string tab = null)
+		{
+			if (ci == null)
+				return;
+
+			ci.OpenUI();
+
+			if (!string.IsNullOrEmpty(tab))
+				SetTab(ci, tab);
+		}
+
+		private static void SetTab(DAZDynamicItem ci, string name)
+		{
+			DoSetTab(ci, name);
+			AlternateUI.Instance.StartCoroutine(CoSetTab(ci, name));
+		}
+
+		private static IEnumerator CoSetTab(DAZDynamicItem ci, string name)
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			DoSetTab(ci, name);
+		}
+
+		private static void DoSetTab(DAZDynamicItem ci, string name)
+		{
+			var ts = ci.customizationUI.GetComponentInChildren<UITabSelector>();
+			if (ts == null)
+				return;
+
+			if (ts.HasTab(name))
+				ts.SetActiveTab(name);
+		}
+
 
 		public override bool IsLike(BasicAtomUIInfo other)
 		{

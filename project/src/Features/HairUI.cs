@@ -1,23 +1,48 @@
-﻿using UnityEngine;
-using System.Collections;
-using AUI.ClothingUI;
-
-namespace AUI.HairUI
+﻿namespace AUI.HairUI
 {
 	class CurrentHairPanel : DynamicItemsUI.CurrentControls.ItemPanel
 	{
+		private readonly VUI.Button physics_;
+		private readonly VUI.Button lighting_;
+		private readonly VUI.Button scalp_;
+
 		public CurrentHairPanel(DynamicItemsUI.Controls c)
 			: base(c)
 		{
+			physics_ = AddWidget(new VUI.ToolButton("P", OpenPhysics, "Physics"));
+			lighting_ = AddWidget(new VUI.ToolButton("L", OpenLighting, "Lighting"));
+			scalp_ = AddWidget(new VUI.ToolButton("S", OpenScalp, "Scalp"));
 		}
 
-		public DAZHairGroup ClothingItem
+		public DAZHairGroup HairItem
 		{
 			get { return Item as DAZHairGroup; }
 		}
 
 		protected override void DoUpdate()
 		{
+		}
+
+		protected override void DoActiveChanged(bool b)
+		{
+			physics_.Enabled = b;
+			lighting_.Enabled = b;
+			scalp_.Enabled = b;
+		}
+
+		public void OpenPhysics()
+		{
+			HairUI.OpenPhysics(HairItem);
+		}
+
+		public void OpenLighting()
+		{
+			HairUI.OpenLighting(HairItem);
+		}
+
+		public void OpenScalp()
+		{
+			HairUI.OpenScalp(HairItem);
 		}
 	}
 
@@ -33,19 +58,45 @@ namespace AUI.HairUI
 
 	class HairPanel : DynamicItemsUI.ItemPanel
 	{
+		private readonly VUI.Button physics_;
+		private readonly VUI.Button lighting_;
+		private readonly VUI.Button scalp_;
+
 		public HairPanel(HairAtomInfo parent)
 			: base(parent)
 		{
+			physics_ = AddWidget(new VUI.ToolButton("P", OpenPhysics, "Physics"));
+			lighting_ = AddWidget(new VUI.ToolButton("L", OpenLighting, "Lighting"));
+			scalp_ = AddWidget(new VUI.ToolButton("S", OpenScalp, "Scalp"));
+
 			Update();
 		}
 
-		public DAZHairGroup ClothingItem
+		public DAZHairGroup HairItem
 		{
 			get { return Item as DAZHairGroup; }
 		}
 
+		public void OpenPhysics()
+		{
+			HairUI.OpenPhysics(HairItem);
+		}
+
+		public void OpenLighting()
+		{
+			HairUI.OpenLighting(HairItem);
+		}
+
+		public void OpenScalp()
+		{
+			HairUI.OpenScalp(HairItem);
+		}
+
 		protected override void DoActiveChanged(bool b)
 		{
+			physics_.Enabled = b;
+			lighting_.Enabled = b;
+			scalp_.Enabled = b;
 		}
 	}
 
@@ -129,6 +180,23 @@ namespace AUI.HairUI
 					"Complete overhaul of the hair panel.";
 			}
 		}
+
+
+		public static void OpenPhysics(DAZHairGroup item)
+		{
+			DynamicItemsUI.AtomUI.OpenUI(item, "Physics");
+		}
+
+		public static void OpenLighting(DAZHairGroup item)
+		{
+			DynamicItemsUI.AtomUI.OpenUI(item, "Lighting");
+		}
+
+		public static void OpenScalp(DAZHairGroup item)
+		{
+			DynamicItemsUI.AtomUI.OpenUI(item, "Scalp");
+		}
+
 
 		protected override void DoEnable()
 		{

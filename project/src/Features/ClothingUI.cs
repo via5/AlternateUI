@@ -38,6 +38,12 @@ namespace AUI.ClothingUI
 			}
 		}
 
+		protected override void DoActiveChanged(bool b)
+		{
+			adjustments_.Enabled = b;
+			physics_.Enabled = b && HasSim();
+		}
+
 		private bool IsClothingVisible()
 		{
 			if (Item == null)
@@ -79,12 +85,12 @@ namespace AUI.ClothingUI
 
 		public void OpenPhysics()
 		{
-			ClothingUI.OpenPhysicsClothingUI(ClothingItem);
+			ClothingUI.OpenPhysics(ClothingItem);
 		}
 
 		public void OpenAdjustments()
 		{
-			ClothingUI.OpenAdjustmentsClothingUI(ClothingItem);
+			ClothingUI.OpenAdjustments(ClothingItem);
 		}
 	}
 
@@ -135,8 +141,8 @@ namespace AUI.ClothingUI
 		public ClothingPanel(ClothingAtomInfo parent)
 			: base(parent)
 		{
-			adjustments_ = AddButton(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
-			physics_ = AddButton(new VUI.ToolButton("P", OpenPhysics, "Physics"));
+			adjustments_ = AddWidget(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
+			physics_ = AddWidget(new VUI.ToolButton("P", OpenPhysics, "Physics"));
 
 			Update();
 		}
@@ -148,12 +154,12 @@ namespace AUI.ClothingUI
 
 		public void OpenPhysics()
 		{
-			ClothingUI.OpenPhysicsClothingUI(ClothingItem);
+			ClothingUI.OpenPhysics(ClothingItem);
 		}
 
 		public void OpenAdjustments()
 		{
-			ClothingUI.OpenAdjustmentsClothingUI(ClothingItem);
+			ClothingUI.OpenAdjustments(ClothingItem);
 		}
 
 		protected override void DoActiveChanged(bool b)
@@ -245,53 +251,14 @@ namespace AUI.ClothingUI
 		}
 
 
-		public static void OpenCustomizeClothingUI(DAZClothingItem item)
+		public static void OpenPhysics(DAZClothingItem item)
 		{
-			OpenClothingUI(item);
+			DynamicItemsUI.AtomUI.OpenUI(item, "Physics");
 		}
 
-		public static void OpenPhysicsClothingUI(DAZClothingItem item)
+		public static void OpenAdjustments(DAZClothingItem item)
 		{
-			OpenClothingUI(item, "Physics");
-		}
-
-		public static void OpenAdjustmentsClothingUI(DAZClothingItem item)
-		{
-			OpenClothingUI(item, "Adjustments");
-		}
-
-		private static void OpenClothingUI(DAZClothingItem ci, string tab = null)
-		{
-			if (ci == null)
-				return;
-
-			ci.OpenUI();
-
-			if (!string.IsNullOrEmpty(tab))
-				SetTab(ci, tab);
-		}
-
-		private static void SetTab(DAZClothingItem ci, string name)
-		{
-			DoSetTab(ci, name);
-			AlternateUI.Instance.StartCoroutine(CoSetTab(ci, name));
-		}
-
-		private static IEnumerator CoSetTab(DAZClothingItem ci, string name)
-		{
-			yield return new WaitForEndOfFrame();
-			yield return new WaitForEndOfFrame();
-			DoSetTab(ci, name);
-		}
-
-		private static void DoSetTab(DAZClothingItem ci, string name)
-		{
-			var ts = ci.customizationUI.GetComponentInChildren<UITabSelector>();
-			if (ts == null)
-				return;
-
-			if (ts.HasTab(name))
-				ts.SetActiveTab(name);
+			DynamicItemsUI.AtomUI.OpenUI(item, "Adjustments");
 		}
 
 
