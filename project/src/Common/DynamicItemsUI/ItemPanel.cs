@@ -162,7 +162,7 @@ namespace AUI.DynamicItemsUI
 
 			if (b)
 			{
-				BackgroundColor = new Color(0.2f, 0.2f, 0.5f);
+				BackgroundColor = new Color(0.15f, 0.15f, 0.45f);
 				BorderColor = new Color(1, 1, 1);
 			}
 			else
