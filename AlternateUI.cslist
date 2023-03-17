@@ -24,6 +24,7 @@ project\src\Common\FS\Pins.cs
 project\src\Common\FS\Sys.cs
 project\src\Common\MRU\MRUAtomInfo.cs
 project\src\Common\MRU\MRUAtomUIModifier.cs
+project\src\Features\ClothingUI.cs
 project\src\Features\CuaUI.cs
 project\src\Features\Feature.cs
 project\src\Features\LightUI.cs
@@ -32,7 +33,6 @@ project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
-project\src\Features\ClothingUI\ClothingUI.cs
 project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FileDialogFeature.cs
 project\src\Features\FileDialog\FilePanel.cs
