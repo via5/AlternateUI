@@ -39,6 +39,7 @@ namespace AUI.DynamicItemsUI
 		private int page_ = 0;
 		private readonly Filter filter_;
 		private DAZDynamicItem[] items_ = new DAZDynamicItem[0];
+		private HashSet<string> errors_ = null;
 
 
 		public AtomUI(string name, AtomUIModifier uiMod, Atom a)
@@ -428,7 +429,7 @@ namespace AUI.DynamicItemsUI
 				char_ = Atom.GetComponentInChildren<DAZCharacter>();
 				if (char_ == null)
 				{
-					Log.Error("no DAZCharacter");
+					LogErrorOnce("no DAZCharacter");
 					return false;
 				}
 			}
@@ -438,7 +439,7 @@ namespace AUI.DynamicItemsUI
 				cs_ = Atom.GetComponentInChildren<DAZCharacterSelector>();
 				if (cs_ == null)
 				{
-					Log.Error("no DAZCharacterSelector");
+					LogErrorOnce("no DAZCharacterSelector");
 					return false;
 				}
 			}
@@ -448,7 +449,7 @@ namespace AUI.DynamicItemsUI
 				ui_ = DoGetSelectorUI();
 				if (ui_ == null)
 				{
-					Log.Error("atom has no selector ui");
+					LogErrorOnce("atom has no selector ui");
 					return false;
 				}
 			}
@@ -459,6 +460,19 @@ namespace AUI.DynamicItemsUI
 		public DAZDynamicItem[] GetItems()
 		{
 			return DoGetItems();
+		}
+
+
+		private void LogErrorOnce(string s)
+		{
+			if (errors_ == null)
+				errors_ = new HashSet<string>();
+
+			if (!errors_.Contains(s))
+			{
+				Log.Error(s);
+				errors_.Add(s);
+			}
 		}
 
 
