@@ -231,7 +231,7 @@ namespace AUI.DynamicItemsUI
 
 		private void Rebuild()
 		{
-			items_ = filter_.Filtered(cs_.clothingItems);
+			items_ = filter_.Filtered(GetItems());
 
 			page_ = 0;
 			controls_.Set(page_, PageCount);
@@ -301,6 +301,11 @@ namespace AUI.DynamicItemsUI
 		public void SetActive(DAZDynamicItem item, bool b)
 		{
 			DoSetActive(item, b);
+		}
+
+		public CurrentControls CreateCurrentControls(Controls c)
+		{
+			return DoCreateCurrentControls(c);
 		}
 
 		public CurrentControls.ItemPanel CreateCurrentItemPanel(Controls c)
@@ -386,9 +391,17 @@ namespace AUI.DynamicItemsUI
 			return true;
 		}
 
+		public DAZDynamicItem[] GetItems()
+		{
+			return DoGetItems();
+		}
+
+
 		protected abstract GenerateDAZDynamicSelectorUI DoGetSelectorUI();
 		protected abstract ItemPanel DoCreateItemPanel();
+		protected abstract CurrentControls DoCreateCurrentControls(Controls c);
 		protected abstract CurrentControls.ItemPanel DoCreateCurrentItemPanel(Controls c);
 		protected abstract void DoSetActive(DAZDynamicItem item, bool b);
+		protected abstract DAZDynamicItem[] DoGetItems();
 	}
 }

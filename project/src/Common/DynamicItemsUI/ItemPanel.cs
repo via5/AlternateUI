@@ -10,6 +10,7 @@ namespace AUI.DynamicItemsUI
 		private readonly VUI.Label author_;
 		private readonly VUI.Label name_;
 		private readonly VUI.Panel buttons_;
+		private readonly VUI.Button customize_ = null;
 		private readonly VUI.Image thumbnail_;
 
 		private DAZDynamicItem item_ = null;
@@ -35,6 +36,7 @@ namespace AUI.DynamicItemsUI
 			name_ = center.Add(new VUI.Label());
 
 			buttons_ = new VUI.Panel(new VUI.HorizontalFlow(5));
+			customize_ = AddButton(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 			center.Add(buttons_);
 
 			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
@@ -147,6 +149,11 @@ namespace AUI.DynamicItemsUI
 			}
 		}
 
+		public void OpenCustomize()
+		{
+			item_?.OpenUI();
+		}
+
 		private void ActiveChanged()
 		{
 			bool b = (item_ != null && item_.active);
@@ -161,6 +168,8 @@ namespace AUI.DynamicItemsUI
 				BackgroundColor = new Color(0, 0, 0, 0);
 				BorderColor = VUI.Style.Theme.BorderColor;
 			}
+
+			customize_.Enabled = b;
 
 			DoActiveChanged(b);
 		}

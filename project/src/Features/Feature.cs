@@ -60,6 +60,7 @@ namespace AUI
 			{
 				new MorphUI.MorphUI(),
 				new ClothingUI.ClothingUI(),
+				new HairUI.HairUI(),
 				new FileDialog.FileDialogFeature(),
 				new PluginsUI.PluginsUI(),
 				new LightUI.LightUI(),

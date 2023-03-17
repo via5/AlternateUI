@@ -27,6 +27,7 @@ project\src\Common\MRU\MRUAtomUIModifier.cs
 project\src\Features\ClothingUI.cs
 project\src\Features\CuaUI.cs
 project\src\Features\Feature.cs
+project\src\Features\HairUI.cs
 project\src\Features\LightUI.cs
 project\src\Features\LogUI.cs
 project\src\Features\PluginsUI.cs

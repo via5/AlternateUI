@@ -316,7 +316,7 @@ namespace AUI.DynamicItemsUI
 			var sui = controls_.AtomUI.SelectorUI;
 
 			var authors = new HashSet<string>();
-			var items = controls_.AtomUI.CharacterSelector.clothingItems;
+			var items = controls_.AtomUI.GetItems();
 
 			for (int i = 0; i < items.Length; ++i)
 			{
@@ -473,7 +473,7 @@ namespace AUI.DynamicItemsUI
 	}
 
 
-	class CurrentControls
+	abstract class CurrentControls
 	{
 		public abstract class ItemPanel : VUI.Panel
 		{
@@ -484,6 +484,7 @@ namespace AUI.DynamicItemsUI
 			private readonly VUI.Panel buttons_;
 			private readonly VUI.CheckBox active_;
 			private readonly VUI.Label name_;
+			private readonly VUI.Button customize_;
 			private bool ignore_ = false;
 
 			private DAZDynamicItem item_ = null;
@@ -501,6 +502,8 @@ namespace AUI.DynamicItemsUI
 
 				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(
 					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
+
+				customize_ = AddWidget(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 
 				var center = new VUI.Panel(new VUI.BorderLayout());
 				name_ = center.Add(new VUI.Label(), VUI.BorderLayout.Center);
@@ -552,6 +555,7 @@ namespace AUI.DynamicItemsUI
 
 						active_.Checked = item_.active;
 						name_.Text = item_.displayName;
+						customize_.Enabled = true;
 
 						DoUpdate();
 
@@ -567,6 +571,11 @@ namespace AUI.DynamicItemsUI
 				{
 					ignore_ = false;
 				}
+			}
+
+			public void OpenCustomize()
+			{
+				item_?.OpenUI();
 			}
 
 			private void OnActive(bool b)
@@ -586,6 +595,7 @@ namespace AUI.DynamicItemsUI
 
 		private readonly Controls controls_;
 		private readonly VUI.ToggledPanel panel_;
+		private readonly VUI.Panel buttons_;
 		private readonly VUI.Panel itemsPanel_;
 		private readonly List<ItemPanel> items_ = new List<ItemPanel>();
 
@@ -596,28 +606,34 @@ namespace AUI.DynamicItemsUI
 			itemsPanel_ = new VUI.Panel(new VUI.VerticalFlow(0));
 
 			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+			buttons_ = new VUI.Panel(new VUI.HorizontalFlow(10));
 
-			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10));
-			buttons.Add(new VUI.ToolButton("Remove all", OnRemoveAll));
-			buttons.Add(new VUI.ToolButton("Undress all", () => OnDressAll(false)));
-			buttons.Add(new VUI.ToolButton("Re-dress all", () => OnDressAll(true)));
-
-			p.Add(buttons);
+			p.Add(buttons_);
 			p.Add(itemsPanel_);
 
 			panel_.Panel.Padding = new VUI.Insets(10);
 			panel_.Panel.Add(p, VUI.BorderLayout.Top);
 			panel_.Toggled += OnToggled;
+
+			AddWidget(new VUI.ToolButton("Remove all", OnRemoveAll));
+		}
+
+		public Controls Controls
+		{
+			get { return controls_; }
+		}
+
+		public T AddWidget<T>(T w) where T : VUI.Widget
+		{
+			return buttons_.Add(w);
 		}
 
 		private void OnToggled(bool b)
 		{
 			if (b)
 			{
-				var cs = controls_.AtomUI.CharacterSelector;
-				var items = cs.clothingItems;
-
-				var list = new List<DAZClothingItem>();
+				var items = controls_.AtomUI.GetItems();
+				var list = new List<DAZDynamicItem>();
 
 				for (int i = 0; i < items.Length; ++i)
 				{
@@ -659,44 +675,16 @@ namespace AUI.DynamicItemsUI
 
 		private void OnRemoveAll()
 		{
-			var cs = controls_.AtomUI.CharacterSelector;
-			var items = cs.clothingItems;
+			var items = controls_.AtomUI.GetItems();
 
 			for (int i = 0; i < items.Length; ++i)
 			{
 				if (items[i].active)
-					cs.SetActiveClothingItem(items[i], false);
+					Controls.AtomUI.SetActive(items[i], false);
 			}
 
 			UpdateItems();
 			controls_.AtomUI.UpdatePanels();
-		}
-
-		private void OnDressAll(bool b)
-		{
-			var cs = controls_.AtomUI.CharacterSelector;
-			var items = cs.clothingItems;
-
-			for (int i = 0; i < items.Length; ++i)
-			{
-				if (items[i].active)
-				{
-					var csc = items[i].GetComponentsInChildren<ClothSimControl>();
-
-					for (int j = 0; j < csc.Length; ++j)
-					{
-						var allowDetach = csc[j].GetBoolJSONParam("allowDetach");
-						if (allowDetach != null)
-							allowDetach.val = !b;
-
-						if (b)
-						{
-							var r = csc[j].GetAction("Reset");
-							r?.actionCallback?.Invoke();
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -717,7 +705,7 @@ namespace AUI.DynamicItemsUI
 		public Controls(AtomUI parent)
 		{
 			parent_ = parent;
-			cc_ = new CurrentControls(this);
+			cc_ = parent_.CreateCurrentControls(this);
 			sorter_ = new Sorter(this);
 			tags_ = new TagsControls(this);
 			authors_ = new AuthorControls(this);

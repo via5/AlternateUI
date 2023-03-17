@@ -5,7 +5,6 @@ namespace AUI.ClothingUI
 {
 	class CurrentClothingPanel : DynamicItemsUI.CurrentControls.ItemPanel
 	{
-		private readonly VUI.Button customize_;
 		private readonly VUI.Button adjustments_;
 		private readonly VUI.Button physics_;
 		private readonly VUI.CheckBox visible_;
@@ -14,7 +13,6 @@ namespace AUI.ClothingUI
 		public CurrentClothingPanel(DynamicItemsUI.Controls c)
 			: base(c)
 		{
-			customize_ = AddWidget(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 			adjustments_ = AddWidget(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
 			physics_ = AddWidget(new VUI.ToolButton("P", OpenPhysics, "Physics"));
 			visible_ = AddWidget(new VUI.CheckBox("V", OnVisible, false, "Hides all materials"));
@@ -30,7 +28,6 @@ namespace AUI.ClothingUI
 			try
 			{
 				ignore_ = true;
-				customize_.Enabled = true;
 				adjustments_.Enabled = true;
 				physics_.Enabled = HasSim();
 				visible_.Checked = IsClothingVisible();
@@ -80,11 +77,6 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		public void OpenCustomize()
-		{
-			ClothingUI.OpenCustomizeClothingUI(ClothingItem);
-		}
-
 		public void OpenPhysics()
 		{
 			ClothingUI.OpenPhysicsClothingUI(ClothingItem);
@@ -98,18 +90,51 @@ namespace AUI.ClothingUI
 
 
 
+	class ClothingCurrentControls : DynamicItemsUI.CurrentControls
+	{
+		public ClothingCurrentControls(DynamicItemsUI.Controls c)
+			: base(c)
+		{
+			AddWidget(new VUI.ToolButton("Undress all", () => OnDressAll(false)));
+			AddWidget(new VUI.ToolButton("Re-dress all", () => OnDressAll(true)));
+		}
+
+		private void OnDressAll(bool b)
+		{
+			var items = Controls.AtomUI.GetItems();
+
+			for (int i = 0; i < items.Length; ++i)
+			{
+				if (items[i].active)
+				{
+					var csc = items[i].GetComponentsInChildren<ClothSimControl>();
+
+					for (int j = 0; j < csc.Length; ++j)
+					{
+						var allowDetach = csc[j].GetBoolJSONParam("allowDetach");
+						if (allowDetach != null)
+							allowDetach.val = !b;
+
+						if (b)
+						{
+							var r = csc[j].GetAction("Reset");
+							r?.actionCallback?.Invoke();
+						}
+					}
+				}
+			}
+		}
+	}
+
+
 	class ClothingPanel : DynamicItemsUI.ItemPanel
 	{
-		private readonly ClothingAtomInfo parent_;
-		private readonly VUI.Button customize_ = null;
 		private readonly VUI.Button adjustments_ = null;
 		private readonly VUI.Button physics_ = null;
 
 		public ClothingPanel(ClothingAtomInfo parent)
 			: base(parent)
 		{
-			parent_ = parent;
-			customize_ = AddButton(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 			adjustments_ = AddButton(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
 			physics_ = AddButton(new VUI.ToolButton("P", OpenPhysics, "Physics"));
 
@@ -119,11 +144,6 @@ namespace AUI.ClothingUI
 		public DAZClothingItem ClothingItem
 		{
 			get { return Item as DAZClothingItem; }
-		}
-
-		public void OpenCustomize()
-		{
-			ClothingUI.OpenCustomizeClothingUI(ClothingItem);
 		}
 
 		public void OpenPhysics()
@@ -138,7 +158,6 @@ namespace AUI.ClothingUI
 
 		protected override void DoActiveChanged(bool b)
 		{
-			customize_.Enabled = b;
 			physics_.Enabled = b;
 			adjustments_.Enabled = b;
 		}
@@ -168,10 +187,21 @@ namespace AUI.ClothingUI
 			return new ClothingPanel(this);
 		}
 
+		protected override DynamicItemsUI.CurrentControls DoCreateCurrentControls(
+			DynamicItemsUI.Controls c)
+		{
+			return new ClothingCurrentControls(c);
+		}
+
 		protected override DynamicItemsUI.CurrentControls.ItemPanel DoCreateCurrentItemPanel(
 			DynamicItemsUI.Controls c)
 		{
 			return new CurrentClothingPanel(c);
+		}
+
+		protected override DAZDynamicItem[] DoGetItems()
+		{
+			return CharacterSelector.clothingItems;
 		}
 	}
 

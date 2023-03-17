@@ -172,23 +172,23 @@ namespace AUI.DynamicItemsUI
 			}
 		}
 
-		public DAZClothingItem[] Filtered(DAZClothingItem[] all)
+		public DAZDynamicItem[] Filtered(DAZDynamicItem[] all)
 		{
 			var list = Culled(all);
 			Sorted(list);
 			return list.ToArray();
 		}
 
-		private List<DAZClothingItem> Culled(DAZClothingItem[] all)
+		private List<DAZDynamicItem> Culled(DAZDynamicItem[] all)
 		{
 			if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
-				return new List<DAZClothingItem>(all);
+				return new List<DAZDynamicItem>(all);
 
 			authorsLc_.Clear();
 			foreach (string a in authors_)
 				authorsLc_.Add(a.ToLower());
 
-			var list = new List<DAZClothingItem>();
+			var list = new List<DAZDynamicItem>();
 			var s = search_.ToLower().Trim();
 
 			Regex re = null;
@@ -225,7 +225,7 @@ namespace AUI.DynamicItemsUI
 			return list;
 		}
 
-		public void Sorted(List<DAZClothingItem> list)
+		public void Sorted(List<DAZDynamicItem> list)
 		{
 			switch (sort_)
 			{
@@ -261,7 +261,7 @@ namespace AUI.DynamicItemsUI
 			}
 		}
 
-		private bool TagsMatch(DAZClothingItem ci)
+		private bool TagsMatch(DAZDynamicItem ci)
 		{
 			if (tags_.Count == 0)
 				return true;
@@ -298,7 +298,7 @@ namespace AUI.DynamicItemsUI
 			return matched;
 		}
 
-		private bool AuthorsMatch(DAZClothingItem ci)
+		private bool AuthorsMatch(DAZDynamicItem ci)
 		{
 			if (authors_.Count == 0)
 				return true;
