@@ -1,695 +1,186 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using System.Text.RegularExpressions;
-using System;
+﻿using UnityEngine;
 using System.Collections;
-using MVR.FileManagementSecure;
-using SimpleJSON;
 
 namespace AUI.ClothingUI
 {
-	class Filter
+	class CurrentClothingPanel : DynamicItemsUI.CurrentControls.ItemPanel
 	{
-		public const int SortAZ = 0;
-		public const int SortZA = 1;
-		public const int SortNew = 2;
-		public const int SortOld = 3;
-		public const int SortAuthor = 4;
-		public const int SortCount = 5;
+		private readonly VUI.Button customize_;
+		private readonly VUI.Button adjustments_;
+		private readonly VUI.Button physics_;
+		private readonly VUI.CheckBox visible_;
+		private bool ignore_ = false;
 
-		public delegate void Handler();
-		public event Handler TagsChanged, AuthorsChanged;
-
-		private readonly ClothingAtomInfo parent_;
-
-		private bool active_ = false;
-		private string search_ = "";
-		private int sort_ = SortNew;
-
-		private readonly HashSet<string> tags_ = new HashSet<string>();
-		private bool tagsAnd_ = true;
-
-		private readonly HashSet<string> authors_ = new HashSet<string>();
-		private readonly HashSet<string> authorsLc_ = new HashSet<string>();
-
-
-		public Filter(ClothingAtomInfo parent)
+		public CurrentClothingPanel(DynamicItemsUI.Controls c)
+			: base(c)
 		{
-			parent_ = parent;
+			customize_ = AddWidget(new VUI.ToolButton("...", OpenCustomize, "Customize"));
+			adjustments_ = AddWidget(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
+			physics_ = AddWidget(new VUI.ToolButton("P", OpenPhysics, "Physics"));
+			visible_ = AddWidget(new VUI.CheckBox("V", OnVisible, false, "Hides all materials"));
 		}
 
-		public static string SortToString(int i)
+		public DAZClothingItem ClothingItem
 		{
-			switch (i)
+			get { return Item as DAZClothingItem; }
+		}
+
+		protected override void DoUpdate()
+		{
+			try
 			{
-				case SortAZ: return "A to Z";
-				case SortZA: return "Z to A";
-				case SortNew: return "New to old";
-				case SortOld: return "Old to new";
-				case SortAuthor: return "Creator";
-				default: return $"?{i}";
+				ignore_ = true;
+				customize_.Enabled = true;
+				adjustments_.Enabled = true;
+				physics_.Enabled = HasSim();
+				visible_.Checked = IsClothingVisible();
+			}
+			finally
+			{
+				ignore_ = false;
 			}
 		}
 
-		public bool Active
+		private bool IsClothingVisible()
 		{
-			get
-			{
-				return active_;
-			}
+			if (Item == null)
+				return false;
 
-			set
+			foreach (var mo in Item.GetComponentsInChildren<MaterialOptions>())
 			{
-				if (active_ != value)
+				var j = mo.GetBoolJSONParam("hideMaterial");
+				if (j != null)
 				{
-					active_ = value;
-					parent_.CriteriaChangedInternal();
+					if (!j.val)
+						return true;
+				}
+			}
+
+			return false;
+		}
+
+		private bool HasSim()
+		{
+			var sim = Item?.GetComponentInChildren<ClothSimControl>();
+			return (sim != null);
+		}
+
+		private void OnVisible(bool b)
+		{
+			if (ignore_) return;
+
+			if (Item != null)
+			{
+				foreach (var mo in Item.GetComponentsInChildren<MaterialOptions>())
+				{
+					var j = mo.GetBoolJSONParam("hideMaterial");
+					if (j != null)
+						j.val = !b;
 				}
 			}
 		}
 
-		public string Search
+		public void OpenCustomize()
 		{
-			get
-			{
-				return search_;
-			}
-
-			set
-			{
-				if (search_ != value)
-				{
-					search_ = value;
-					parent_.CriteriaChangedInternal();
-				}
-			}
+			ClothingUI.OpenCustomizeClothingUI(ClothingItem);
 		}
 
-		public int Sort
+		public void OpenPhysics()
 		{
-			get
-			{
-				return sort_;
-			}
-
-			set
-			{
-				if (sort_ != value)
-				{
-					sort_ = value;
-					parent_.CriteriaChangedInternal();
-				}
-			}
+			ClothingUI.OpenPhysicsClothingUI(ClothingItem);
 		}
 
-		public HashSet<string> Tags
+		public void OpenAdjustments()
 		{
-			get { return tags_; }
-		}
-
-		public HashSet<string> Authors
-		{
-			get { return authors_; }
-		}
-
-		public bool TagsAnd
-		{
-			get
-			{
-				return tagsAnd_;
-			}
-
-			set
-			{
-				if (tagsAnd_ != value)
-				{
-					tagsAnd_ = value;
-					parent_.CriteriaChangedInternal();
-				}
-			}
-		}
-
-		public void AddTag(string s)
-		{
-			tags_.Add(s);
-			TagsChanged?.Invoke();
-			parent_.CriteriaChangedInternal();
-		}
-
-		public void RemoveTag(string s)
-		{
-			tags_.Remove(s);
-			TagsChanged?.Invoke();
-			parent_.CriteriaChangedInternal();
-		}
-
-		public void ClearTags()
-		{
-			if (tags_.Count > 0)
-			{
-				tags_.Clear();
-				TagsChanged?.Invoke();
-				parent_.CriteriaChangedInternal();
-			}
-		}
-
-		public void AddAuthor(string s)
-		{
-			authors_.Add(s);
-			AuthorsChanged?.Invoke();
-			parent_.CriteriaChangedInternal();
-		}
-
-		public void RemoveAuthor(string s)
-		{
-			authors_.Remove(s);
-			AuthorsChanged?.Invoke();
-			parent_.CriteriaChangedInternal();
-		}
-
-		public void ClearAuthors()
-		{
-			if (authors_.Count > 0)
-			{
-				authors_.Clear();
-				AuthorsChanged?.Invoke();
-				parent_.CriteriaChangedInternal();
-			}
-		}
-
-		public DAZClothingItem[] Filtered(DAZClothingItem[] all)
-		{
-			var list = Culled(all);
-			Sorted(list);
-			return list.ToArray();
-		}
-
-		private List<DAZClothingItem> Culled(DAZClothingItem[] all)
-		{
-			if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
-				return new List<DAZClothingItem>(all);
-
-			authorsLc_.Clear();
-			foreach (string a in authors_)
-				authorsLc_.Add(a.ToLower());
-
-			var list = new List<DAZClothingItem>();
-			var s = search_.ToLower().Trim();
-
-			Regex re = null;
-			if (s != "" && VUI.Utilities.IsRegex(s))
-				re = VUI.Utilities.CreateRegex(s);
-
-			for (int i = 0; i < all.Length; ++i)
-			{
-				var ci = all[i];
-
-				if (active_ && !ci.active)
-					continue;
-
-				if (re == null)
-				{
-					if (!ci.displayName.ToLower().Contains(s))
-						continue;
-				}
-				else
-				{
-					if (!re.IsMatch(ci.displayName))
-						continue;
-				}
-
-				if (!TagsMatch(ci))
-					continue;
-
-				if (!AuthorsMatch(ci))
-					continue;
-
-				list.Add(ci);
-			}
-
-			return list;
-		}
-
-		public void Sorted(List<DAZClothingItem> list)
-		{
-			switch (sort_)
-			{
-				case SortAZ:
-				{
-					list.Sort((a, b) => U.CompareNatural(a.displayName, b.displayName));
-					break;
-				}
-
-				case SortZA:
-				{
-					list.Sort((a, b) => U.CompareNatural(b.displayName, a.displayName));
-					break;
-				}
-
-				case SortNew:
-				{
-					list.Reverse();
-					break;
-				}
-
-				case SortOld:
-				{
-					// no-op, default sort
-					break;
-				}
-
-				case SortAuthor:
-				{
-					list.Sort((a, b) => U.CompareNatural(a.creatorName, b.creatorName));
-					break;
-				}
-			}
-		}
-
-		private bool TagsMatch(DAZClothingItem ci)
-		{
-			if (tags_.Count == 0)
-				return true;
-
-			bool matched;
-
-			if (tagsAnd_)
-			{
-				matched = true;
-
-				foreach (string t in tags_)
-				{
-					if (!ci.CheckMatchTag(t))
-					{
-						matched = false;
-						break;
-					}
-				}
-			}
-			else
-			{
-				matched = false;
-
-				foreach (string t in tags_)
-				{
-					if (ci.CheckMatchTag(t))
-					{
-						matched = true;
-						break;
-					}
-				}
-			}
-
-			return matched;
-		}
-
-		private bool AuthorsMatch(DAZClothingItem ci)
-		{
-			if (authors_.Count == 0)
-				return true;
-
-			return authorsLc_.Contains(ci.creatorName.ToLower());
+			ClothingUI.OpenAdjustmentsClothingUI(ClothingItem);
 		}
 	}
 
 
-	class ClothingAtomInfo : BasicAtomUIInfo
+
+	class ClothingPanel : DynamicItemsUI.ItemPanel
 	{
-		public const int MinColumns = 1;
-		public const int MaxColumns = 3;
-		public const int DefaultColumns = 3;
+		private readonly ClothingAtomInfo parent_;
+		private readonly VUI.Button customize_ = null;
+		private readonly VUI.Button adjustments_ = null;
+		private readonly VUI.Button physics_ = null;
 
-		public const int MinRows = 2;
-		public const int MaxRows = 7;
-		public const int DefaultRows = 7;
+		public ClothingPanel(ClothingAtomInfo parent)
+			: base(parent)
+		{
+			parent_ = parent;
+			customize_ = AddButton(new VUI.ToolButton("...", OpenCustomize, "Customize"));
+			adjustments_ = AddButton(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
+			physics_ = AddButton(new VUI.ToolButton("P", OpenPhysics, "Physics"));
 
-		private const float DisableCheckInterval = 1;
-		private const float DisableCheckTries = 5;
+			Update();
+		}
 
-		private readonly AtomClothingUIModifier uiMod_;
-		private DAZCharacter char_ = null;
-		private DAZCharacterSelector cs_ = null;
-		private GenerateDAZClothingSelectorUI ui_ = null;
+		public DAZClothingItem ClothingItem
+		{
+			get { return Item as DAZClothingItem; }
+		}
 
-		private VUI.Root root_ = null;
-		private VUI.Panel grid_ = null;
-		private int cols_ = DefaultColumns;
-		private int rows_ = DefaultRows;
-		private ClothingPanel[] panels_ = null;
-		private Controls controls_ = null;
+		public void OpenCustomize()
+		{
+			ClothingUI.OpenCustomizeClothingUI(ClothingItem);
+		}
 
-		private float disableElapsed_ = 0;
-		private int disableTries_ = 0;
+		public void OpenPhysics()
+		{
+			ClothingUI.OpenPhysicsClothingUI(ClothingItem);
+		}
 
-		private int page_ = 0;
-		private readonly Filter filter_;
-		private DAZClothingItem[] items_ = new DAZClothingItem[0];
+		public void OpenAdjustments()
+		{
+			ClothingUI.OpenAdjustmentsClothingUI(ClothingItem);
+		}
 
+		protected override void DoActiveChanged(bool b)
+		{
+			customize_.Enabled = b;
+			physics_.Enabled = b;
+			adjustments_.Enabled = b;
+		}
+	}
+
+
+	class ClothingAtomInfo : DynamicItemsUI.AtomUI
+	{
 		public ClothingAtomInfo(AtomClothingUIModifier uiMod, Atom a)
-			: base(a, uiMod.Log.Prefix)
+			: base("clothing", uiMod, a)
 		{
-			uiMod_ = uiMod;
-			filter_ = new Filter(this);
-			LoadOptions();
 		}
 
-		public string GetAutoCompleteFile()
+		protected override void DoSetActive(DAZDynamicItem item, bool b)
 		{
-			string g;
-
-			if (char_.isMale)
-				g = "male";
-			else
-				g = "female";
-
-			return AlternateUI.Instance.GetConfigFilePath(
-				$"aui.clothing.{g}.autocomplete.json");
+			var ci = item as DAZClothingItem;
+			ci.characterSelector.SetActiveClothingItem(ci, b);
 		}
 
-		public string GetOptionsFile()
+		protected override GenerateDAZDynamicSelectorUI DoGetSelectorUI()
 		{
-			return AlternateUI.Instance.GetConfigFilePath(
-				$"aui.clothing.json");
+			return CharacterSelector?.clothingSelectorUI;
 		}
 
-		private void LoadOptions()
+		protected override DynamicItemsUI.ItemPanel DoCreateItemPanel()
 		{
-			var f = GetOptionsFile();
-
-			if (FileManagerSecure.FileExists(f))
-			{
-				var j = SuperController.singleton.LoadJSON(f)?.AsObject;
-				if (j == null)
-					return;
-
-				if (j.HasKey("columns"))
-					cols_ = U.Clamp(j["columns"].AsInt, MinColumns, MaxColumns);
-
-				if (j.HasKey("rows"))
-					rows_ = U.Clamp(j["rows"].AsInt, MinRows, MaxRows);
-			}
+			return new ClothingPanel(this);
 		}
 
-		private void SaveOptions()
+		protected override DynamicItemsUI.CurrentControls.ItemPanel DoCreateCurrentItemPanel(
+			DynamicItemsUI.Controls c)
 		{
-			var j = new JSONClass();
-
-			j["columns"] = new JSONData(cols_);
-			j["rows"] = new JSONData(rows_);
-
-			SuperController.singleton.SaveJSON(j, GetOptionsFile());
-		}
-
-		public void NotifyAutoCompleteChanged()
-		{
-			foreach (ClothingAtomInfo a in uiMod_.Atoms)
-			{
-				if (a == this)
-					continue;
-
-				if (a.char_.isMale == char_.isMale)
-					a.controls_.UpdateAutoComplete();
-			}
-		}
-
-		public void NotifyGridChanged()
-		{
-			foreach (ClothingAtomInfo a in uiMod_.Atoms)
-			{
-				if (a == this)
-					continue;
-
-				a.LoadOptions();
-				a.GridChanged(false);
-			}
-		}
-
-		public DAZCharacterSelector CharacterSelector
-		{
-			get { return cs_; }
-		}
-
-		public GenerateDAZClothingSelectorUI SelectorUI
-		{
-			get { return ui_; }
-		}
-
-		public int Page
-		{
-			get { return page_; }
-			set { SetPage(value); }
-		}
-
-		public Filter Filter
-		{
-			get { return filter_; }
-		}
-
-		public int Columns
-		{
-			get { return cols_; }
-			set { cols_ = value; GridChanged(); }
-		}
-
-		public int Rows
-		{
-			get { return rows_; }
-			set { rows_ = value; GridChanged(); }
-		}
-
-		public int PerPage
-		{
-			get { return cols_ * rows_; }
-		}
-
-		public int PageCount
-		{
-			get
-			{
-				if (items_.Length <= PerPage)
-					return 1;
-				else if ((items_.Length % PerPage) == 0)
-					return items_.Length / PerPage;
-				else
-					return items_.Length / PerPage + 1;
-			}
-		}
-
-		public void NextPage()
-		{
-			if (page_ < (PageCount - 1))
-				SetPage(page_ + 1);
-		}
-
-		public void PreviousPage()
-		{
-			if (page_ > 0)
-				SetPage(page_ - 1);
-		}
-
-		public void UpdatePanels()
-		{
-			for (int i = 0; i < panels_.Length; ++i)
-				panels_[i].Update(false);
-		}
-
-		private void SetPage(int newPage)
-		{
-			if (newPage < 0 || newPage >= PageCount)
-				return;
-
-			page_ = newPage;
-			UpdatePage();
-		}
-
-		private void UpdatePage()
-		{
-			if (page_ < 0)
-				page_ = 0;
-			else if (page_ >= PageCount)
-				page_ = PageCount - 1;
-
-			int first = PerPage * page_;
-
-			for (int i = 0; i < panels_.Length; ++i)
-			{
-				int ci = first + i;
-				if (ci >= items_.Length)
-					panels_[i].Clear();
-				else
-					panels_[i].Set(items_[ci]);
-			}
-
-			controls_.Set(page_, PageCount);
-		}
-
-		public void CriteriaChangedInternal()
-		{
-			Rebuild();
-		}
-
-		private void Rebuild()
-		{
-			items_ = filter_.Filtered(cs_.clothingItems);
-
-			page_ = 0;
-			controls_.Set(page_, PageCount);
-			UpdatePage();
-		}
-
-		public override bool Enable()
-		{
-			if (!GetInfo())
-				return false;
-
-			if (root_ == null)
-			{
-				try
-				{
-					CreateUI();
-				}
-				catch (Exception)
-				{
-					if (root_ != null)
-						root_.Visible = false;
-
-					throw;
-				}
-			}
-
-
-			if (root_ != null)
-				root_.Visible = true;
-
-			return true;
-		}
-
-		public override void Disable()
-		{
-			if (root_ != null)
-				root_.Visible = false;
-		}
-
-		public override void Update(float s)
-		{
-			if (root_ != null)
-			{
-				root_.Update();
-
-				// vam will sometimes enable the clothing ui after the root has
-				// been created, make sure everything is off for the first few
-				// seconds
-				if (disableTries_ < DisableCheckTries)
-				{
-					disableElapsed_ += s;
-					if (disableElapsed_ >= DisableCheckInterval)
-					{
-						disableElapsed_ = 0;
-						++disableTries_;
-
-						foreach (Transform t in ui_.transform.parent)
-						{
-							if (t != root_.RootSupport.RootParent)
-								t.gameObject.SetActive(false);
-						}
-					}
-				}
-			}
-		}
-
-		private bool GetInfo()
-		{
-			if (char_ == null)
-			{
-				char_ = Atom.GetComponentInChildren<DAZCharacter>();
-				if (char_ == null)
-				{
-					Log.Error("no DAZCharacter");
-					return false;
-				}
-			}
-
-			if (cs_ == null)
-			{
-				cs_ = Atom.GetComponentInChildren<DAZCharacterSelector>();
-				if (cs_ == null)
-				{
-					Log.Error("no DAZCharacterSelector");
-					return false;
-				}
-			}
-
-			if (ui_ == null)
-			{
-				ui_ = cs_.clothingSelectorUI;
-				if (ui_ == null)
-				{
-					Log.Error("atom has no clothingSelectorUI");
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		public override bool IsLike(BasicAtomUIInfo other)
-		{
-			return true;
-		}
-
-		private void CreateUI()
-		{
-			root_ = new VUI.Root(new VUI.TransformUIRootSupport(ui_.transform.parent));
-			root_.ContentPanel.Layout = new VUI.BorderLayout(10);
-
-			controls_ = new Controls(this);
-			grid_ = new VUI.Panel();
-
-			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
-			root_.ContentPanel.Add(grid_, VUI.BorderLayout.Center);
-
-			GridChanged(false);
-		}
-
-		private void GridChanged(bool notify=true)
-		{
-			grid_.RemoveAllChildren();
-
-			var gl = new VUI.GridLayout(cols_);
-			gl.UniformWidth = true;
-			gl.Spacing = 5;
-
-			grid_.Layout = gl;
-
-			var panels = new List<ClothingPanel>();
-
-			for (int i = 0; i < PerPage; ++i)
-			{
-				var p = new ClothingPanel(this);
-
-				panels.Add(p);
-				grid_.Add(p);
-			}
-
-			panels_ = panels.ToArray();
-			Rebuild();
-
-			SaveOptions();
-
-			if (notify)
-				NotifyGridChanged();
+			return new CurrentClothingPanel(c);
 		}
 	}
 
 
 	class AtomClothingUIModifier : AtomUIModifier
 	{
-		private readonly ClothingUI parent_;
-
 		public AtomClothingUIModifier(ClothingUI parent)
 			: base("aui.clothing")
 		{
-			parent_ = parent;
 		}
 
 		protected override BasicAtomUIInfo CreateAtomInfo(Atom a)
@@ -723,7 +214,23 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		public static void OpenClothingUI(DAZClothingItem ci, string tab = null)
+
+		public static void OpenCustomizeClothingUI(DAZClothingItem item)
+		{
+			OpenClothingUI(item);
+		}
+
+		public static void OpenPhysicsClothingUI(DAZClothingItem item)
+		{
+			OpenClothingUI(item, "Physics");
+		}
+
+		public static void OpenAdjustmentsClothingUI(DAZClothingItem item)
+		{
+			OpenClothingUI(item, "Adjustments");
+		}
+
+		private static void OpenClothingUI(DAZClothingItem ci, string tab = null)
 		{
 			if (ci == null)
 				return;
@@ -756,6 +263,7 @@ namespace AUI.ClothingUI
 			if (ts.HasTab(name))
 				ts.SetActiveTab(name);
 		}
+
 
 		protected override void DoEnable()
 		{

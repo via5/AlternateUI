@@ -96,6 +96,10 @@
   <ItemGroup>
     <Compile Include="src\Common\AtomUIModifier.cs" />
     <Compile Include="src\Common\Common.cs" />
+    <Compile Include="src\Common\DynamicItemsUI\AtomUI.cs" />
+    <Compile Include="src\Common\DynamicItemsUI\Controls.cs" />
+    <Compile Include="src\Common\DynamicItemsUI\Filter.cs" />
+    <Compile Include="src\Common\DynamicItemsUI\ItemPanel.cs" />
     <Compile Include="src\Common\FS\BasicDirectory.cs" />
     <Compile Include="src\Common\FS\BasicObject.cs" />
     <Compile Include="src\Common\FS\Cache.cs" />
@@ -112,9 +116,7 @@
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
-    <Compile Include="src\Features\ClothingUI\ClothingPanel.cs" />
     <Compile Include="src\Features\ClothingUI\ClothingUI.cs" />
-    <Compile Include="src\Features\ClothingUI\Controls.cs" />
     <Compile Include="src\Features\CuaUI.cs" />
     <Compile Include="src\Features\Feature.cs" />
     <Compile Include="src\Features\FileDialog\FileDialog.cs" />

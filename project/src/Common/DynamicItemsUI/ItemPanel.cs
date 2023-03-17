@@ -1,23 +1,21 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-namespace AUI.ClothingUI
+namespace AUI.DynamicItemsUI
 {
-	class ClothingPanel : VUI.Panel
+	abstract class ItemPanel : VUI.Panel
 	{
-		private readonly ClothingAtomInfo parent_;
-		private readonly VUI.CheckBox active_ = null;
-		private readonly VUI.Label author_ = null;
-		private readonly VUI.Label name_ = null;
-		private readonly VUI.Button customize_ = null;
-		private readonly VUI.Button adjustments_ = null;
-		private readonly VUI.Button physics_ = null;
-		private readonly VUI.Image thumbnail_ = null;
+		private readonly AtomUI parent_;
+		private readonly VUI.CheckBox active_;
+		private readonly VUI.Label author_;
+		private readonly VUI.Label name_;
+		private readonly VUI.Panel buttons_;
+		private readonly VUI.Image thumbnail_;
 
-		private DAZClothingItem ci_ = null;
+		private DAZDynamicItem item_ = null;
 		private bool ignore_ = false;
 
-		public ClothingPanel(ClothingAtomInfo parent)
+		public ItemPanel(AtomUI parent)
 		{
 			parent_ = parent;
 
@@ -36,12 +34,8 @@ namespace AUI.ClothingUI
 			center.Add(top);
 			name_ = center.Add(new VUI.Label());
 
-			var buttons = new VUI.Panel(new VUI.HorizontalFlow(5));
-			customize_ = buttons.Add(new VUI.ToolButton("...", OpenCustomize, "Customize"));
-			adjustments_ = buttons.Add(new VUI.ToolButton("A", OpenAdjustments, "Adjustments"));
-			physics_ = buttons.Add(new VUI.ToolButton("P", OpenPhysics, "Physics"));
-
-			center.Add(buttons);
+			buttons_ = new VUI.Panel(new VUI.HorizontalFlow(5));
+			center.Add(buttons_);
 
 			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
 			thumbnail_ = right.Add(new VUI.Image());
@@ -61,29 +55,37 @@ namespace AUI.ClothingUI
 
 			name_.MinimumSize = new VUI.Size(DontCare, 60);
 			name_.MaximumSize = new VUI.Size(DontCare, 60);
-
-			Update();
 		}
 
-		public void Set(DAZClothingItem ci)
+		public DAZDynamicItem Item
 		{
-			ci_ = ci;
+			get { return item_; }
+		}
+
+		public VUI.Button AddButton(VUI.Button b)
+		{
+			return buttons_.Add(b);
+		}
+
+		public void Set(DAZDynamicItem item)
+		{
+			item_ = item;
 			Update();
 		}
 
 		public void Clear()
 		{
-			ci_ = null;
+			item_ = null;
 			Update();
 		}
 
-		public void Update(bool updateThumbnail=true)
+		public void Update(bool updateThumbnail = true)
 		{
 			try
 			{
 				ignore_ = true;
 
-				if (ci_ == null)
+				if (item_ == null)
 				{
 					active_.Checked = false;
 					author_.Text = "";
@@ -93,25 +95,25 @@ namespace AUI.ClothingUI
 				}
 				else
 				{
-					active_.Checked = ci_.active;
-					author_.Text = ci_.creatorName;
-					name_.Text = ci_.displayName;
+					active_.Checked = item_.active;
+					author_.Text = item_.creatorName;
+					name_.Text = item_.displayName;
 					Borders = new VUI.Insets(1);
 
 					if (updateThumbnail)
 					{
 						thumbnail_.Texture = null;
 
-						DAZClothingItem forCi = ci_;
+						DAZDynamicItem forItem = item_;
 
-						ci_.GetThumbnail((Texture2D t) =>
+						item_.GetThumbnail((Texture2D t) =>
 						{
-							AlternateUI.Instance.StartCoroutine(CoSetTexture(forCi, t));
+							AlternateUI.Instance.StartCoroutine(CoSetTexture(forItem, t));
 						});
 					}
 				}
 
-				Render = (ci_ != null);
+				Render = (item_ != null);
 				ActiveChanged();
 			}
 			finally
@@ -120,11 +122,11 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		private IEnumerator CoSetTexture(DAZClothingItem forCi, Texture2D t)
+		private IEnumerator CoSetTexture(DAZDynamicItem forItem, Texture2D t)
 		{
 			yield return new WaitForEndOfFrame();
 
-			if (ci_ == forCi)
+			if (item_ == forItem)
 				thumbnail_.Texture = t;
 		}
 
@@ -135,8 +137,8 @@ namespace AUI.ClothingUI
 			try
 			{
 				ignore_ = true;
-				ci_.characterSelector.SetActiveClothingItem(ci_, !ci_.active);
-				active_.Checked = ci_.active;
+				parent_.SetActive(item_, !item_.active);
+				active_.Checked = item_.active;
 				ActiveChanged();
 			}
 			finally
@@ -145,24 +147,9 @@ namespace AUI.ClothingUI
 			}
 		}
 
-		public void OpenCustomize()
-		{
-			ClothingUI.OpenClothingUI(ci_);
-		}
-
-		public void OpenPhysics()
-		{
-			ClothingUI.OpenClothingUI(ci_, "Physics");
-		}
-
-		public void OpenAdjustments()
-		{
-			ClothingUI.OpenClothingUI(ci_, "Adjustments");
-		}
-
 		private void ActiveChanged()
 		{
-			bool b = (ci_ != null && ci_.active);
+			bool b = (item_ != null && item_.active);
 
 			if (b)
 			{
@@ -175,9 +162,9 @@ namespace AUI.ClothingUI
 				BorderColor = VUI.Style.Theme.BorderColor;
 			}
 
-			customize_.Enabled = b;
-			physics_.Enabled = b;
-			adjustments_.Enabled = b;
+			DoActiveChanged(b);
 		}
+
+		protected abstract void DoActiveChanged(bool b);
 	}
 }

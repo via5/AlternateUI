@@ -5,6 +5,10 @@ project\src\Version.cs
 project\src\Common\AtomUIModifier.cs
 project\src\Common\Common.cs
 project\src\Common\Icons.cs
+project\src\Common\DynamicItemsUI\AtomUI.cs
+project\src\Common\DynamicItemsUI\Controls.cs
+project\src\Common\DynamicItemsUI\Filter.cs
+project\src\Common\DynamicItemsUI\ItemPanel.cs
 project\src\Common\FS\BasicDirectory.cs
 project\src\Common\FS\BasicObject.cs
 project\src\Common\FS\Cache.cs
@@ -28,9 +32,7 @@ project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
-project\src\Features\ClothingUI\ClothingPanel.cs
 project\src\Features\ClothingUI\ClothingUI.cs
-project\src\Features\ClothingUI\Controls.cs
 project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FileDialogFeature.cs
 project\src\Features\FileDialog\FilePanel.cs

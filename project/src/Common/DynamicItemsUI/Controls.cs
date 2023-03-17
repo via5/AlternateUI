@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace AUI.ClothingUI
+namespace AUI.DynamicItemsUI
 {
 	abstract class TreeFilter
 	{
@@ -231,12 +230,12 @@ namespace AUI.ClothingUI
 			: base("Search tags", true)
 		{
 			controls_ = c;
-			controls_.ClothingAtomInfo.Filter.TagsChanged += UpdateButton;
+			controls_.AtomUI.Filter.TagsChanged += UpdateButton;
 
-			ItemAdded += (i) => controls_.ClothingAtomInfo.Filter.AddTag(i.Text);
-			ItemRemoved += (i) => controls_.ClothingAtomInfo.Filter.RemoveTag(i.Text);
-			Cleared += () => controls_.ClothingAtomInfo.Filter.ClearTags();
-			AndChanged += (b) => controls_.ClothingAtomInfo.Filter.TagsAnd = b;
+			ItemAdded += (i) => controls_.AtomUI.Filter.AddTag(i.Text);
+			ItemRemoved += (i) => controls_.AtomUI.Filter.RemoveTag(i.Text);
+			Cleared += () => controls_.AtomUI.Filter.ClearTags();
+			AndChanged += (b) => controls_.AtomUI.Filter.TagsAnd = b;
 
 			UpdateButton();
 		}
@@ -247,7 +246,7 @@ namespace AUI.ClothingUI
 
 			root.Clear();
 
-			var sui = controls_.ClothingAtomInfo.SelectorUI;
+			var sui = controls_.AtomUI.SelectorUI;
 			root.Add(MakeTagItem("Regions", sui.regionTags));
 			root.Add(MakeTagItem("Types", sui.typeTags));
 			root.Add(MakeTagItem("Others", sui.GetOtherTags()));
@@ -277,7 +276,7 @@ namespace AUI.ClothingUI
 
 		private void UpdateButton()
 		{
-			var tags = controls_.ClothingAtomInfo.Filter.Tags;
+			var tags = controls_.AtomUI.Filter.Tags;
 
 			if (tags.Count == 0)
 				SetButtonText("Tags");
@@ -297,11 +296,11 @@ namespace AUI.ClothingUI
 			: base("Search creators", false)
 		{
 			controls_ = c;
-			controls_.ClothingAtomInfo.Filter.AuthorsChanged += UpdateButton;
+			controls_.AtomUI.Filter.AuthorsChanged += UpdateButton;
 
-			ItemAdded += (i) => controls_.ClothingAtomInfo.Filter.AddAuthor(i.Text);
-			ItemRemoved += (i) => controls_.ClothingAtomInfo.Filter.RemoveAuthor(i.Text);
-			Cleared += () => controls_.ClothingAtomInfo.Filter.ClearAuthors();
+			ItemAdded += (i) => controls_.AtomUI.Filter.AddAuthor(i.Text);
+			ItemRemoved += (i) => controls_.AtomUI.Filter.RemoveAuthor(i.Text);
+			Cleared += () => controls_.AtomUI.Filter.ClearAuthors();
 
 			Tree.RootToggles = false;
 
@@ -314,10 +313,10 @@ namespace AUI.ClothingUI
 
 			root.Clear();
 
-			var sui = controls_.ClothingAtomInfo.SelectorUI;
+			var sui = controls_.AtomUI.SelectorUI;
 
 			var authors = new HashSet<string>();
-			var items = controls_.ClothingAtomInfo.CharacterSelector.clothingItems;
+			var items = controls_.AtomUI.CharacterSelector.clothingItems;
 
 			for (int i = 0; i < items.Length; ++i)
 			{
@@ -344,7 +343,7 @@ namespace AUI.ClothingUI
 
 		private void UpdateButton()
 		{
-			var authors = controls_.ClothingAtomInfo.Filter.Authors;
+			var authors = controls_.AtomUI.Filter.Authors;
 
 			if (authors.Count == 0)
 				SetButtonText("Creators");
@@ -372,19 +371,19 @@ namespace AUI.ClothingUI
 
 			p.Add(new VUI.Label("Columns"));
 			cols_ = p.Add(new VUI.IntTextSlider(
-				controls_.ClothingAtomInfo.Columns,
-				ClothingAtomInfo.MinColumns,
-				ClothingAtomInfo.MaxColumns,
+				controls_.AtomUI.Columns,
+				AtomUI.MinColumns,
+				AtomUI.MaxColumns,
 				OnColumns));
-			p.Add(new VUI.ToolButton("R", () => OnColumns(ClothingAtomInfo.DefaultColumns)));
+			p.Add(new VUI.ToolButton("R", () => OnColumns(AtomUI.DefaultColumns)));
 
 			p.Add(new VUI.Label("Rows"));
 			rows_ = p.Add(new VUI.IntTextSlider(
-				controls_.ClothingAtomInfo.Rows,
-				ClothingAtomInfo.MinRows,
-				ClothingAtomInfo.MaxRows,
+				controls_.AtomUI.Rows,
+				AtomUI.MinRows,
+				AtomUI.MaxRows,
 				OnRows));
-			p.Add(new VUI.ToolButton("R", () => OnRows(ClothingAtomInfo.DefaultRows)));
+			p.Add(new VUI.ToolButton("R", () => OnRows(AtomUI.DefaultRows)));
 
 			panel_.Panel.Add(p, VUI.BorderLayout.Top);
 			panel_.Panel.Padding = new VUI.Insets(20);
@@ -406,7 +405,7 @@ namespace AUI.ClothingUI
 				ignore_ = true;
 
 				cols_.Value = i;
-				controls_.ClothingAtomInfo.Columns = i;
+				controls_.AtomUI.Columns = i;
 			}
 			finally
 			{
@@ -423,7 +422,7 @@ namespace AUI.ClothingUI
 				ignore_ = true;
 
 				rows_.Value = i;
-				controls_.ClothingAtomInfo.Rows = i;
+				controls_.AtomUI.Rows = i;
 			}
 			finally
 			{
@@ -438,8 +437,8 @@ namespace AUI.ClothingUI
 				try
 				{
 					ignore_ = true;
-					cols_.Value = controls_.ClothingAtomInfo.Columns;
-					rows_.Value = controls_.ClothingAtomInfo.Rows;
+					cols_.Value = controls_.AtomUI.Columns;
+					rows_.Value = controls_.AtomUI.Rows;
 				}
 				finally
 				{
@@ -450,24 +449,45 @@ namespace AUI.ClothingUI
 	}
 
 
+	class Sorter
+	{
+		private readonly Controls c_;
+		private readonly VUI.ComboBox<string> cb_;
+
+		public Sorter(Controls c)
+		{
+			c_ = c;
+			cb_ = new VUI.ComboBox<string>();
+
+			for (int i = 0; i < DynamicItemsUI.Filter.SortCount; ++i)
+				cb_.AddItem(DynamicItemsUI.Filter.SortToString(i));
+
+			cb_.Select(c_.AtomUI.Filter.Sort);
+			cb_.SelectionIndexChanged += (i) => c_.AtomUI.Filter.Sort = i;
+		}
+
+		public VUI.Widget Widget
+		{
+			get { return cb_; }
+		}
+	}
+
 
 	class CurrentControls
 	{
-		class ItemPanel : VUI.Panel
+		public abstract class ItemPanel : VUI.Panel
 		{
 			private const int ThumbnailSize = 50;
 
 			private readonly Controls c_;
 			private readonly VUI.Image thumbnail_;
+			private readonly VUI.Panel buttons_;
 			private readonly VUI.CheckBox active_;
 			private readonly VUI.Label name_;
-			private readonly VUI.Button customize_;
-			private readonly VUI.Button adjustments_;
-			private readonly VUI.Button physics_;
-			private readonly VUI.CheckBox visible_;
 			private bool ignore_ = false;
 
-			private DAZClothingItem ci_ = null;
+			private DAZDynamicItem item_ = null;
+
 
 			public ItemPanel(Controls c)
 			{
@@ -479,16 +499,8 @@ namespace AUI.ClothingUI
 				active_ = left.Add(new VUI.CheckBox("", OnActive, false, "Active"));
 				thumbnail_ = left.Add(new VUI.Image());
 
-				var right = new VUI.Panel(new VUI.HorizontalFlow(
+				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(
 					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
-				customize_ = right.Add(new VUI.ToolButton(
-					"...", OpenCustomize, "Customize"));
-				adjustments_ = right.Add(new VUI.ToolButton(
-					"A", OpenAdjustments, "Adjustments"));
-				physics_ = right.Add(new VUI.ToolButton(
-					"P", OpenPhysics, "Physics"));
-				visible_ = right.Add(new VUI.CheckBox(
-					"V", OnVisible, false, "Hides all materials"));
 
 				var center = new VUI.Panel(new VUI.BorderLayout());
 				name_ = center.Add(new VUI.Label(), VUI.BorderLayout.Center);
@@ -502,15 +514,25 @@ namespace AUI.ClothingUI
 
 				Add(left, VUI.BorderLayout.Left);
 				Add(center, VUI.BorderLayout.Center);
-				Add(right, VUI.BorderLayout.Right);
+				Add(buttons_, VUI.BorderLayout.Right);
 
 				thumbnail_.MinimumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 				thumbnail_.MaximumSize = new VUI.Size(ThumbnailSize, ThumbnailSize);
 			}
 
-			public void Set(DAZClothingItem ci)
+			public T AddWidget<T>(T w) where T : VUI.Widget
 			{
-				ci_ = ci;
+				return buttons_.Add(w);
+			}
+
+			public DAZDynamicItem Item
+			{
+				get { return item_; }
+			}
+
+			public void Set(DAZDynamicItem item)
+			{
+				item_ = item;
 				Update();
 			}
 
@@ -520,7 +542,7 @@ namespace AUI.ClothingUI
 				{
 					ignore_ = true;
 
-					if (ci_ == null)
+					if (item_ == null)
 					{
 						Visible = false;
 					}
@@ -528,18 +550,15 @@ namespace AUI.ClothingUI
 					{
 						Visible = true;
 
-						active_.Checked = ci_.active;
-						name_.Text = ci_.displayName;
-						customize_.Enabled = true;
-						adjustments_.Enabled = true;
-						physics_.Enabled = HasSim();
-						visible_.Checked = IsClothingVisible();
+						active_.Checked = item_.active;
+						name_.Text = item_.displayName;
 
-						var forCi = ci_;
+						DoUpdate();
 
-						ci_.GetThumbnail((t) =>
+						var forItem = item_;
+						item_.GetThumbnail((t) =>
 						{
-							if (ci_ == forCi)
+							if (item_ == forItem)
 								thumbnail_.Texture = t;
 						});
 					}
@@ -550,70 +569,18 @@ namespace AUI.ClothingUI
 				}
 			}
 
-			private bool IsClothingVisible()
-			{
-				if (ci_ == null)
-					return false;
-
-				foreach (var mo in ci_.GetComponentsInChildren<MaterialOptions>())
-				{
-					var j = mo.GetBoolJSONParam("hideMaterial");
-					if (j != null)
-					{
-						if (!j.val)
-							return true;
-					}
-				}
-
-				return false;
-			}
-
-			private bool HasSim()
-			{
-				var sim = ci_?.GetComponentInChildren<ClothSimControl>();
-				return (sim != null);
-			}
-
 			private void OnActive(bool b)
 			{
 				if (ignore_) return;
 
-				if (ci_ != null)
+				if (item_ != null)
 				{
-					ci_.characterSelector.SetActiveClothingItem(ci_, b);
-					c_.ClothingAtomInfo.UpdatePanels();
+					c_.AtomUI.SetActive(item_, b);
+					c_.AtomUI.UpdatePanels();
 				}
 			}
 
-			private void OnVisible(bool b)
-			{
-				if (ignore_) return;
-
-				if (ci_ != null)
-				{
-					foreach (var mo in ci_.GetComponentsInChildren<MaterialOptions>())
-					{
-						var j = mo.GetBoolJSONParam("hideMaterial");
-						if (j != null)
-							j.val = !b;
-					}
-				}
-			}
-
-			public void OpenCustomize()
-			{
-				ClothingUI.OpenClothingUI(ci_);
-			}
-
-			public void OpenPhysics()
-			{
-				ClothingUI.OpenClothingUI(ci_, "Physics");
-			}
-
-			public void OpenAdjustments()
-			{
-				ClothingUI.OpenClothingUI(ci_, "Adjustments");
-			}
+			protected abstract void DoUpdate();
 		}
 
 
@@ -647,7 +614,7 @@ namespace AUI.ClothingUI
 		{
 			if (b)
 			{
-				var cs = controls_.ClothingAtomInfo.CharacterSelector;
+				var cs = controls_.AtomUI.CharacterSelector;
 				var items = cs.clothingItems;
 
 				var list = new List<DAZClothingItem>();
@@ -658,14 +625,14 @@ namespace AUI.ClothingUI
 						list.Add(items[i]);
 				}
 
-				controls_.ClothingAtomInfo.Filter.Sorted(list);
+				controls_.AtomUI.Filter.Sorted(list);
 
 				int ii = 0;
-				for (int i=0; i<list.Count; ++i)
+				for (int i = 0; i < list.Count; ++i)
 				{
 					while (ii >= items_.Count)
 					{
-						var p = new ItemPanel(controls_);
+						var p = controls_.AtomUI.CreateCurrentItemPanel(controls_);
 						items_.Add(p);
 						itemsPanel_.Add(p);
 					}
@@ -692,7 +659,7 @@ namespace AUI.ClothingUI
 
 		private void OnRemoveAll()
 		{
-			var cs = controls_.ClothingAtomInfo.CharacterSelector;
+			var cs = controls_.AtomUI.CharacterSelector;
 			var items = cs.clothingItems;
 
 			for (int i = 0; i < items.Length; ++i)
@@ -702,12 +669,12 @@ namespace AUI.ClothingUI
 			}
 
 			UpdateItems();
-			controls_.ClothingAtomInfo.UpdatePanels();
+			controls_.AtomUI.UpdatePanels();
 		}
 
 		private void OnDressAll(bool b)
 		{
-			var cs = controls_.ClothingAtomInfo.CharacterSelector;
+			var cs = controls_.AtomUI.CharacterSelector;
 			var items = cs.clothingItems;
 
 			for (int i = 0; i < items.Length; ++i)
@@ -734,33 +701,9 @@ namespace AUI.ClothingUI
 	}
 
 
-	class Sorter
-	{
-		private readonly Controls c_;
-		private readonly VUI.ComboBox<string> cb_;
-
-		public Sorter(Controls c)
-		{
-			c_ = c;
-			cb_ = new VUI.ComboBox<string>();
-
-			for (int i = 0; i < Filter.SortCount; ++i)
-				cb_.AddItem(Filter.SortToString(i));
-
-			cb_.Select(c_.ClothingAtomInfo.Filter.Sort);
-			cb_.SelectionIndexChanged += (i) => c_.ClothingAtomInfo.Filter.Sort = i;
-		}
-
-		public VUI.Widget Widget
-		{
-			get { return cb_; }
-		}
-	}
-
-
 	class Controls : VUI.Panel
 	{
-		private readonly ClothingAtomInfo parent_;
+		private readonly AtomUI parent_;
 		private readonly VUI.IntTextSlider pages_;
 		private readonly VUI.Label pageCount_;
 		private readonly SearchBox search_ = new SearchBox("Search");
@@ -771,7 +714,7 @@ namespace AUI.ClothingUI
 		private readonly OptionsControls options_;
 		private bool ignore_ = false;
 
-		public Controls(ClothingAtomInfo parent)
+		public Controls(AtomUI parent)
 		{
 			parent_ = parent;
 			cc_ = new CurrentControls(this);
@@ -839,7 +782,7 @@ namespace AUI.ClothingUI
 			search_?.TextBox?.AutoComplete?.Reload();
 		}
 
-		public ClothingAtomInfo ClothingAtomInfo
+		public AtomUI AtomUI
 		{
 			get { return parent_; }
 		}
