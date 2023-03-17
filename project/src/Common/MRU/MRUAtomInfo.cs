@@ -39,7 +39,7 @@ namespace AUI
 		}
 
 
-		private const int MaxRecent = 30;
+		private const int MaxRecent = 20;
 
 		private readonly MRUAtomUIModifier uiMod_;
 		private Transform parent_ = null;
@@ -79,6 +79,9 @@ namespace AUI
 					}
 				}
 			}
+
+			while (list.Count > MaxRecent)
+				list.RemoveAt(list.Count - 1);
 
 			return list;
 		}
