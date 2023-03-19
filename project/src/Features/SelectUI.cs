@@ -30,16 +30,7 @@ namespace AUI.SelectUI
 						if (text != null)
 						{
 							var uid = text.text;
-
-							if (uid != "None")
-							{
-								var atom = SuperController.singleton.GetAtomByUid(uid);
-
-								if (atom == null)
-									ui_.Log.Error($"atom {uid} not found");
-								else
-									SuperController.singleton.RemoveAtom(atom);
-							}
+							ui_.RemoveAtom(uid);
 						}
 					}
 				}
@@ -76,6 +67,22 @@ namespace AUI.SelectUI
 			}
 		}
 
+		public void RemoveAtom(string uid)
+		{
+			if (uid == "None")
+				return;
+
+			var atom = SuperController.singleton.GetAtomByUid(uid);
+			if (atom == null)
+			{
+				Log.Error($"atom {uid} not found");
+				return;
+			}
+
+			SuperController.singleton.RemoveAtom(atom);
+			RefreshCallbacks();
+		}
+
 		protected override void DoInit()
 		{
 			sc_ = SuperController.singleton;
@@ -83,13 +90,21 @@ namespace AUI.SelectUI
 
 		protected override void DoEnable()
 		{
-			sc_.onSceneLoadedHandlers += OnSceneLoaded;
+			sc_.onSceneLoadedHandlers += RefreshCallbacks;
+			sc_.onAtomAddedHandlers += OnAtomAdded;
+			sc_.onAtomRemovedHandlers += OnAtomRemoved;
+			sc_.onAtomUIDRenameHandlers += OnAtomRenamed;
+
 			AddCallbacks();
 		}
 
 		protected override void DoDisable()
 		{
-			sc_.onSceneLoadedHandlers -= OnSceneLoaded;
+			sc_.onSceneLoadedHandlers -= RefreshCallbacks;
+			sc_.onAtomAddedHandlers -= OnAtomAdded;
+			sc_.onAtomRemovedHandlers -= OnAtomRemoved;
+			sc_.onAtomUIDRenameHandlers -= OnAtomRenamed;
+
 			RemoveCallbacks();
 			lastDisplays_ = null;
 			lastValues_ = null;
@@ -120,6 +135,21 @@ namespace AUI.SelectUI
 		}
 
 		private void OnSceneLoaded()
+		{
+			RefreshCallbacks();
+		}
+
+		private void OnAtomAdded(Atom a)
+		{
+			RefreshCallbacks();
+		}
+
+		private void OnAtomRemoved(Atom a)
+		{
+			RefreshCallbacks();
+		}
+
+		private void OnAtomRenamed(string a, string b)
 		{
 			RefreshCallbacks();
 		}

@@ -852,6 +852,8 @@ namespace VUI
 				borderGraphics_.Borders = borders_;
 				borderGraphics_.Color = borderColor_;
 
+				borderGraphicsRT_.gameObject.SetActive(IsVisibleOnScreen());
+
 				SetBorderBounds();
 			}
 		}
@@ -874,19 +876,18 @@ namespace VUI
 
 		private void SetRender(bool b)
 		{
-			if (widgetObject_ == null)
-				return;
-
-			if (!borders_.Empty)
-			{
+			if (MainObject != null && b && !borders_.Empty)
 				CreateBorderGraphics();
-				borderGraphics_?.gameObject?.SetActive(b);
+
+			borderGraphics_?.gameObject?.SetActive(b);
+
+			if (widgetObject_ != null)
+			{
+				DoSetRender(b);
+
+				foreach (var c in children_)
+					c.SetRender(b && c.render_);
 			}
-
-			DoSetRender(b);
-
-			foreach (var c in children_)
-				c.SetRender(b && c.render_);
 		}
 
 		protected virtual void DoSetRender(bool b)

@@ -440,10 +440,7 @@ namespace AUI.FileDialog
 			if (path == "")
 				return "";
 
-			var npath = FileManagerSecure.GetFullPath(path);
-			AlternateUI.Instance.Log.Info($"path={path} npath={npath}");
-
-			return npath;
+			return FileManagerSecure.GetFullPath(path);
 		}
 	}
 

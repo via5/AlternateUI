@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 namespace AUI.ClothingUI
 {
@@ -78,7 +79,17 @@ namespace AUI.ClothingUI
 				{
 					var j = mo.GetBoolJSONParam("hideMaterial");
 					if (j != null)
-						j.val = !b;
+					{
+						try
+						{
+							// this can throw an nre in
+							// MaterialOptions.SetMaterialHide(), not sure why
+							j.val = !b;
+						}
+						catch (Exception e)
+						{
+						}
+					}
 				}
 			}
 		}
