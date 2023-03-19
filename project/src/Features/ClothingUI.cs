@@ -86,7 +86,7 @@ namespace AUI.ClothingUI
 							// MaterialOptions.SetMaterialHide(), not sure why
 							j.val = !b;
 						}
-						catch (Exception e)
+						catch (Exception)
 						{
 						}
 					}

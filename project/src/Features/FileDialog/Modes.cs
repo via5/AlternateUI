@@ -4,6 +4,29 @@ using System.Collections.Generic;
 
 namespace AUI.FileDialog
 {
+	public class ExtensionItem
+	{
+		private readonly string text_;
+		private readonly string[] exts_;
+
+		public ExtensionItem(string text, string[] exts)
+		{
+			text_ = text;
+			exts_ = exts;
+		}
+
+		public string[] Extensions
+		{
+			get { return exts_; }
+		}
+
+		public override string ToString()
+		{
+			return text_;
+		}
+	}
+
+
 	class History
 	{
 		private const int Max = 30;

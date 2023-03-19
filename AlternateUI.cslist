@@ -34,12 +34,15 @@ project\src\Features\PluginsUI.cs
 project\src\Features\SelectUI.cs
 project\src\Features\SkinUI.cs
 project\src\Features\Tweaks.cs
+project\src\Features\FileDialog\AddressBar.cs
+project\src\Features\FileDialog\ButtonsPanel.cs
 project\src\Features\FileDialog\FileDialog.cs
 project\src\Features\FileDialog\FileDialogFeature.cs
 project\src\Features\FileDialog\FilePanel.cs
 project\src\Features\FileDialog\FileTree.cs
 project\src\Features\FileDialog\FileTreeItem.cs
 project\src\Features\FileDialog\Modes.cs
+project\src\Features\FileDialog\OptionsPanel.cs
 project\src\Features\MorphUI\Categories.cs
 project\src\Features\MorphUI\Controls.cs
 project\src\Features\MorphUI\Filter.cs

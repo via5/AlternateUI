@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Globalization;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AUI.FileDialog
@@ -178,6 +179,130 @@ namespace AUI.FileDialog
 			panel_.Render = false;
 			selected_ = false;
 			hovered_ = false;
+		}
+	}
+
+
+	class FilesPanel : VUI.Panel
+	{
+		private readonly FileDialog fd_;
+		private readonly int cols_, rows_;
+		private readonly VUI.FixedScrolledPanel scroll_;
+		private readonly FilePanel[] panels_;
+		private List<FS.IFilesystemObject> files_ = null;
+
+		public FilesPanel(FileDialog fd, int cols, int rows)
+		{
+			fd_ = fd;
+			cols_ = cols;
+			rows_ = rows;
+
+			scroll_ = new VUI.FixedScrolledPanel();
+
+			var p = scroll_.ContentPanel;
+
+			var gl = new VUI.GridLayout(cols, 10);
+			gl.UniformWidth = true;
+
+			p.Layout = gl;
+			p.Padding = new VUI.Insets(0, 0, 5, 0);
+
+			panels_ = new FilePanel[cols * rows];
+
+			for (int j = 0; j < cols * rows; ++j)
+			{
+				panels_[j] = new FilePanel(fd, FileDialog.FontSize);
+				p.Add(panels_[j].Panel);
+			}
+
+			scroll_.Scrolled += OnScroll;
+			scroll_.Events.PointerClick += OnClicked;
+
+			Layout = new VUI.BorderLayout();
+			Add(scroll_, VUI.BorderLayout.Center);
+		}
+
+		public void SetFiles(List<FS.IFilesystemObject> files)
+		{
+			files_ = files;
+			SetPanels(0);
+			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+		}
+
+		public void SetSelected(FS.IFilesystemObject o, bool b)
+		{
+			FindPanel(o)?.SetSelectedInternal(b);
+		}
+
+		public void ScrollToTop()
+		{
+			SetPanels(0);
+		}
+
+		public void Clear()
+		{
+			for (int i = 0; i < panels_.Length; ++i)
+				panels_[i]?.Clear();
+		}
+
+		private void SetPanels(int from)
+		{
+			int count = files_?.Count ?? 0;
+
+			int panelIndex = 0;
+			for (int i = from; i < count; ++i)
+			{
+				var f = files_[i];
+				var fp = panels_[panelIndex];
+
+				fp.Set(f);
+				fp.SetSelectedInternal(fd_.SelectedFile == f);
+
+				++panelIndex;
+				if (panelIndex >= (cols_ * rows_))
+					break;
+			}
+
+			while (panelIndex < (cols_ * rows_))
+			{
+				panels_[panelIndex].Clear();
+				++panelIndex;
+			}
+		}
+
+		private FilePanel FindPanel(FS.IFilesystemObject o)
+		{
+			for (int i = 0; i < panels_.Length; ++i)
+			{
+				if (panels_[i].Object == o)
+					return panels_[i];
+			}
+
+			return null;
+		}
+
+		private IEnumerator CoSetScrollPanel()
+		{
+			yield return new WaitForEndOfFrame();
+
+			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
+			int offscreenRows = totalRows - rows_;
+			float scrollbarSize = scroll_.ContentPanel.ClientBounds.Height / rows_ / 3;
+
+			scroll_.Set(offscreenRows, scrollbarSize);
+		}
+
+		private void OnScroll(int top)
+		{
+			SetPanels(top * cols_);
+		}
+
+		private void OnClicked(VUI.PointerEvent e)
+		{
+			if (e.Button == VUI.PointerEvent.LeftButton)
+				fd_.SelectFile(null);
+
+			e.Bubble = false;
 		}
 	}
 }
