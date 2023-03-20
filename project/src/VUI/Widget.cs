@@ -876,18 +876,19 @@ namespace VUI
 
 		private void SetRender(bool b)
 		{
-			if (MainObject != null && b && !borders_.Empty)
-				CreateBorderGraphics();
+			if (widgetObject_ == null)
+				return;
 
-			borderGraphics_?.gameObject?.SetActive(b);
-
-			if (widgetObject_ != null)
+			if (!borders_.Empty)
 			{
-				DoSetRender(b);
-
-				foreach (var c in children_)
-					c.SetRender(b && c.render_);
+				CreateBorderGraphics();
+				borderGraphics_?.gameObject?.SetActive(b);
 			}
+
+			DoSetRender(b);
+
+			foreach (var c in children_)
+				c.SetRender(b && c.render_);
 		}
 
 		protected virtual void DoSetRender(bool b)
