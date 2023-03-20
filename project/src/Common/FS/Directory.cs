@@ -41,6 +41,17 @@ namespace AUI.FS
 			}
 		}
 
+		public override void ClearCache()
+		{
+			base.ClearCache();
+
+			if (dirs_ != null)
+			{
+				foreach (var d in dirs_)
+					d.ClearCache();
+			}
+		}
+
 		protected override string GetDisplayName()
 		{
 			return SingleContent?.Name ?? Name;

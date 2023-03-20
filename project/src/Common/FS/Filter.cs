@@ -57,6 +57,57 @@ namespace AUI.FS
 			}
 		}
 
+		public static string SortToString(int s)
+		{
+			switch (s)
+			{
+				case SortFilename:
+					return "Filename";
+
+				case SortType:
+					return "Type";
+
+				case SortDateModified:
+					return "Date modified";
+
+				case SortDateCreated:
+					return "Date created";
+
+				default:
+					return $"?{s}";
+			}
+		}
+
+		public static string SortDirectionToString(int s)
+		{
+			switch (s)
+			{
+				case SortAscending:
+					return "Ascending";
+
+				case SortDescending:
+					return "Descending";
+
+				default:
+					return $"?{s}";
+			}
+		}
+
+		public static string SortDirectionToShortString(int s)
+		{
+			switch (s)
+			{
+				case SortAscending:
+					return "\u2191";
+
+				case SortDescending:
+					return "\u2193";
+
+				default:
+					return $"?{s}";
+			}
+		}
+
 		public override string ToString()
 		{
 			return

@@ -168,7 +168,7 @@ namespace AUI.FileDialog
 			{
 				// SelectInitialDirectory() won't fire the selected event if the
 				// node was already selected, so call it manually to make sure
-				SetCurrentDirectory(tree_.Selected as FS.IFilesystemContainer);
+				OnTreeSelection(tree_.TreeView.Selected as FileTreeItem);
 			}
 
 			SelectFile(null);
@@ -491,7 +491,7 @@ namespace AUI.FileDialog
 
 			var s = tree_.Selected as FS.IFilesystemContainer;
 			if (s != null)
-				dir_ = s;
+				SetCurrentDirectory(s);
 		}
 
 		private IEnumerator CoRefresh()
