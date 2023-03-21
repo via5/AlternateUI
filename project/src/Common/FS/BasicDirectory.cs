@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace AUI.FS
 {
@@ -177,7 +176,7 @@ namespace AUI.FS
 
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags);
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "");
 
 				dirs = GetDirectoriesInternal(cx2);
 				SetLocalDirectoriesCache(cx, dirs);
@@ -591,7 +590,7 @@ namespace AUI.FS
 
 			if (listing.SearchStale(cx))
 			{
-				if (cx.Search == "")
+				if (cx.Search.Empty)
 				{
 					listing.SetSearched(cx, null);
 				}

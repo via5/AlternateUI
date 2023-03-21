@@ -160,12 +160,12 @@ namespace AUI.FS
 
 		public bool SearchStale(Context cx)
 		{
-			return (currentSearch_ != cx.Search);
+			return (currentSearch_ != cx.Search.String);
 		}
 
 		public void SetSearched(Context cx, List<EntriesType> list)
 		{
-			currentSearch_ = cx.Search;
+			currentSearch_ = cx.Search.String;
 			searched_ = list;
 			SetSortStale();
 		}

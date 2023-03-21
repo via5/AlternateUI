@@ -90,6 +90,12 @@ namespace AUI.FileDialog
 
 		public void Refresh(bool recursive)
 		{
+			var cx = CreateContext();
+			RefreshInternal(cx, recursive);
+		}
+
+		private void RefreshInternal(FS.Context cx, bool recursive)
+		{
 			o_ = null;
 
 			var o = GetFSObject();
@@ -113,7 +119,11 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			var dirs = GetDirectories(o);
+			var dirs = GetDirectories(cx, o);
+
+			var names = new Dictionary<string, FS.IFilesystemContainer>();
+			foreach (var d in dirs)
+				names.Add(d.Name, d);
 
 			{
 				var cs = GetInternalChildren();
@@ -125,16 +135,22 @@ namespace AUI.FileDialog
 					{
 						bool found = false;
 						var c = cs[i] as FileTreeItem;
-						var co = c.GetFSObject();
 
-						if (co != null)
+						// assume that two objects can only be the same if they
+						// have the same name; this can give false negative,
+						// which isn't a problem except for performance, but it
+						// won't give false positives
+
+						FS.IFilesystemContainer samePath;
+						if (names.TryGetValue(c.Text, out samePath))
 						{
-							for (int j = 0; j < dirs.Count; ++j)
+							var co = c.GetFSObject();
+
+							if (co != null)
 							{
-								if (co.IsSameObject(dirs[j]))
+								if (co.IsSameObject(samePath))
 								{
 									found = true;
-									break;
 								}
 							}
 						}
@@ -146,7 +162,7 @@ namespace AUI.FileDialog
 						else
 						{
 							if (recursive)
-								c.Refresh(true);
+								c.RefreshInternal(cx, true);
 
 							++i;
 						}
@@ -173,7 +189,9 @@ namespace AUI.FileDialog
 			if (!checkedHasChildren_)
 			{
 				var d = GetFSObject();
-				hasChildren_ = (d != null && !d.IsFlattened && HasDirectories(d));
+				var cx = CreateContext();
+
+				hasChildren_ = (d != null && !d.IsFlattened && HasDirectories(cx, d));
 				checkedHasChildren_ = true;
 			}
 
@@ -186,7 +204,7 @@ namespace AUI.FileDialog
 
 			if (d != null && !d.IsFlattened)
 			{
-				foreach (var c in GetDirectories(d))
+				foreach (var c in GetDirectories(CreateContext(), d))
 					Add(CreateItem(c));
 			}
 		}
@@ -212,26 +230,27 @@ namespace AUI.FileDialog
 			return item;
 		}
 
-		private List<FS.IFilesystemContainer> GetDirectories(FS.IFilesystemContainer o)
+		private List<FS.IFilesystemContainer> GetDirectories(
+			FS.Context cx, FS.IFilesystemContainer o)
 		{
 			List<FS.IFilesystemContainer> list;
 
 			FS.Instrumentation.Start(FS.I.FTIGetDirectories);
 			{
-				list = o.GetDirectories(CreateContext());
+				list = o.GetDirectories(cx);
 			}
 			FS.Instrumentation.End();
 
 			return list;
 		}
 
-		private bool HasDirectories(FS.IFilesystemContainer o)
+		private bool HasDirectories(FS.Context cx, FS.IFilesystemContainer o)
 		{
 			bool b = false;
 
 			FS.Instrumentation.Start(FS.I.FTIHasDirectories);
 			{
-				b = o.HasDirectories(CreateContext());
+				b = o.HasDirectories(cx);
 			}
 			FS.Instrumentation.End();
 

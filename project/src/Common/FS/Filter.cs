@@ -4,6 +4,69 @@ using System.Text.RegularExpressions;
 
 namespace AUI.FS
 {
+	class SearchString
+	{
+		private string string_ = null;
+		private string lc_ = null;
+		private Regex re_ = null;
+
+		public SearchString(string s)
+		{
+			Set(s);
+		}
+
+		public bool Empty
+		{
+			get { return string.IsNullOrEmpty(string_); }
+		}
+
+		public string String
+		{
+			get { return string_; }
+		}
+
+		public void Set(string s)
+		{
+			if (string_ != s)
+			{
+				string_ = s;
+
+				if (VUI.Utilities.IsRegex(string_))
+				{
+					lc_ = null;
+					re_ = VUI.Utilities.CreateRegex(string_);
+				}
+				else
+				{
+					lc_ = string_.ToLower();
+					re_ = null;
+				}
+			}
+		}
+
+		public bool Matches(string s)
+		{
+			if (lc_ != null)
+			{
+				if (s.ToLower().IndexOf(lc_) == -1)
+					return false;
+			}
+			else if (re_ != null)
+			{
+				if (!re_.IsMatch(s))
+					return false;
+			}
+
+			return true;
+		}
+
+		public override string ToString()
+		{
+			return string_;
+		}
+	}
+
+
 	class Context
 	{
 		public const int NoSort = 0;
@@ -25,36 +88,25 @@ namespace AUI.FS
 		public const int MergePackagesFlag = 0x08;
 		public const int DebugFlag = 0x10;
 
-		private readonly string search_;
-		private readonly string searchLc_;
 		private readonly string[] exts_;
 		private string packagesRoot_;
-		private readonly Regex searchRe_;
 		private readonly int sort_;
 		private readonly int sortDir_;
+		private readonly SearchString search_;
+		private readonly SearchString packagesSearch_;
 		private int flags_;
 
 		public Context(
 			string search, string[] extensions, string packagesRoot,
-			int sort, int sortDir, int flags)
+			int sort, int sortDir, int flags, string packagesSearch)
 		{
-			search_ = search;
+			search_ = new SearchString(search);
 			exts_ = extensions;
 			packagesRoot_ = packagesRoot;
 			sort_ = sort;
 			sortDir_ = sortDir;
 			flags_ = flags;
-
-			if (VUI.Utilities.IsRegex(search_))
-			{
-				searchLc_ = null;
-				searchRe_ = VUI.Utilities.CreateRegex(search_);
-			}
-			else
-			{
-				searchLc_ = search.ToLower();
-				searchRe_ = null;
-			}
+			packagesSearch_ = new SearchString(packagesSearch);
 		}
 
 		public static string SortToString(int s)
@@ -123,7 +175,7 @@ namespace AUI.FS
 			get
 			{
 				return new Context(
-					"", null, "", NoSort, NoSortDirection, NoFlags);
+					"", null, "", NoSort, NoSortDirection, NoFlags, "");
 			}
 		}
 
@@ -132,14 +184,19 @@ namespace AUI.FS
 			get
 			{
 				return
-					string.IsNullOrEmpty(search_) &&
+					search_.Empty &&
 					string.IsNullOrEmpty(ExtensionsString);
 			}
 		}
 
-		public string Search
+		public SearchString Search
 		{
 			get { return search_; }
+		}
+
+		public SearchString PackagesSearch
+		{
+			get { return packagesSearch_; }
 		}
 
 		public string[] Extensions
@@ -232,20 +289,7 @@ namespace AUI.FS
 
 		public bool SearchMatches(string path)
 		{
-			var name = Path.Filename(path);
-
-			if (searchLc_ != null)
-			{
-				if (name.ToLower().IndexOf(searchLc_) == -1)
-					return false;
-			}
-			else if (searchRe_ != null)
-			{
-				if (!searchRe_.IsMatch(name))
-					return false;
-			}
-
-			return true;
+			return search_.Matches(Path.Filename(path));
 		}
 
 

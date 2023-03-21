@@ -19,6 +19,7 @@ namespace AUI.FileDialog
 		private FileTree tree_ = null;
 		private FilesPanel filesPanel_ = null;
 		private ButtonsPanel buttonsPanel_ = null;
+		private SearchBox packagesSearch_ = null;
 
 		private IFileDialogMode mode_ = new NoMode();
 		private FS.IFilesystemContainer dir_ = null;
@@ -429,7 +430,8 @@ namespace AUI.FileDialog
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				mode_.Options.Sort, mode_.Options.SortDirection,
-				MakeContextFlags(recursive, mode_.Options));
+				MakeContextFlags(recursive, mode_.Options),
+				"");
 		}
 
 		public FS.Context CreateTreeContext(bool recursive)
@@ -438,7 +440,8 @@ namespace AUI.FileDialog
 				"", buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				FS.Context.SortFilename, FS.Context.SortAscending,
-				MakeContextFlags(recursive, mode_.Options));
+				MakeContextFlags(recursive, mode_.Options),
+				packagesSearch_.Text);
 		}
 
 		public void Refresh()
@@ -617,9 +620,9 @@ namespace AUI.FileDialog
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
 
 			// needs work
-			//var s = p.Add(new SearchBox("Search folders"), VUI.BorderLayout.Bottom);
-			//s.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
-			//s.Changed += (ss) => tree_.TreeView.Filter = ss;
+			packagesSearch_ = p.Add(new SearchBox("Search packages"), VUI.BorderLayout.Bottom);
+			packagesSearch_.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
+			packagesSearch_.Changed += (ss) => tree_.SearchPackages(ss);
 
 			return p;
 		}

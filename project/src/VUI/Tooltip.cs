@@ -63,8 +63,8 @@ namespace VUI
 			Visible = false;
 
 			SetDropShadow(
-				Style.Theme.TooltipDropShadowColor,
-				Style.Metrics.TooltipDropShadowDistance);
+				Style.Theme.DropShadowColor,
+				Style.Metrics.DropShadowDistance);
 
 			label_ = new Label();
 			label_.WrapMode = VUI.Label.Wrap;

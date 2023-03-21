@@ -8,37 +8,72 @@ namespace AUI.FS
 	{
 		class PackagesInfo
 		{
-			public PackageRootDirectory pr;
-			public readonly string root;
-			public List<IFilesystemContainer> packages = null;
-			public Dictionary<string, ShortCut> shortCuts = null;
+			private PackageRootDirectory pr_;
+			private readonly string root_;
+			private List<IFilesystemContainer> packages_ = null;
+			private Dictionary<string, ShortCut> shortCuts_ = null;
+
+			private string search_ = null;
+			private List<IFilesystemContainer> searchedPackages_ = null;
 
 			public PackagesInfo(PackageRootDirectory pr, string root)
 			{
-				this.pr = pr;
-				this.root = root;
+				pr_ = pr;
+				root_ = root;
 			}
 
 			public Logger Log
 			{
-				get { return pr.Log; }
+				get { return pr_.Log; }
+			}
+
+			public List<IFilesystemContainer> GetPackages(Context cx)
+			{
+				if (cx.PackagesSearch.Empty || packages_ == null)
+					return packages_;
+
+				if (search_ != cx.PackagesSearch.String)
+				{
+					search_ = cx.PackagesSearch.String;
+
+					if (searchedPackages_ == null)
+						searchedPackages_ = new List<IFilesystemContainer>();
+					else
+						searchedPackages_.Clear();
+
+					foreach (var p in packages_)
+					{
+						if (cx.PackagesSearch.Matches(p.DisplayName))
+							searchedPackages_.Add(p);
+					}
+				}
+
+				return searchedPackages_;
+			}
+
+			public ShortCut GetShortcut(string name)
+			{
+				ShortCut sc = null;
+				shortCuts_.TryGetValue(name, out sc);
+
+				return sc;
 			}
 
 			public void Refresh(bool showHiddenFolders)
 			{
 				Instrumentation.Start(I.RefreshPackages);
 				{
-					if (packages == null)
-						packages = new List<IFilesystemContainer>();
+					if (packages_ == null)
+						packages_ = new List<IFilesystemContainer>();
 					else
-						packages.Clear();
+						packages_.Clear();
 
-					if (shortCuts == null)
-						shortCuts = new Dictionary<string, ShortCut>();
+					if (shortCuts_ == null)
+						shortCuts_ = new Dictionary<string, ShortCut>();
 					else
-						shortCuts.Clear();
+						shortCuts_.Clear();
 
-					var scs = Sys.GetShortCutsForDirectory(pr, root);
+					var scs = Sys.GetShortCutsForDirectory(pr_, root_);
 
 					foreach (var sc in scs)
 					{
@@ -51,8 +86,8 @@ namespace AUI.FS
 						if (sc.path == "AddonPackages")
 							continue;
 
-						packages.Add(new Package(pr.fs_, pr, sc.package, root, showHiddenFolders));
-						shortCuts.Add(sc.package, sc);
+						packages_.Add(new Package(pr_.fs_, pr_, sc.package, root_, showHiddenFolders));
+						shortCuts_.Add(sc.package, sc);
 					}
 				}
 				Instrumentation.End();
@@ -121,7 +156,7 @@ namespace AUI.FS
 		public List<IFilesystemContainer> GetPackages(Context cx)
 		{
 			var pi = GetPackagesInfo(cx.PackagesRoot, cx.ShowHiddenFolders);
-			return pi?.packages;
+			return pi?.GetPackages(cx);
 		}
 
 		public ShortCut GetShortCut(
@@ -131,10 +166,7 @@ namespace AUI.FS
 			if (pi == null)
 				return null;
 
-			ShortCut sc;
-			pi.shortCuts.TryGetValue(name, out sc);
-
-			return sc;
+			return pi.GetShortcut(name);
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)

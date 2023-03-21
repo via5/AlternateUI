@@ -183,6 +183,12 @@ namespace AUI.FS
 			return "RootDirectory";
 		}
 
+		public override void ClearCache()
+		{
+			base.ClearCache();
+			dirs_ = null;
+		}
+
 		public SavesDirectory Saves
 		{
 			get { return saves_; }
@@ -281,16 +287,26 @@ namespace AUI.FS
 		{
 			if (dirs_ == null)
 			{
-				dirs_ = new List<IFilesystemContainer>()
+				if (cx.PackagesSearch.Empty)
 				{
-					new VirtualDirectory(fs_, this, allFlat_),
-					new VirtualDirectory(fs_, this, packagesFlat_),
-					pinnedFlat_,
-					pinned_,
-					new VirtualDirectory(fs_, this, saves_),
-					new VirtualDirectory(fs_, this, custom_),
-					fs_.GetPackagesRoot()
-				};
+					dirs_ = new List<IFilesystemContainer>()
+					{
+						new VirtualDirectory(fs_, this, allFlat_),
+						new VirtualDirectory(fs_, this, packagesFlat_),
+						pinnedFlat_,
+						pinned_,
+						new VirtualDirectory(fs_, this, saves_),
+						new VirtualDirectory(fs_, this, custom_),
+						fs_.GetPackagesRoot()
+					};
+				}
+				else
+				{
+					dirs_ = new List<IFilesystemContainer>()
+					{
+						fs_.GetPackagesRoot()
+					};
+				}
 			}
 
 			return dirs_;

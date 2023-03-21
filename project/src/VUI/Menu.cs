@@ -160,6 +160,7 @@ namespace VUI
 			panel_.Borders = new Insets(1);
 			panel_.Clickthrough = false;
 			panel_.Visible = false;
+			panel_.SetDropShadow(Style.Theme.DropShadowColor, Style.Metrics.DropShadowDistance);
 
 			if (!autoSize_)
 				panel_.MinimumSize = Size;

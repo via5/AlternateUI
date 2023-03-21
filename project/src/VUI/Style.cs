@@ -32,7 +32,7 @@ namespace VUI
 			get { return 10; }
 		}
 
-		public Vector2 TooltipDropShadowDistance
+		public Vector2 DropShadowDistance
 		{
 			get { return new Vector2(10, -10); }
 		}
@@ -285,7 +285,7 @@ namespace VUI
 			get { return new Color(0.12f, 0.12f, 0.12f); }
 		}
 
-		public Color TooltipDropShadowColor
+		public Color DropShadowColor
 		{
 			get { return new Color(0, 0, 0, 0.5f); }
 		}

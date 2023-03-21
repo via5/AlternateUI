@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using VUI;
 
 namespace AUI.FileDialog
 {
@@ -26,11 +27,8 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			var fsRoot = FS.Filesystem.Instance.GetRoot();
-
-			root_ = new FileTreeItem(this, fsRoot);
+			root_ = new FileTreeItem(this, FS.Filesystem.Instance.GetRoot());
 			tree_.RootItem.Add(root_);
-
 			tree_.SelectionChanged += OnSelection;
 		}
 
@@ -41,9 +39,9 @@ namespace AUI.FileDialog
 
 		public void Init()
 		{
-			var fsRoot = FS.Filesystem.Instance.GetRoot();
-
 			root_.Expanded = true;
+
+			var fsRoot = FS.Filesystem.Instance.GetRoot();
 			Expand(fsRoot.PinnedRoot);
 			Expand(fsRoot.Saves);
 		}
@@ -131,6 +129,17 @@ namespace AUI.FileDialog
 		public void Disable()
 		{
 			FS.Filesystem.Instance.ObjectChanged -= OnObjectChanged;
+		}
+
+		public void SearchPackages(string s)
+		{
+			FS.Filesystem.Instance.GetRoot().ClearCache();
+			FS.Filesystem.Instance.GetPackagesRoot().ClearCache();
+
+			if (!string.IsNullOrEmpty(s))
+				Expand(FS.Filesystem.Instance.GetPackagesRoot());
+
+			Refresh();
 		}
 
 		public void Refresh()
