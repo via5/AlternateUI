@@ -7,6 +7,46 @@ using UnityEngine.UI;
 
 namespace VUI
 {
+	public class DropShadow
+	{
+		private Color c_;
+		private Vector2 distance_;
+		private Shadow shadow_;
+
+		public DropShadow()
+		{
+		}
+
+		public void Set(GameObject o, Color c, Vector2 distance)
+		{
+			c_ = c;
+			distance_ = distance;
+
+			if (o != null)
+				Create(o);
+		}
+
+		public void Create(GameObject o)
+		{
+			if (o == null)
+				return;
+
+			if (shadow_ == null)
+			{
+				var image = o.GetComponent<UnityEngine.UI.Image>();
+				if (image == null)
+					image = o.AddComponent<UnityEngine.UI.Image>();
+
+				shadow_ = o.AddComponent<Shadow>();
+			}
+
+			shadow_.effectColor = c_;
+			shadow_.effectDistance = distance_;
+			shadow_.useGraphicAlpha = true;
+		}
+	}
+
+
 	public abstract class Widget : IDisposable, IWidget
 	{
 		public virtual string TypeName { get { return "Widget"; } }
@@ -35,6 +75,8 @@ namespace VUI
 		private RectTransform borderGraphicsRT_ = null;
 		private LayoutElement mainObjectLE_ = null;
 
+		private DropShadow dropShadow_ = null;
+
 		private bool render_ = true;
 		private bool visible_ = true;
 		private bool enabled_ = true;
@@ -50,6 +92,7 @@ namespace VUI
 		private Events events_ = new Events();
 		private bool wantsFocus_ = true;
 		private bool didLayoutWhileRendered_ = false;
+		private bool bringToTop_ = false;
 
 		private bool dirty_ = true;
 
@@ -177,6 +220,14 @@ namespace VUI
 					Polish();
 				}
 			}
+		}
+
+		public void SetDropShadow(Color color, Vector2 distance)
+		{
+			if (dropShadow_ == null)
+				dropShadow_ = new DropShadow();
+
+			dropShadow_.Set(MainObject, color, distance);
 		}
 
 		public GameObject MainObject
@@ -764,6 +815,8 @@ namespace VUI
 
 		public void BringToTop()
 		{
+			bringToTop_ = true;
+
 			if (widgetObject_ != null)
 				Utilities.BringToTop(widgetObject_);
 		}
@@ -807,6 +860,8 @@ namespace VUI
 				else
 					mainObject_.transform.SetParent(parent_.MainObject.transform, false);
 
+				dropShadow_?.Create(MainObject);
+
 				widgetObject_ = CreateGameObject();
 				widgetObject_.AddComponent<MouseCallbacks>().Widget = this;
 				widgetObject_.transform.SetParent(mainObject_.transform, false);
@@ -835,6 +890,9 @@ namespace VUI
 
 				if (root.Focused == this)
 					DoFocus();
+
+				if (bringToTop_)
+					Utilities.BringToTop(widgetObject_);
 			}
 
 			DoPostCreate();

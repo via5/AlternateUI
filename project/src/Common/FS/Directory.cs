@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,6 +10,8 @@ namespace AUI.FS
 		private HashSet<IFilesystemContainer> dirs_ = null;
 		private List<IFilesystemContainer> sortedDirs_ = null;
 		private List<string> tooltip_ = null;
+		private Context lastContext_ = null;
+		private bool merged_ = false;
 
 		public VirtualDirectory(
 			Filesystem fs, IFilesystemContainer parent,
@@ -49,7 +52,11 @@ namespace AUI.FS
 			{
 				foreach (var d in dirs_)
 					d.ClearCache();
+
+				sortedDirs_ = null;
 			}
+
+			merged_ = false;
 		}
 
 		protected override string GetDisplayName()
@@ -61,6 +68,8 @@ namespace AUI.FS
 		{
 			get
 			{
+				RequireAllDirectories(lastContext_);
+
 				var s = base.Tooltip;
 
 				if (dirs_ != null && dirs_.Count > 0)
@@ -70,7 +79,7 @@ namespace AUI.FS
 					else
 						tooltip_.Clear();
 
-					MakeTooltip(SortedDirs(), U.DevMode);
+					MakeTooltip(lastContext_, SortedDirs(lastContext_), U.DevMode);
 
 					string dirSources = "";
 
@@ -87,38 +96,49 @@ namespace AUI.FS
 			}
 		}
 
-		private List<IFilesystemContainer> SortedDirs()
+		private bool RequireAllDirectories(Context cx)
 		{
+			if (merged_)
+				return false;
+
+			if (cx == null)
+			{
+				Log.Error($"{this}: trying to merge, but no context");
+				return false;
+			}
+
+			if (cx.MergePackages)
+			{
+				if (ParentPackage == null && !IsInternal)
+					return MergePackages(cx);
+			}
+
+			return false;
+		}
+
+		private List<IFilesystemContainer> SortedDirs(Context cx)
+		{
+			RequireAllDirectories(cx);
+
 			if (sortedDirs_ == null && dirs_ != null)
 			{
 				sortedDirs_ = new List<IFilesystemContainer>(dirs_);
 				sortedDirs_.Sort((a, b) =>
 				{
-					if (!a.Virtual && b.Virtual)
+					var ap = a.ParentPackage;
+					var bp = b.ParentPackage;
+
+					if (ap == null && bp != null)
 					{
 						return -1;
 					}
-					else if (a.Virtual && !b.Virtual)
+					else if (ap != null && bp == null)
 					{
 						return 1;
 					}
 					else
 					{
-						var ap = a.ParentPackage;
-						var bp = b.ParentPackage;
-
-						if (ap == null && bp != null)
-						{
-							return -1;
-						}
-						else if (ap != null && bp == null)
-						{
-							return 1;
-						}
-						else
-						{
-							return U.CompareNatural(a.VirtualPath, b.VirtualPath);
-						}
+						return U.CompareNatural(a.VirtualPath, b.VirtualPath);
 					}
 				});
 			}
@@ -126,7 +146,8 @@ namespace AUI.FS
 			return sortedDirs_;
 		}
 
-		private void MakeTooltip(List<IFilesystemContainer> dirs, bool devMode)
+		private void MakeTooltip(
+			Context cx, List<IFilesystemContainer> dirs, bool devMode)
 		{
 			if (dirs == null)
 				return;
@@ -152,7 +173,7 @@ namespace AUI.FS
 				tooltip_.Add(s);
 
 				if (d is VirtualDirectory)
-					MakeTooltip((d as VirtualDirectory).SortedDirs(), devMode);
+					MakeTooltip(cx, (d as VirtualDirectory).SortedDirs(cx), devMode);
 			}
 		}
 
@@ -173,13 +194,10 @@ namespace AUI.FS
 			if (dirs_ == null)
 				dirs_ = new HashSet<IFilesystemContainer>();
 
-			dirs_.UnionWith(c);
-			sortedDirs_ = null;
-		}
+			foreach (var cc in c)
+				Add(cc);
 
-		public HashSet<IFilesystemContainer> Content
-		{
-			get { return dirs_; }
+			sortedDirs_ = null;
 		}
 
 		public override DateTime DateCreated
@@ -293,6 +311,9 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
+			lastContext_ = cx;
+			RequireAllDirectories(cx);
+
 			var list = new HashSet<IFilesystemContainer>();
 
 			if (dirs_ != null)
@@ -322,6 +343,24 @@ namespace AUI.FS
 
 		protected override bool DoHasDirectories(Context cx)
 		{
+			lastContext_ = cx;
+
+			if (HasDirectoriesInternal(cx))
+				return true;
+
+			// try again with all directories
+			// todo: skip the ones already tried
+			if (RequireAllDirectories(cx))
+			{
+				if (HasDirectoriesInternal(cx))
+					return true;
+			}
+
+			return false;
+		}
+
+		private bool HasDirectoriesInternal(Context cx)
+		{
 			if (dirs_ == null)
 				return false;
 
@@ -341,6 +380,9 @@ namespace AUI.FS
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
+			lastContext_ = cx;
+			RequireAllDirectories(cx);
+
 			var list = new List<IFilesystemObject>();
 
 			if (dirs_ != null)
@@ -406,6 +448,78 @@ namespace AUI.FS
 						vd.Add(d);
 						map.Add(d.Name, vd);
 					}
+				}
+			}
+		}
+
+		private bool MergePackages(Context cx)
+		{
+			bool changed = false;
+			var list = new HashSet<IFilesystemContainer>();
+
+			Instrumentation.Start(I.MergePackages);
+			{
+				string rootName, path;
+
+				Instrumentation.Start(I.MergePackagesStart);
+				{
+					rootName = fs_.GetRoot().Name + "/";
+
+					path = VirtualPath;
+					if (path.StartsWith(rootName))
+						path = path.Substring(rootName.Length);
+				}
+				Instrumentation.End();
+
+				List<IFilesystemContainer> packages;
+
+				Instrumentation.Start(I.MergePackagesGetPackages);
+				{
+					packages = fs_.GetPackagesRoot().GetPackages(cx);
+				}
+				Instrumentation.End();
+
+				foreach (var p in packages)
+				{
+					string rpath = p.Name + ":/" + path;
+					IFilesystemObject o;
+
+					Instrumentation.Start(I.MergePackagesResolve);
+					{
+						o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);
+					}
+					Instrumentation.End();
+
+					Instrumentation.Start(I.MergePackagesAdd);
+					{
+						var d = o as IFilesystemContainer;
+						if (d != null)
+							list.Add(d);
+					}
+					Instrumentation.End();
+				}
+			}
+			Instrumentation.End();
+
+			MergeAdd(list);
+			merged_ = true;
+
+			return changed;
+		}
+
+		private void MergeAdd(HashSet<IFilesystemContainer> list)
+		{
+			foreach (var c in list)
+			{
+				if (c is VirtualDirectory)
+				{
+					var vd = c as VirtualDirectory;
+					if (vd.dirs_ != null)
+						MergeAdd(vd.dirs_);
+				}
+				else
+				{
+					Add(c);
 				}
 			}
 		}

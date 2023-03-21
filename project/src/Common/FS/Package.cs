@@ -38,7 +38,9 @@ namespace AUI.FS
 					else
 						shortCuts.Clear();
 
-					foreach (var sc in Sys.GetShortCutsForDirectory(pr, root))
+					var scs = Sys.GetShortCutsForDirectory(pr, root);
+
+					foreach (var sc in scs)
 					{
 						if (string.IsNullOrEmpty(sc.package))
 							continue;

@@ -26,6 +26,11 @@ namespace AUI.FS
 			i_ = i;
 		}
 
+		public string Path
+		{
+			get { return path_; }
+		}
+
 		public bool Done
 		{
 			get { return (i_ >= cs_.Length); }

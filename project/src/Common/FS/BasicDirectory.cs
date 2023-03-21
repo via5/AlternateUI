@@ -508,25 +508,6 @@ namespace AUI.FS
 			}
 			Instrumentation.End();
 
-
-			if (cx.MergePackages)
-			{
-				if (ParentPackage == null && !Virtual)
-				{
-					foreach (var d in dirs)
-					{
-						if (d.IsInternal)
-							continue;
-
-						if (d is VirtualDirectory)
-						{
-							var vd = d as VirtualDirectory;
-							MergePackages(cx, vd);
-						}
-					}
-				}
-			}
-
 			return dirs;
 		}
 
@@ -578,53 +559,6 @@ namespace AUI.FS
 			Instrumentation.End();
 
 			return files;
-		}
-
-		private void MergePackages(Context cx, VirtualDirectory vd)
-		{
-			Instrumentation.Start(I.MergePackages);
-			{
-				string rootName, path;
-
-				Instrumentation.Start(I.MergePackagesStart);
-				{
-					rootName = fs_.GetRoot().Name + "/";
-
-					path = vd.VirtualPath;
-					if (path.StartsWith(rootName))
-						path = path.Substring(rootName.Length);
-				}
-				Instrumentation.End();
-
-				List<IFilesystemContainer> packages;
-
-				Instrumentation.Start(I.MergePackagesGetPackages);
-				{
-					packages = fs_.GetPackagesRoot().GetPackages(cx);
-				}
-				Instrumentation.End();
-
-				foreach (var p in packages)
-				{
-					string rpath = p.Name + ":/" + path;
-					IFilesystemObject o;
-
-					Instrumentation.Start(I.MergePackagesResolve);
-					{
-						o = p.Resolve(cx, rpath, Filesystem.ResolveDirsOnly);
-					}
-					Instrumentation.End();
-
-					Instrumentation.Start(I.MergePackagesAdd);
-					{
-						var d = o as IFilesystemContainer;
-						if (d != null)
-							vd.Add(d);
-					}
-					Instrumentation.End();
-				}
-			}
-			Instrumentation.End();
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)

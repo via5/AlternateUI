@@ -19,12 +19,22 @@ namespace VUI
 
 		public float MaxTooltipWidth
 		{
-			get { return 1000; }
+			get { return 1200; }
 		}
 
 		public float TooltipBorderOffset
 		{
 			get { return 10; }
+		}
+
+		public float TooltipPadding
+		{
+			get { return 10; }
+		}
+
+		public Vector2 TooltipDropShadowDistance
+		{
+			get { return new Vector2(10, -10); }
 		}
 
 		public Size ButtonMinimumSize
@@ -273,6 +283,11 @@ namespace VUI
 		public Color BackgroundColor
 		{
 			get { return new Color(0.12f, 0.12f, 0.12f); }
+		}
+
+		public Color TooltipDropShadowColor
+		{
+			get { return new Color(0, 0, 0, 0.5f); }
 		}
 
 		public Color ComboBoxBackgroundColor
