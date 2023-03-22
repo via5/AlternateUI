@@ -368,10 +368,6 @@ namespace AUI.FileDialog
 
 			if (opts.CurrentDirectoryInPinned != "")
 			{
-				Log.Info(
-					$"trying to select dir in pinned: " +
-					$"dir={opts.CurrentDirectory} pin={opts.CurrentDirectoryInPinned}");
-
 				if (SelectDirectoryInPinned(
 						opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
 						flags, scrollTo))

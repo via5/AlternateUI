@@ -258,7 +258,7 @@ namespace AUI.FileDialog
 			string path, string pinnedRoot, int flags,
 			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
-			bool debug = true;// Bits.IsSet(flags, FileDialog.SelectDirectoryDebug);
+			bool debug = Bits.IsSet(flags, FileDialog.SelectDirectoryDebug);
 			bool expand = Bits.IsSet(flags, FileDialog.SelectDirectoryExpand);
 
 			path = path.Replace('\\', '/');
@@ -271,8 +271,11 @@ namespace AUI.FileDialog
 			if (!pinnedRoot.EndsWith("/"))
 				pinnedRoot += "/";
 
-			Log.Info(
-				$"SelectInPinned: path={path} pinnedRoot={pinnedRoot}");
+			if (debug)
+			{
+				Log.Info(
+					$"SelectInPinned: path={path} pinnedRoot={pinnedRoot}");
+			}
 
 			if (!path.StartsWith(pinnedRoot))
 			{
@@ -296,10 +299,13 @@ namespace AUI.FileDialog
 			{
 				if (o.VirtualPath == pinnedRoot)
 				{
-					Log.Info($"SelectInPinned: got root {o}, rpath={rpath}");
+					if (debug)
+						Log.Info($"SelectInPinned: got root {o}, rpath={rpath}");
 
 					var cs = new List<string>(rpath.Split('/'));
-					Log.Info($"SelectInPinned: cs={cs.Count}");
+
+					if (debug)
+						Log.Info($"SelectInPinned: cs={cs.Count}");
 
 					while (cs.Count > 0 && cs[0].Trim() == "")
 						cs.RemoveAt(0);
@@ -327,8 +333,12 @@ namespace AUI.FileDialog
 				}
 				else
 				{
-					Log.Info(
-						$"SelectInPinned: o.vp {o.VirtualPath} is not {pinnedRoot}");
+					if (debug)
+					{
+						Log.Info(
+							$"SelectInPinned: o.vp {o.VirtualPath} " +
+							$"is not {pinnedRoot}");
+					}
 				}
 			}
 
