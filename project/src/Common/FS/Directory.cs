@@ -501,27 +501,35 @@ namespace AUI.FS
 			}
 			Instrumentation.End();
 
-			MergeAdd(list);
+			changed = MergeAdd(list);
 			merged_ = true;
 
 			return changed;
 		}
 
-		private void MergeAdd(HashSet<IFilesystemContainer> list)
+		private bool MergeAdd(HashSet<IFilesystemContainer> list)
 		{
+			bool changed = false;
+
 			foreach (var c in list)
 			{
 				if (c is VirtualDirectory)
 				{
 					var vd = c as VirtualDirectory;
 					if (vd.dirs_ != null)
-						MergeAdd(vd.dirs_);
+					{
+						if (MergeAdd(vd.dirs_))
+							changed = true;
+					}
 				}
 				else
 				{
 					Add(c);
+					changed = true;
 				}
 			}
+
+			return changed;
 		}
 
 		private bool HasRealDir()

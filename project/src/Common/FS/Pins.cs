@@ -240,6 +240,20 @@ namespace AUI.FS
 			return $"PinnedObject({c_})";
 		}
 
+		public override string Tooltip
+		{
+			get
+			{
+				string s = base.Tooltip;
+
+				s += "\n\n";
+
+				s += c_.Tooltip;
+
+				return s;
+			}
+		}
+
 		protected override string GetDisplayName()
 		{
 			var p = c_.ParentPackage;
@@ -262,6 +276,7 @@ namespace AUI.FS
 		public override IPackage ParentPackage { get { return c_.ParentPackage; } }
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 		public override bool IsInternal { get { return c_.IsInternal; } }
+
 
 		public override bool UnderlyingCanChange
 		{

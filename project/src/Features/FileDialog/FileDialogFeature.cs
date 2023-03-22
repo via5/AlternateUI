@@ -170,7 +170,9 @@ namespace AUI.FileDialog
 				path = path.Replace("/AddonPackages/", "/Packages/");
 				path = path.Replace(".var", "");
 
-				fd_.SelectDirectory(path, false, VUI.TreeView.ScrollToCenter);
+				fd_.SelectDirectory(
+					path, FileDialog.SelectDirectoryNoFlags,
+					VUI.TreeView.ScrollToCenter);
 			};
 		}
 

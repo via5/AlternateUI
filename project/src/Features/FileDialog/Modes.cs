@@ -108,6 +108,7 @@ namespace AUI.FileDialog
 	{
 		private string name_;
 		private string lastPath_;
+		private string lastPathRootInPinned_;
 		private bool flattenDirs_;
 		private bool flattenPackages_;
 		private bool mergePackages_;
@@ -126,6 +127,7 @@ namespace AUI.FileDialog
 		{
 			name_ = name;
 			lastPath_ = lastPath;
+			lastPathRootInPinned_ = "";
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
 			mergePackages_ = mergePackages;
@@ -204,6 +206,12 @@ namespace AUI.FileDialog
 			set { lastPath_ = value; Changed(); }
 		}
 
+		public string CurrentDirectoryInPinned
+		{
+			get { return lastPathRootInPinned_; }
+			set { lastPathRootInPinned_ = value; Changed(); }
+		}
+
 		public void Load()
 		{
 			var path = GetOptionsFile();
@@ -216,6 +224,9 @@ namespace AUI.FileDialog
 
 			if (j.HasKey("lastPath"))
 				lastPath_ = j["lastPath"].Value;
+
+			if (j.HasKey("lastPathRootInPinned"))
+				lastPathRootInPinned_ = j["lastPathRootInPinned"].Value;
 
 			if (j.HasKey("flattenDirectories"))
 				flattenDirs_ = j["flattenDirectories"].AsBool;
@@ -248,6 +259,7 @@ namespace AUI.FileDialog
 			var j = new JSONClass();
 
 			j["lastPath"] = new JSONData(lastPath_);
+			j["lastPathRootInPinned"] = new JSONData(lastPathRootInPinned_);
 			j["flattenDirectories"] = new JSONData(flattenDirs_);
 			j["flattenPackages"] = new JSONData(flattenPackages_);
 			j["mergePackages"] = new JSONData(mergePackages_);
@@ -362,6 +374,8 @@ namespace AUI.FileDialog
 		public void Execute(FileDialog fd, ExecuteHandler h)
 		{
 			opts_.CurrentDirectory = fd.SelectedDirectory.VirtualPath;
+			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
+
 			DoExecute(fd, h);
 		}
 

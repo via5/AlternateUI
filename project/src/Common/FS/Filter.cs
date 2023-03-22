@@ -163,10 +163,10 @@ namespace AUI.FS
 		public override string ToString()
 		{
 			return
-				$"search='{search_}' " +
 				$"exts={(exts_ == null ? "(none)" : string.Join(";", exts_))} " +
-				$"sort={sort_} " +
-				$"sortDir={sortDir_} " +
+				$"pr='{packagesRoot_}' " +
+				$"sort={sort_} sortDir={sortDir_} " +
+				$"search='{search_}' psearch='{packagesSearch_}' " +
 				$"flags={flags_}";
 		}
 

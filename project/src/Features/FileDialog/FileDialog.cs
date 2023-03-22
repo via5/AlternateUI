@@ -9,6 +9,14 @@ namespace AUI.FileDialog
 	{
 		public const int FontSize = 24;
 
+		public const int SelectFileNoFlags = 0x00;
+		public const int SelectFileKeepFilename = 0x01;
+
+		public const int SelectDirectoryNoFlags = 0x00;
+		public const int SelectDirectoryExpand = 0x01;
+		public const int SelectDirectoryDebug = 0x02;
+
+
 		private readonly Logger log_;
 
 		private VUI.Root root_ = null;
@@ -119,6 +127,11 @@ namespace AUI.FileDialog
 			get { return dir_; }
 		}
 
+		public FS.IFilesystemContainer SelectedDirectoryRootInPinned
+		{
+			get { return tree_.SelectedRootInPinned; }
+		}
+
 		public FS.IFilesystemObject SelectedFile
 		{
 			get { return selected_; }
@@ -182,53 +195,17 @@ namespace AUI.FileDialog
 			buttonsPanel_.FocusFilename();
 		}
 
-		private void SelectInitialDirectory(string cwd)
-		{
-			var scrollTo = VUI.TreeView.ScrollToCenter;
-			var opts = mode_.Options;
-
-			if (cwd != null)
-			{
-				if (SelectDirectory(cwd, false, scrollTo))
-				{
-					opts.CurrentDirectory = cwd;
-					return;
-				}
-
-				Log.Error($"(1) bad initial directory {cwd}");
-			}
-
-			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
-				return;
-
-			Log.Error($"(2) bad initial directory {opts.CurrentDirectory}");
-
-			if (SelectDirectory(mode_.DefaultDirectory, false, scrollTo))
-			{
-				opts.CurrentDirectory = mode_.DefaultDirectory;
-				return;
-			}
-
-			Log.Error($"(3) bad initial directory {mode_.DefaultDirectory}");
-			opts.CurrentDirectory = FS.Filesystem.Instance.GetRoot().VirtualPath;
-
-			if (SelectDirectory(opts.CurrentDirectory, false, scrollTo))
-				return;
-
-			Log.Error($"can't select any initial directory");
-		}
-
 		public void Hide()
 		{
 			tree_.Disable();
 			root_.Visible = false;
 		}
 
-		public void SelectFile(FS.IFilesystemObject o, bool replaceFilename = true)
+		public void SelectFile(FS.IFilesystemObject o, int flags = SelectFileNoFlags)
 		{
 			if (selected_ == o)
 			{
-				if (replaceFilename)
+				if (!Bits.IsSet(flags, SelectFileKeepFilename))
 					UpdateFilename();
 			}
 			else
@@ -238,7 +215,7 @@ namespace AUI.FileDialog
 
 				selected_ = o;
 
-				if (replaceFilename)
+				if (!Bits.IsSet(flags, SelectFileKeepFilename))
 					UpdateFilename();
 
 				if (selected_ != null)
@@ -248,21 +225,34 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private void UpdateFilename()
-		{
-			if (selected_ != null)
-				buttonsPanel_.Filename = selected_.DisplayName;
-		}
-
 		public bool SelectDirectory(
-			string vpath, bool expand = true,
-			int scrollTo = VUI.TreeView.ScrollToNearest, bool debug = false)
+			string vpath, int flags = SelectDirectoryNoFlags,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
 			bool b;
-
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
 			{
-				b = tree_.Select(vpath, expand, scrollTo, debug);
+				b = tree_.Select(vpath, flags, scrollTo);
+			}
+			FS.Instrumentation.End();
+
+			if (!b)
+			{
+				SetPath();
+				return false;
+			}
+
+			return true;
+		}
+
+		public bool SelectDirectoryInPinned(
+			string vpath, string pinnedRoot, int flags = SelectDirectoryNoFlags,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
+		{
+			bool b;
+			FS.Instrumentation.Start(FS.I.FDTreeSelect);
+			{
+				b = tree_.SelectInPinned(vpath, pinnedRoot, flags, scrollTo);
 			}
 			FS.Instrumentation.End();
 
@@ -295,7 +285,7 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreHistory_ = true;
-				SelectDirectory(History.Back(), false);
+				SelectDirectory(History.Back());
 			}
 			finally
 			{
@@ -308,7 +298,7 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreHistory_ = true;
-				SelectDirectory(History.Next(), false);
+				SelectDirectory(History.Next());
 			}
 			finally
 			{
@@ -322,7 +312,7 @@ namespace AUI.FileDialog
 			{
 				ignoreHistory_ = true;
 				if (History.SetIndex(i))
-					SelectDirectory(History.Current, false);
+					SelectDirectory(History.Current);
 			}
 			finally
 			{
@@ -357,6 +347,63 @@ namespace AUI.FileDialog
 					Hide();
 				});
 			}
+		}
+
+		private void SelectInitialDirectory(string cwd)
+		{
+			var scrollTo = VUI.TreeView.ScrollToCenter;
+			var flags = SelectDirectoryNoFlags;
+			var opts = mode_.Options;
+
+			if (cwd != null)
+			{
+				if (SelectDirectory(cwd, flags, scrollTo))
+				{
+					opts.CurrentDirectory = cwd;
+					return;
+				}
+
+				Log.Error($"(1) bad initial directory {cwd}");
+			}
+
+			if (opts.CurrentDirectoryInPinned != "")
+			{
+				Log.Info(
+					$"trying to select dir in pinned: " +
+					$"dir={opts.CurrentDirectory} pin={opts.CurrentDirectoryInPinned}");
+
+				if (SelectDirectoryInPinned(
+						opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
+						flags, scrollTo))
+				{
+					return;
+				}
+			}
+
+			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
+				return;
+
+			Log.Error($"(2) bad initial directory {opts.CurrentDirectory}");
+
+			if (SelectDirectory(mode_.DefaultDirectory, flags, scrollTo))
+			{
+				opts.CurrentDirectory = mode_.DefaultDirectory;
+				return;
+			}
+
+			Log.Error($"(3) bad initial directory {mode_.DefaultDirectory}");
+			opts.CurrentDirectory = FS.Filesystem.Instance.GetRoot().VirtualPath;
+
+			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
+				return;
+
+			Log.Error($"can't select any initial directory");
+		}
+
+		private void UpdateFilename()
+		{
+			if (selected_ != null)
+				buttonsPanel_.Filename = selected_.DisplayName;
 		}
 
 		private IEnumerator CoRunCallback(Action<string> f, string path)
@@ -680,7 +727,7 @@ namespace AUI.FileDialog
 				// filename not found, make selected file null, but don't
 				// replace the filename, it'd be set to an empty string and
 				// would be lost
-				SelectFile(null, false);
+				SelectFile(null);
 			}
 		}
 

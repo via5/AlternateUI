@@ -125,6 +125,30 @@ namespace AUI.FileDialog
 			}
 		}
 
+		public FS.IFilesystemContainer SelectedRootInPinned
+		{
+			get
+			{
+				var s = tree_.Selected as FileTreeItem;
+				var pinnedRoot = FS.Filesystem.Instance.GetPinnedRoot();
+
+				while (s != null)
+				{
+					var parent = s.Parent as FileTreeItem;
+					if (parent == null)
+						break;
+
+					var po = parent.Object;
+					if (po != null && po.IsSameObject(pinnedRoot))
+						return s.Object as FS.IFilesystemContainer;
+
+					s = s.Parent as FileTreeItem;
+				}
+
+				return null;
+			}
+		}
+
 		public void Enable()
 		{
 			FS.Filesystem.Instance.ObjectChanged += OnObjectChanged;
@@ -211,10 +235,12 @@ namespace AUI.FileDialog
 		}
 
 		public bool Select(
-			string path, bool expand = false,
-			int scrollTo = VUI.TreeView.ScrollToNearest,
-			bool debug = false)
+			string path, int flags,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
+			bool debug = Bits.IsSet(flags, FileDialog.SelectDirectoryDebug);
+			bool expand = Bits.IsSet(flags, FileDialog.SelectDirectoryExpand);
+
 			path = path.Replace('\\', '/');
 			path = path.Trim();
 
@@ -226,6 +252,87 @@ namespace AUI.FileDialog
 				Log.Info($"selecting {path}: {cs}");
 
 			return Select(tree_.RootItem, cs, expand, scrollTo, debug);
+		}
+
+		public bool SelectInPinned(
+			string path, string pinnedRoot, int flags,
+			int scrollTo = VUI.TreeView.ScrollToNearest)
+		{
+			bool debug = true;// Bits.IsSet(flags, FileDialog.SelectDirectoryDebug);
+			bool expand = Bits.IsSet(flags, FileDialog.SelectDirectoryExpand);
+
+			path = path.Replace('\\', '/');
+			path = path.Trim();
+			if (!path.EndsWith("/"))
+				path += "/";
+
+			pinnedRoot = pinnedRoot.Replace('\\', '/');
+			pinnedRoot = pinnedRoot.Trim();
+			if (!pinnedRoot.EndsWith("/"))
+				pinnedRoot += "/";
+
+			Log.Info(
+				$"SelectInPinned: path={path} pinnedRoot={pinnedRoot}");
+
+			if (!path.StartsWith(pinnedRoot))
+			{
+				Log.Error(
+					$"SelectInPinned: path '{path}' doesn't start with " +
+					$"pinned root '{pinnedRoot}'");
+
+				return false;
+			}
+
+			var fs = FS.Filesystem.Instance;
+			var rpath = path.Substring(pinnedRoot.Length);
+
+			if (pinnedRoot.EndsWith("/"))
+				pinnedRoot = pinnedRoot.Substring(0, pinnedRoot.Length - 1);
+
+			if (rpath.EndsWith("/"))
+				rpath = rpath.Substring(0, rpath.Length - 1);
+
+			foreach (var o in fs.GetPinnedRoot().Pinned)
+			{
+				if (o.VirtualPath == pinnedRoot)
+				{
+					Log.Info($"SelectInPinned: got root {o}, rpath={rpath}");
+
+					var cs = new List<string>(rpath.Split('/'));
+					Log.Info($"SelectInPinned: cs={cs.Count}");
+
+					while (cs.Count > 0 && cs[0].Trim() == "")
+						cs.RemoveAt(0);
+
+					var oi = FindItem(o);
+					if (oi == null)
+					{
+						Log.Error(
+							$"SelectInPinned: can't find object {o}");
+
+						return false;
+					}
+
+					if (cs.Count == 0)
+					{
+						tree_.Select(oi, true, scrollTo);
+
+						if (expand && tree_.Selected != null)
+							tree_.Selected.Expanded = true;
+
+						return true;
+					}
+
+					return Select(oi, cs, expand, scrollTo, debug);
+				}
+				else
+				{
+					Log.Info(
+						$"SelectInPinned: o.vp {o.VirtualPath} is not {pinnedRoot}");
+				}
+			}
+
+			return false;
 		}
 
 		private bool Select(
