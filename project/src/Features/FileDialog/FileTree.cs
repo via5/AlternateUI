@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using VUI;
 
 namespace AUI.FileDialog
 {
@@ -35,6 +34,11 @@ namespace AUI.FileDialog
 		public VUI.TreeView TreeView
 		{
 			get { return tree_; }
+		}
+
+		public Logger Log
+		{
+			get { return fd_.Log; }
 		}
 
 		public void Init()
@@ -208,7 +212,8 @@ namespace AUI.FileDialog
 
 		public bool Select(
 			string path, bool expand = false,
-			int scrollTo = VUI.TreeView.ScrollToNearest)
+			int scrollTo = VUI.TreeView.ScrollToNearest,
+			bool debug = false)
 		{
 			path = path.Replace('\\', '/');
 			path = path.Trim();
@@ -217,14 +222,27 @@ namespace AUI.FileDialog
 			if (cs.Count == 0)
 				return false;
 
-			return Select(tree_.RootItem, cs, expand, scrollTo);
+			if (debug)
+				Log.Info($"selecting {path}: {cs}");
+
+			return Select(tree_.RootItem, cs, expand, scrollTo, debug);
 		}
 
 		private bool Select(
-			VUI.TreeView.Item parent, List<string> cs, bool expand, int scrollTo)
+			VUI.TreeView.Item parent, List<string> cs,
+			bool expand, int scrollTo, bool debug)
 		{
 			if (parent.Children == null)
+			{
+				if (debug)
+					Log.Info($"{cs}: {parent} has no children");
+
 				return false;
+			}
+
+			if (debug)
+				Log.Info($"{cs}: select parent={parent}");
+
 
 			foreach (var i in parent.Children)
 			{
@@ -236,10 +254,16 @@ namespace AUI.FileDialog
 
 				if (o.Name == cs[0])
 				{
+					if (debug)
+						Log.Info($"{cs}: found {cs[0]} {o}");
+
 					if (fi != null)
 					{
 						if (cs.Count == 1)
 						{
+							if (debug)
+								Log.Info($"{cs}: {fi} is final");
+
 							tree_.Select(fi, true, scrollTo);
 
 							if (expand && tree_.Selected != null)
@@ -249,14 +273,22 @@ namespace AUI.FileDialog
 						}
 						else
 						{
+							if (debug)
+								Log.Info($"{cs}: going into {fi}");
+
 							cs.RemoveAt(0);
 
-							if (Select(fi, cs, expand, scrollTo))
+							if (Select(fi, cs, expand, scrollTo, debug))
 								return true;
 						}
 					}
 
 					break;
+				}
+				else
+				{
+					if (debug)
+						Log.Info($"{cs}: '{o.Name}' != '{cs[0]}'");
 				}
 			}
 

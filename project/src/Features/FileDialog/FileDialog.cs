@@ -46,6 +46,11 @@ namespace AUI.FileDialog
 				root_.Visible = false;
 		}
 
+		public bool Visible
+		{
+			get { return root_?.Visible ?? false; }
+		}
+
 		public void Update(float s)
 		{
 			root_?.Update();
@@ -251,13 +256,13 @@ namespace AUI.FileDialog
 
 		public bool SelectDirectory(
 			string vpath, bool expand = true,
-			int scrollTo = VUI.TreeView.ScrollToNearest)
+			int scrollTo = VUI.TreeView.ScrollToNearest, bool debug = false)
 		{
 			bool b;
 
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
 			{
-				b = tree_.Select(vpath, expand, scrollTo);
+				b = tree_.Select(vpath, expand, scrollTo, debug);
 			}
 			FS.Instrumentation.End();
 

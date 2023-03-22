@@ -456,6 +456,9 @@ namespace AUI.FS
 			if (pn.EndsWith(":"))
 				pn = pn.Substring(0, pn.Length - 1);
 
+			if (pn.EndsWith(".var"))
+				pn = pn.Substring(0, pn.Length - 4);
+
 			if (pn != sc_.package)
 			{
 				if (debug.Enabled)

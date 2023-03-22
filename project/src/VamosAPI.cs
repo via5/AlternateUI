@@ -14,6 +14,9 @@ namespace Vamos
 		public delegate void uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool_Handler(FileBrowser self, FileBrowserFullCallback cb, bool changeDirectory);
 		public event uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool_Handler uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool;
 
+		public delegate void uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool_Handler(FileBrowser self, string path, string pkgFilter, bool flatten, bool includeRegularDirs);
+		public event uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool_Handler uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool;
+
 		public void Vamos_uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool(object[] args)
 		{
 			try
@@ -39,6 +42,20 @@ namespace Vamos
 			catch (Exception e)
 			{
 				SuperController.LogMessage($"VamosAPIReceiver: exception in uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool");
+				SuperController.LogMessage(e.ToString());
+			}
+		}
+
+		public void Vamos_uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool(object[] args)
+		{
+			try
+			{
+				//SuperController.LogMessage($"VamosAPIReceiver: got Vamos_uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool {args.Length}");
+				uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool?.Invoke(args[0] as FileBrowser, args[1] as string, args[2] as string, (bool)args[3], (bool)args[4]);
+			}
+			catch (Exception e)
+			{
+				SuperController.LogMessage($"VamosAPIReceiver: exception in uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool");
 				SuperController.LogMessage(e.ToString());
 			}
 		}

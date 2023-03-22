@@ -171,11 +171,12 @@ namespace VUI
 
 		private void OnHandleMoved()
 		{
-			var r = ClientBounds;
+			var r = AbsoluteClientBounds;
 			var hr = handle_.RelativeBounds;
 			var top = hr.Top - Borders.Top;
 			var h = r.Height - hr.Height;
 			var p = (top / h);
+
 			value_ = p * range_;
 			ValueChanged?.Invoke(value_);
 		}

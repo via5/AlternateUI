@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using uFileBrowser;
 
 namespace AUI.FileDialog
 {
@@ -107,12 +108,12 @@ namespace AUI.FileDialog
 						t == "Select Scene For Edit" ||
 						t == "Select Scene To Load")
 					{
-						fd_.Show(Modes.OpenScene(), (path) => cb?.Invoke(path));
+						Show(Modes.OpenScene(), cb);
 						return;
 					}
 					else if (t == "Select Save File")
 					{
-						fd_.Show(Modes.SaveScene(), (path) => cb?.Invoke(path));
+						Show(Modes.SaveScene(), cb);
 						return;
 					}
 				}
@@ -137,12 +138,12 @@ namespace AUI.FileDialog
 					{
 						if (fb.fileFormat == "assetbundle|scene")
 						{
-							fd_.Show(Modes.OpenCUA(), (path) => cb?.Invoke(path, true));
+							Show(Modes.OpenCUA(), cb);
 							return;
 						}
 						else if (fb.fileFormat == "cs|cslist|dll")
 						{
-							fd_.Show(Modes.OpenPlugin(), (path) => cb?.Invoke(path, true));
+							Show(Modes.OpenPlugin(), cb);
 							return;
 						}
 					}
@@ -156,6 +157,31 @@ namespace AUI.FileDialog
 					fb.Show(cb, cd);
 				});
 			};
+
+			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool");
+			Vamos.API.Instance.uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool += (fb, path, pkgFilter, flatten, includeRegularDirs) =>
+			{
+				if (!fd_.Visible)
+					return;
+
+				path = path.Replace("\\", "/");
+				path = "VaM/" + path;
+
+				path = path.Replace("/AddonPackages/", "/Packages/");
+				path = path.Replace(".var", "");
+
+				fd_.SelectDirectory(path, false, VUI.TreeView.ScrollToCenter);
+			};
+		}
+
+		private void Show(IFileDialogMode mode, FileBrowserCallback cb)
+		{
+			fd_.Show(mode, (path) => cb?.Invoke(path));
+		}
+
+		private void Show(IFileDialogMode mode, FileBrowserFullCallback cb)
+		{
+			fd_.Show(mode, (path) => cb?.Invoke(path, true));
 		}
 
 		protected override void DoDisable()
