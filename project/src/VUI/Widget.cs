@@ -47,7 +47,7 @@ namespace VUI
 	}
 
 
-	public abstract class Widget : IDisposable, IWidget
+	public abstract class Widget : IDisposable
 	{
 		public virtual string TypeName { get { return "Widget"; } }
 
@@ -948,12 +948,6 @@ namespace VUI
 				children_ = new List<Widget>();
 
 			return children_;
-		}
-
-		public void AddGeneric(IWidget w, LayoutData d = null)
-		{
-			CheckDestroyed();
-			Add((Widget)w, d);
 		}
 
 		public T Add<T>(T w, LayoutData d = null)
