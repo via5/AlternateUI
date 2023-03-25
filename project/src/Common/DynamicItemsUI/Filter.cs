@@ -181,8 +181,11 @@ namespace AUI.DynamicItemsUI
 
 		private List<DAZDynamicItem> Culled(DAZDynamicItem[] all)
 		{
-			if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
-				return new List<DAZDynamicItem>(all);
+			// always need to cull isLatestVersion, so this check is broken
+			// until it's made an actual option
+			//
+			//if (!active_ && search_ == "" && tags_.Count == 0 && authors_.Count == 0)
+			//	return new List<DAZDynamicItem>(all);
 
 			authorsLc_.Clear();
 			foreach (string a in authors_)
@@ -200,6 +203,9 @@ namespace AUI.DynamicItemsUI
 				var ci = all[i];
 
 				if (active_ && !ci.active)
+					continue;
+
+				if (!ci.isLatestVersion)
 					continue;
 
 				if (re == null)
