@@ -99,8 +99,6 @@ namespace AUI.FS
 						if (sc.path == "AddonPackages")
 							continue;
 
-						Log.Info($"{sc.package} {sc.isLatest} {cx.LatestPackagesOnly}");
-
 						if (cx.LatestPackagesOnly && !sc.isLatest)
 							continue;
 

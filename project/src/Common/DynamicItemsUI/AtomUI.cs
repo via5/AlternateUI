@@ -395,7 +395,7 @@ namespace AUI.DynamicItemsUI
 
 		private void GridChanged(bool notify = true)
 		{
-			grid_.RemoveAllChildren();
+			grid_.DestroyAllChildren();
 
 			var gl = new VUI.GridLayout(cols_);
 			gl.UniformWidth = true;
