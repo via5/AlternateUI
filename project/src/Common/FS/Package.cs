@@ -6,7 +6,7 @@ namespace AUI.FS
 {
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
-		class PackagesInfo
+		class PackagesCache
 		{
 			private PackageRootDirectory pr_;
 			private readonly string root_;
@@ -15,8 +15,10 @@ namespace AUI.FS
 
 			private string search_ = null;
 			private List<IFilesystemContainer> searchedPackages_ = null;
+			private bool latestOnly_ = false;
+			private int cacheToken_ = -1;
 
-			public PackagesInfo(PackageRootDirectory pr, string root)
+			public PackagesCache(PackageRootDirectory pr, string root)
 			{
 				pr_ = pr;
 				root_ = root;
@@ -25,6 +27,14 @@ namespace AUI.FS
 			public Logger Log
 			{
 				get { return pr_.Log; }
+			}
+
+			public bool Stale(Context cx)
+			{
+				if (latestOnly_ != cx.LatestPackagesOnly)
+					return true;
+
+				return (cacheToken_ != pr_.fs_.CacheToken);
 			}
 
 			public List<IFilesystemContainer> GetPackages(Context cx)
@@ -59,8 +69,11 @@ namespace AUI.FS
 				return sc;
 			}
 
-			public void Refresh(bool showHiddenFolders)
+			public void Refresh(Context cx)
 			{
+				cacheToken_ = pr_.fs_.CacheToken;
+				latestOnly_ = cx.LatestPackagesOnly;
+
 				Instrumentation.Start(I.RefreshPackages);
 				{
 					if (packages_ == null)
@@ -86,7 +99,12 @@ namespace AUI.FS
 						if (sc.path == "AddonPackages")
 							continue;
 
-						packages_.Add(new Package(pr_.fs_, pr_, sc.package, root_, showHiddenFolders));
+						Log.Info($"{sc.package} {sc.isLatest} {cx.LatestPackagesOnly}");
+
+						if (cx.LatestPackagesOnly && !sc.isLatest)
+							continue;
+
+						packages_.Add(new Package(pr_.fs_, pr_, sc));
 						shortCuts_.Add(sc.package, sc);
 					}
 				}
@@ -94,13 +112,19 @@ namespace AUI.FS
 			}
 		}
 
-		private readonly Dictionary<string, PackagesInfo> packages_ =
-			new Dictionary<string, PackagesInfo>();
+		private readonly Dictionary<string, PackagesCache> packages_ =
+			new Dictionary<string, PackagesCache>();
 
 
 		public PackageRootDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Packages")
 		{
+		}
+
+		public override void ClearCache()
+		{
+			base.ClearCache();
+			packages_.Clear();
 		}
 
 		public override string ToString()
@@ -155,18 +179,8 @@ namespace AUI.FS
 
 		public List<IFilesystemContainer> GetPackages(Context cx)
 		{
-			var pi = GetPackagesInfo(cx.PackagesRoot, cx.ShowHiddenFolders);
+			var pi = GetPackagesInfo(cx);
 			return pi?.GetPackages(cx);
-		}
-
-		public ShortCut GetShortCut(
-			string name, string packagesRoot, bool showHiddenFolders)
-		{
-			var pi = GetPackagesInfo(packagesRoot, showHiddenFolders);
-			if (pi == null)
-				return null;
-
-			return pi.GetShortcut(name);
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
@@ -180,20 +194,25 @@ namespace AUI.FS
 			return (ps != null && ps.Count > 0);
 		}
 
-		private PackagesInfo GetPackagesInfo(
-			string packagesRoot, bool showHiddenFolders)
+		private PackagesCache GetPackagesInfo(Context cx)
 		{
-			PackagesInfo pi;
+			PackagesCache pc;
 
-			if (packages_.TryGetValue(packagesRoot, out pi))
-				return pi;
+			if (packages_.TryGetValue(cx.PackagesRoot, out pc))
+			{
+				if (pc.Stale(cx))
+					pc.Refresh(cx);
 
-			pi = new PackagesInfo(this, packagesRoot);
-			packages_.Add(packagesRoot, pi);
+				return pc;
+			}
+			else
+			{
+				pc = new PackagesCache(this, cx.PackagesRoot);
+				packages_.Add(cx.PackagesRoot, pc);
+				pc.Refresh(cx);
+			}
 
-			pi.Refresh(showHiddenFolders);
-
-			return pi;
+			return pc;
 		}
 	}
 
@@ -203,8 +222,10 @@ namespace AUI.FS
 		private readonly Package p_;
 		private List<IFilesystemContainer> children_ = null;
 
-		public VirtualPackageDirectory(Filesystem fs, Package p, IFilesystemContainer parent, string name)
-			: base(fs, parent, name)
+		public VirtualPackageDirectory(
+			Filesystem fs, Package p, IFilesystemContainer parent,
+			string name, Context cx)
+				: base(fs, parent, name, cx)
 		{
 			p_ = p;
 		}
@@ -263,20 +284,23 @@ namespace AUI.FS
 
 	class Package : BasicFilesystemContainer, IPackage
 	{
-		private readonly string name_;
-		private ShortCut sc_ = null;
-		private string packagesRoot_;
-		private bool showHiddenFolders_ = false;
+		private readonly ShortCut sc_ = null;
 		private VirtualPackageDirectory rootDir_ = null;
+		private DateTime created_ = DateTime.MaxValue;
+		private DateTime modified_ = DateTime.MaxValue;
 
-		public Package(
-			Filesystem fs, IFilesystemContainer parent, string name,
-			string packagesRoot, bool showHiddenFolders)
-			: base(fs, parent, name)
+
+		public Package(Filesystem fs, IFilesystemContainer parent, ShortCut sc)
+			: base(fs, parent, sc.package)
 		{
-			name_ = name;
-			packagesRoot_ = packagesRoot;
-			showHiddenFolders_ = showHiddenFolders;
+			sc_ = sc;
+		}
+
+		public override void ClearCache()
+		{
+			base.ClearCache();
+			created_ = DateTime.MaxValue;
+			modified_ = DateTime.MaxValue;
 		}
 
 		public override string ToString()
@@ -291,55 +315,7 @@ namespace AUI.FS
 
 		public ShortCut ShortCut
 		{
-			get
-			{
-				Get();
-				return sc_;
-			}
-		}
-
-		private void Get()
-		{
-			if (sc_ == null)
-			{
-				sc_ = fs_.GetPackagesRoot()
-					.GetShortCut(name_, packagesRoot_, showHiddenFolders_);
-
-				CreatePackageDirectories();
-			}
-		}
-
-		private void CreatePackageDirectories()
-		{
-			rootDir_ = null;
-
-			string path = sc_.path;
-			var col = path.IndexOf(":");
-			if (col != -1)
-				path = path.Substring(col + 1);
-
-			path = path.Replace('\\', '/');
-			if (path.StartsWith("/"))
-				path = path.Substring(1);
-
-			var cs = path.Split('/');
-			if (cs == null || cs.Length == 0 || (cs.Length == 1 && cs[0] == ""))
-				return;
-
-			rootDir_ = new VirtualPackageDirectory(fs_, this, this, cs[0]);
-
-			VirtualPackageDirectory parent = rootDir_;
-			for (int i = 1; i < cs.Length - 1; ++i)
-			{
-				var d = new VirtualPackageDirectory(fs_, this, parent, cs[i]);
-				parent.AddChild(d);
-				parent = d;
-			}
-
-			{
-				var d = new RealPackageDirectory(fs_, this, parent, cs[cs.Length - 1]);
-				parent.AddChild(d);
-			}
+			get { return sc_; }
 		}
 
 		public override string Tooltip
@@ -367,12 +343,24 @@ namespace AUI.FS
 
 		public override DateTime DateCreated
 		{
-			get { return Sys.FileCreationTime(this, ShortCut.path); }
+			get
+			{
+				if (created_ == DateTime.MaxValue)
+					created_ = Sys.FileCreationTime(this, sc_.path);
+
+				return created_;
+			}
 		}
 
 		public override DateTime DateModified
 		{
-			get { return Sys.FileLastWriteTime(this, ShortCut.path); }
+			get
+			{
+				if (modified_ == DateTime.MaxValue)
+					modified_ = Sys.FileLastWriteTime(this, sc_.path);
+
+				return modified_;
+			}
 		}
 
 		public override VUI.Icon Icon
@@ -436,8 +424,6 @@ namespace AUI.FS
 			if (debug.Enabled)
 				debug.Info(this, $"resolveinternal cs={cs} flags={flags}");
 
-			Get();
-
 			if (cs.Done)
 			{
 				if (debug.Enabled)
@@ -483,35 +469,22 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			if (showHiddenFolders_ != cx.ShowHiddenFolders)
-			{
-				sc_ = null;
-				showHiddenFolders_ = cx.ShowHiddenFolders;
-			}
+			var rd = GetRootDirectory(cx);
 
-			Get();
-
-			if (rootDir_ == null)
+			if (rd == null)
 				return new List<IFilesystemContainer>();
 			else
-				return new List<IFilesystemContainer> { rootDir_ };
+				return new List<IFilesystemContainer> { rd };
 		}
 
 		protected override bool DoHasDirectories(Context cx)
 		{
-			return (rootDir_ != null);
+			var rd = GetRootDirectory(cx);
+			return (rd != null);
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
-			Get();
-
-			if (showHiddenFolders_ != cx.ShowHiddenFolders)
-			{
-				sc_ = null;
-				showHiddenFolders_ = cx.ShowHiddenFolders;
-			}
-
 			return base.DoGetFiles(cx);
 		}
 
@@ -521,6 +494,43 @@ namespace AUI.FS
 				return true;
 
 			return (o.Name != "meta.json");
+		}
+
+
+		private IFilesystemContainer GetRootDirectory(Context cx)
+		{
+			if (rootDir_ != null)
+				return rootDir_;
+
+			string path = sc_.path;
+			var col = path.IndexOf(":");
+			if (col != -1)
+				path = path.Substring(col + 1);
+
+			path = path.Replace('\\', '/');
+			if (path.StartsWith("/"))
+				path = path.Substring(1);
+
+			var cs = path.Split('/');
+			if (cs == null || cs.Length == 0 || (cs.Length == 1 && cs[0] == ""))
+				return null;
+
+			rootDir_ = new VirtualPackageDirectory(fs_, this, this, cs[0], cx);
+
+			VirtualPackageDirectory parent = rootDir_;
+			for (int i = 1; i < cs.Length - 1; ++i)
+			{
+				var d = new VirtualPackageDirectory(fs_, this, parent, cs[i], cx);
+				parent.AddChild(d);
+				parent = d;
+			}
+
+			{
+				var d = new RealPackageDirectory(fs_, this, parent, cs[cs.Length - 1]);
+				parent.AddChild(d);
+			}
+
+			return rootDir_;
 		}
 	}
 }

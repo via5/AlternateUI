@@ -15,17 +15,19 @@ namespace AUI.FS
 
 		public VirtualDirectory(
 			Filesystem fs, IFilesystemContainer parent,
-			IFilesystemContainer content)
-				: this(fs, parent, content.Name)
+			IFilesystemContainer content, Context lastContext = null)
+				: this(fs, parent, content.Name, lastContext)
 		{
 			if (content != null)
 				Add(content);
 		}
 
 		public VirtualDirectory(
-			Filesystem fs, IFilesystemContainer parent, string name)
+			Filesystem fs, IFilesystemContainer parent, string name,
+			Context lastContext = null)
 				: base(fs, parent, name)
 		{
+			lastContext_ = lastContext;
 		}
 
 		public override string ToString()
@@ -103,7 +105,7 @@ namespace AUI.FS
 
 			if (cx == null)
 			{
-				Log.Error($"{this}: trying to merge, but no context");
+				Log.ErrorST($"{this}: trying to merge, but no context");
 				return false;
 			}
 

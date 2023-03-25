@@ -12,6 +12,7 @@ namespace AUI.FileDialog
 		private readonly VUI.CheckBox mergePackages_;
 		private readonly VUI.CheckBox showHiddenFolders_;
 		private readonly VUI.CheckBox showHiddenFiles_;
+		private readonly VUI.CheckBox latestPackagesOnly_;
 		private readonly VUI.MenuButton sortPanel_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
@@ -48,6 +49,7 @@ namespace AUI.FileDialog
 			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
 			showHiddenFolders_ = Add(new VUI.CheckBox("Show all folders", SetShowHiddenFolders));
 			showHiddenFiles_ = Add(new VUI.CheckBox("Show all files", SetShowHiddenFiles));
+			latestPackagesOnly_ = Add(new VUI.CheckBox("Latest packages", SetLatestPackagesOnly));
 
 			Add(sortPanel_.Button);
 		}
@@ -80,6 +82,7 @@ namespace AUI.FileDialog
 				mergePackages_.Checked = mode_.Options.MergePackages;
 				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
 				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
+				latestPackagesOnly_.Checked = mode_.Options.LatestPackagesOnly;
 
 				VUI.RadioMenuItem item;
 
@@ -160,6 +163,14 @@ namespace AUI.FileDialog
 
 			mode_.Options.ShowHiddenFiles = b;
 			fd_.RefreshFiles();
+		}
+
+		private void SetLatestPackagesOnly(bool b)
+		{
+			if (ignore_) return;
+
+			mode_.Options.LatestPackagesOnly = b;
+			fd_.RefreshBoth();
 		}
 
 		private void SetSort(int s)

@@ -17,7 +17,7 @@ namespace AUI.DynamicItemsUI
 
 		private readonly VUI.ToggledPanel panel_ = new VUI.ToggledPanel("");
 		private readonly VUI.TreeView tree_ = new VUI.TreeView();
-		private readonly SearchBox search_;
+		private readonly VUI.SearchBox search_;
 		private readonly VUI.ComboBox<string> and_ = null;
 		private bool ignore_ = false;
 
@@ -38,7 +38,7 @@ namespace AUI.DynamicItemsUI
 			tree_.CheckBoxes = true;
 			tree_.ItemClicked += OnTagClicked;
 
-			search_ = new SearchBox(searchPlaceholder);
+			search_ = new VUI.SearchBox(searchPlaceholder);
 			search_.Changed += OnTagsSearch;
 
 			var top = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeftVCenter));
@@ -722,7 +722,7 @@ namespace AUI.DynamicItemsUI
 		private readonly AtomUI parent_;
 		private readonly VUI.IntTextSlider pages_;
 		private readonly VUI.Label pageCount_;
-		private readonly SearchBox search_ = new SearchBox("Search");
+		private readonly VUI.SearchBox search_;
 		private readonly CurrentControls cc_;
 		private readonly Sorter sorter_;
 		private readonly TagsControls tags_;
@@ -752,6 +752,8 @@ namespace AUI.DynamicItemsUI
 			pages.Add(new VUI.ToolButton(">", () => parent_.NextPage()));
 			pageCount_ = pages.Add(new VUI.Label("", VUI.Label.AlignLeft | VUI.Label.AlignVCenter));
 			pageCount_.MinimumSize = new VUI.Size(80, DontCare);
+
+			search_ = new VUI.SearchBox("Search");
 
 			var top = new VUI.Panel(new VUI.BorderLayout(10));
 			top.Add(pages, VUI.BorderLayout.Left);

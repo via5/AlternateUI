@@ -114,7 +114,10 @@ namespace AUI.FileDialog
 		private bool mergePackages_;
 		private bool showHiddenFolders_;
 		private bool showHiddenFiles_;
+		private bool latestPackagesOnly_;
 		private int sort_, sortDir_;
+		private float scroll_ = 0;
+		private string search_ = "";
 		private readonly History history_ = new History();
 
 		private static readonly Dictionary<string, Options> map_ =
@@ -133,6 +136,7 @@ namespace AUI.FileDialog
 			mergePackages_ = mergePackages;
 			showHiddenFolders_ = showHiddenFolders;
 			showHiddenFiles_ = showHiddenFiles;
+			latestPackagesOnly_ = true;
 			sort_ = sort;
 			sortDir_ = sortDir;
 		}
@@ -188,6 +192,12 @@ namespace AUI.FileDialog
 			set { showHiddenFiles_ = value; Changed(); }
 		}
 
+		public bool LatestPackagesOnly
+		{
+			get { return latestPackagesOnly_; }
+			set { latestPackagesOnly_ = value; Changed(); }
+		}
+
 		public int Sort
 		{
 			get { return sort_; }
@@ -198,6 +208,18 @@ namespace AUI.FileDialog
 		{
 			get { return sortDir_; }
 			set { sortDir_ = value; Changed(); }
+		}
+
+		public string Search
+		{
+			get { return search_; }
+			set { search_ = value; }
+		}
+
+		public float Scroll
+		{
+			get { return scroll_; }
+			set { scroll_ = value; }
 		}
 
 		public string CurrentDirectory
@@ -243,6 +265,9 @@ namespace AUI.FileDialog
 			if (j.HasKey("showHiddenFiles"))
 				showHiddenFiles_ = j["showHiddenFiles"].AsBool;
 
+			if (j.HasKey("latestPackagesOnly"))
+				latestPackagesOnly_ = j["latestPackagesOnly"].AsBool;
+
 			if (j.HasKey("sort"))
 				sort_ = j["sort"].AsInt;
 
@@ -265,6 +290,7 @@ namespace AUI.FileDialog
 			j["mergePackages"] = new JSONData(mergePackages_);
 			j["showHiddenFolders"] = new JSONData(showHiddenFolders_);
 			j["showHiddenFiles"] = new JSONData(showHiddenFiles_);
+			j["latestPackagesOnly"] = new JSONData(latestPackagesOnly_);
 			j["sort"] = new JSONData(sort_);
 			j["sortDirection"] = new JSONData(sortDir_);
 
@@ -375,6 +401,8 @@ namespace AUI.FileDialog
 		{
 			opts_.CurrentDirectory = fd.SelectedDirectory.VirtualPath;
 			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
+			opts_.Search = fd.Search;
+			opts_.Scroll = fd.Scroll;
 
 			DoExecute(fd, h);
 		}

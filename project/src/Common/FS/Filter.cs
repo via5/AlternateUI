@@ -87,6 +87,7 @@ namespace AUI.FS
 		public const int ShowHiddenFilesFlag = 0x04;
 		public const int MergePackagesFlag = 0x08;
 		public const int DebugFlag = 0x10;
+		public const int LatestPackagesOnlyFlag = 0x20;
 
 		private readonly string[] exts_;
 		private string packagesRoot_;
@@ -268,7 +269,12 @@ namespace AUI.FS
 
 		public bool MergePackages
 		{
-			get { return Bits.IsSet(flags_,MergePackagesFlag); }
+			get { return Bits.IsSet(flags_, MergePackagesFlag); }
+		}
+
+		public bool LatestPackagesOnly
+		{
+			get { return Bits.IsSet(flags_, LatestPackagesOnlyFlag); }
 		}
 
 		public bool ExtensionMatches(string path)

@@ -10,7 +10,7 @@ namespace AUI.FileDialog
 		private readonly VUI.MenuButton drop_;
 		private readonly VUI.ToolButton pin_, openInExplorer_;
 		private readonly VUI.TextBox path_;
-		private readonly SearchBox search_;
+		private readonly VUI.SearchBox search_;
 		private readonly VUI.Menu dropMenu_;
 		private bool ignore_ = false;
 
@@ -65,7 +65,7 @@ namespace AUI.FileDialog
 			path_ = left.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
 
-			search_ = new SearchBox("Search");
+			search_ = new VUI.SearchBox("Search");
 			search_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
 			search_.Changed += OnSearchChanged;
 
@@ -77,6 +77,7 @@ namespace AUI.FileDialog
 		public string Search
 		{
 			get { return search_.Text; }
+			set { search_.Text = value; }
 		}
 
 		public string Path

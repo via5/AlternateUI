@@ -4,7 +4,7 @@
 	{
 		private readonly GenderMorphUI ui_;
 		private readonly VUI.TreeView tree_;
-		private readonly SearchBox search_;
+		private readonly VUI.SearchBox search_;
 		private readonly VUI.ToggledPanel catsPanel_;
 		private Categories cats_ = null;
 		private bool ignore_ = false;
@@ -39,7 +39,7 @@
 			catsPanel_ = new VUI.ToggledPanel("Categories");
 			tree_ = new VUI.TreeView();
 
-			search_ = new SearchBox("Search categories");
+			search_ = new VUI.SearchBox("Search categories");
 			search_.Changed += OnSearch;
 
 			catsPanel_.Panel.Add(tree_, VUI.BorderLayout.Center);
@@ -136,7 +136,7 @@
 
 		private VUI.IntTextSlider page_ = new VUI.IntTextSlider();
 		private VUI.Label count_ = new VUI.Label();
-		private SearchBox search_ = new SearchBox("Search");
+		private VUI.SearchBox search_ = new VUI.SearchBox("Search");
 		private CategoriesWidget cats_;
 
 		public Controls(GenderMorphUI ui)

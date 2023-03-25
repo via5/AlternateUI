@@ -7,6 +7,7 @@ namespace AUI.FS
 		private int cacheToken_ = -1;
 		private bool showHiddenFolders_ = false;
 		private bool showHiddenFiles_ = false;
+		private bool latestPackagesOnly_ = false;
 		private bool mergePackages_ = false;
 		private string packagesRoot_ = null;
 		private Listing<T> listing_ = null;
@@ -19,6 +20,11 @@ namespace AUI.FS
 		public bool ShowHiddenFiles
 		{
 			get { return showHiddenFiles_; }
+		}
+
+		public bool LatestPackagesOnly
+		{
+			get { return latestPackagesOnly_; }
 		}
 
 		public bool MergePackages
@@ -57,6 +63,7 @@ namespace AUI.FS
 			cacheToken_ = fs.CacheToken;
 			showHiddenFolders_ = cx.ShowHiddenFolders;
 			showHiddenFiles_ = cx.ShowHiddenFiles;
+			latestPackagesOnly_ = cx.LatestPackagesOnly;
 			mergePackages_ = cx.MergePackages;
 			packagesRoot_ = cx.PackagesRoot;
 
@@ -120,6 +127,9 @@ namespace AUI.FS
 				return true;
 
 			if (localDirs_.PackagesRoot != cx.PackagesRoot)
+				return true;
+
+			if (localDirs_.LatestPackagesOnly != cx.LatestPackagesOnly)
 				return true;
 
 			return false;

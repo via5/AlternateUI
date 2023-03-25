@@ -27,7 +27,7 @@ namespace AUI.FileDialog
 		private FileTree tree_ = null;
 		private FilesPanel filesPanel_ = null;
 		private ButtonsPanel buttonsPanel_ = null;
-		private SearchBox packagesSearch_ = null;
+		private VUI.SearchBox packagesSearch_ = null;
 
 		private IFileDialogMode mode_ = new NoMode();
 		private FS.IFilesystemContainer dir_ = null;
@@ -108,7 +108,7 @@ namespace AUI.FileDialog
 
 		public int Columns
 		{
-			get { return 4; }
+			get { return 5; }
 		}
 
 		public int Rows
@@ -140,6 +140,16 @@ namespace AUI.FileDialog
 		public string Filename
 		{
 			get { return buttonsPanel_.Filename; }
+		}
+
+		public string Search
+		{
+			get { return addressBar_.Search; }
+		}
+
+		public float Scroll
+		{
+			get { return filesPanel_.Scroll; }
 		}
 
 		public History History
@@ -191,6 +201,9 @@ namespace AUI.FileDialog
 			}
 
 			SelectFile(null);
+
+			addressBar_.Search = mode_.Options.Search;
+			filesPanel_.Scroll = mode_.Options.Scroll;
 
 			buttonsPanel_.FocusFilename();
 		}
@@ -468,6 +481,9 @@ namespace AUI.FileDialog
 			if (opts.MergePackages)
 				f |= FS.Context.MergePackagesFlag;
 
+			if (opts.LatestPackagesOnly)
+				f |= FS.Context.LatestPackagesOnlyFlag;
+
 			return f;
 		}
 
@@ -668,7 +684,7 @@ namespace AUI.FileDialog
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
 
 			// needs work
-			packagesSearch_ = p.Add(new SearchBox("Search packages"), VUI.BorderLayout.Bottom);
+			packagesSearch_ = p.Add(new VUI.SearchBox("Search packages"), VUI.BorderLayout.Bottom);
 			packagesSearch_.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
 			packagesSearch_.Changed += (ss) => tree_.SearchPackages(ss);
 

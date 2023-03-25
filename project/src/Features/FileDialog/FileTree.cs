@@ -279,9 +279,12 @@ namespace AUI.FileDialog
 
 			if (!path.StartsWith(pinnedRoot))
 			{
-				Log.Error(
-					$"SelectInPinned: path '{path}' doesn't start with " +
-					$"pinned root '{pinnedRoot}'");
+				if (debug)
+				{
+					Log.Info(
+						$"SelectInPinned: path '{path}' doesn't start with " +
+						$"pinned root '{pinnedRoot}'");
+				}
 
 				return false;
 			}

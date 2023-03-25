@@ -77,6 +77,22 @@ namespace AUI
 				return GetThumbnailIcon(thumbPath);
 		}
 
+		public static void ClearFileCache(string path)
+		{
+			var thumbPath = GetThumbnailPath(path);
+
+			if (thumbPath == null)
+			{
+				string ext = Path.Extension(path);
+				exts_.Remove(ext);
+			}
+			else
+			{
+				thumbs_.Remove(thumbPath);
+				ImageLoaderThreaded.singleton.ClearCacheThumbnail(thumbPath);
+			}
+		}
+
 		private static VUI.Icon GetFileIcon(string path)
 		{
 			string ext = Path.Extension(path);

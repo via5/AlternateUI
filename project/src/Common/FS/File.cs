@@ -14,6 +14,15 @@ namespace AUI.FS
 			name_ = name;
 		}
 
+		public override void ClearCache()
+		{
+			base.ClearCache();
+
+			dateCreated_ = DateTime.MaxValue;
+			dateModified_ = DateTime.MaxValue;
+			Icons.ClearFileCache(MakeRealPath());
+		}
+
 		public override string ToString()
 		{
 			return $"File({VirtualPath})";
@@ -84,13 +93,6 @@ namespace AUI.FS
 				s = Parent.MakeRealPath() + s;
 
 			return s;
-		}
-
-		public override void ClearCache()
-		{
-			base.ClearCache();
-			dateCreated_ = DateTime.MaxValue;
-			dateModified_ = DateTime.MaxValue;
 		}
 	}
 }

@@ -190,6 +190,7 @@ namespace AUI.FileDialog
 		private readonly VUI.FixedScrolledPanel scroll_;
 		private readonly FilePanel[] panels_;
 		private List<FS.IFilesystemObject> files_ = null;
+		private float setScroll_ = -1;
 
 		public FilesPanel(FileDialog fd, int cols, int rows)
 		{
@@ -237,6 +238,20 @@ namespace AUI.FileDialog
 		public void ScrollToTop()
 		{
 			SetPanels(0);
+		}
+
+		public float Scroll
+		{
+			get
+			{
+				return scroll_.VerticalScrollbar.Value;
+			}
+
+			set
+			{
+				scroll_.VerticalScrollbar.Value = value;
+				setScroll_ = value;
+			}
 		}
 
 		public void Clear()
@@ -289,7 +304,10 @@ namespace AUI.FileDialog
 			int offscreenRows = totalRows - rows_;
 			float scrollbarSize = scroll_.ContentPanel.ClientBounds.Height / rows_ / 3;
 
-			scroll_.Set(offscreenRows, scrollbarSize);
+			float pos = (setScroll_ >= 0 ? setScroll_ : 0);
+
+			scroll_.Set(offscreenRows, scrollbarSize, pos);
+			setScroll_ = -1;
 		}
 
 		private void OnScroll(int top)
