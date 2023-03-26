@@ -63,6 +63,9 @@ namespace AUI.FileDialog
 		{
 			root_?.Update();
 
+			if (Input.GetKey(KeyCode.Escape))
+				Hide();
+
 			if (FS.Instrumentation.Instance.Enabled)
 				DumpInstrumentation(s);
 		}
@@ -200,7 +203,7 @@ namespace AUI.FileDialog
 				OnTreeSelection(tree_.TreeView.Selected as FileTreeItem);
 			}
 
-			SelectFile(null);
+			SelectInitialFile(mode_.Options.CurrentFile);
 
 			addressBar_.Search = mode_.Options.Search;
 			filesPanel_.Scroll = mode_.Options.Scroll;
@@ -407,6 +410,31 @@ namespace AUI.FileDialog
 				return;
 
 			Log.Error($"can't select any initial directory");
+		}
+
+		private void SelectInitialFile(string name)
+		{
+			if (dir_ == null)
+				return;
+
+			if (string.IsNullOrEmpty(name))
+			{
+				buttonsPanel_.Filename = mode_.MakeNewFilename(this);
+				return;
+			}
+
+			var cx = CreateFileContext(false);
+
+			foreach (var f in dir_.GetFiles(cx))
+			{
+				if (f.Name == name)
+				{
+					SelectFile(f);
+					return;
+				}
+			}
+
+			Log.Error($"bad last file {name}");
 		}
 
 		private void UpdateFilename()

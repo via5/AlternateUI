@@ -76,6 +76,8 @@ namespace AUI.FileDialog
 
 				flattenDirs_.Visible = !mode_.IsWritable;
 				flattenPackages_.Visible = !mode_.IsWritable;
+				mergePackages_.Visible = !mode_.IsWritable;
+				latestPackagesOnly_.Visible = !mode_.IsWritable;
 
 				flattenDirs_.Checked = mode_.Options.FlattenDirectories;
 				flattenPackages_.Checked = mode_.Options.FlattenPackages;

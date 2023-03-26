@@ -1,5 +1,6 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
+using System;
 using System.Collections.Generic;
 
 namespace AUI.FileDialog
@@ -109,6 +110,7 @@ namespace AUI.FileDialog
 		private string name_;
 		private string lastPath_;
 		private string lastPathRootInPinned_;
+		private string lastFile_;
 		private bool flattenDirs_;
 		private bool flattenPackages_;
 		private bool mergePackages_;
@@ -131,6 +133,7 @@ namespace AUI.FileDialog
 			name_ = name;
 			lastPath_ = lastPath;
 			lastPathRootInPinned_ = "";
+			lastFile_ = "";
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
 			mergePackages_ = mergePackages;
@@ -234,6 +237,12 @@ namespace AUI.FileDialog
 			set { lastPathRootInPinned_ = value; Changed(); }
 		}
 
+		public string CurrentFile
+		{
+			get { return lastFile_; }
+			set { lastFile_ = value; Changed(); }
+		}
+
 		public void Load()
 		{
 			var path = GetOptionsFile();
@@ -328,6 +337,7 @@ namespace AUI.FileDialog
 		bool CanExecute(FileDialog fd);
 		void Execute(FileDialog fd, ExecuteHandler h);
 		string GetPath(FileDialog fd);
+		string MakeNewFilename(FileDialog fd);
 	}
 
 
@@ -396,11 +406,13 @@ namespace AUI.FileDialog
 
 		public abstract bool CanExecute(FileDialog fd);
 		public abstract string GetPath(FileDialog fd);
+		public abstract string MakeNewFilename(FileDialog fd);
 
 		public void Execute(FileDialog fd, ExecuteHandler h)
 		{
 			opts_.CurrentDirectory = fd.SelectedDirectory.VirtualPath;
 			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
+			opts_.CurrentFile = fd.SelectedFile?.Name;
 			opts_.Search = fd.Search;
 			opts_.Scroll = fd.Scroll;
 
@@ -440,6 +452,11 @@ namespace AUI.FileDialog
 		}
 
 		public override string GetPath(FileDialog fd)
+		{
+			return "";
+		}
+
+		public override string MakeNewFilename(FileDialog fd)
 		{
 			return "";
 		}
@@ -506,6 +523,11 @@ namespace AUI.FileDialog
 				return "";
 
 			return FileManagerSecure.GetFullPath(path);
+		}
+
+		public override string MakeNewFilename(FileDialog fd)
+		{
+			return "";
 		}
 	}
 
@@ -590,6 +612,12 @@ namespace AUI.FileDialog
 
 			return Path.Join(dir, file);
 		}
+
+		public override string MakeNewFilename(FileDialog fd)
+		{
+			var now = DateTime.UtcNow - new DateTime(1970, 1, 1);
+			return ((int)now.TotalSeconds).ToString() + fd.GetDefaultExtension();
+		}
 	}
 
 
@@ -605,7 +633,7 @@ namespace AUI.FileDialog
 			if (openScene_ == null)
 			{
 				openScene_ = new OpenMode(
-					"openScene", "Open scene",
+					"scene", "Open scene",
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
 					true, true, true, false, false,
@@ -620,7 +648,7 @@ namespace AUI.FileDialog
 			if (saveScene_ == null)
 			{
 				saveScene_ = new SaveMode(
-					"saveScene", "Save scene",
+					"scene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
 					"Saves/scene", "VaM/Saves/scene",
 					false, false, false, false, false,
@@ -635,7 +663,7 @@ namespace AUI.FileDialog
 			if (openCUA_ == null)
 			{
 				openCUA_ = new OpenMode(
-					"openCUA", "Open asset bundle",
+					"cua", "Open asset bundle",
 					FileDialogFeature.GetCUAExtensions(true),
 					"Custom/Assets", "VaM/Custom/Assets",
 					true, true, true, false, false,
@@ -650,7 +678,7 @@ namespace AUI.FileDialog
 			if (openPlugin_ == null)
 			{
 				openPlugin_ = new OpenMode(
-					"openPlugin", "Open plugin",
+					"plugin", "Open plugin",
 					FileDialogFeature.GetPluginExtensions(true),
 					"Custom/Scripts", "VaM/Custom/Scripts",
 					false, true, true, false, false,
