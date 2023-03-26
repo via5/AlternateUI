@@ -125,7 +125,7 @@ namespace AUI.FS
 		private string BytesToString(long bytes)
 		{
 			string[] sizes = { "B", "K", "M", "G", "T" };
-			double len = (double)bytes;
+			double len = (double)Math.Abs(bytes);
 			int order = 0;
 			while (len >= 1024 && order < sizes.Length - 1)
 			{
@@ -135,7 +135,12 @@ namespace AUI.FS
 
 			// Adjust the format string to your preferences. For example "{0:0.#}{1}" would
 			// show a single decimal place, and no space.
-			return string.Format($"{len,6:###0.0} {sizes[order]}");
+			string s = string.Format($"{len,6:###0.0} {sizes[order]}");
+
+			if (bytes < 0)
+				s = "-" + s;
+
+			return s;
 		}
 	}
 

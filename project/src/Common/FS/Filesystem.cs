@@ -165,7 +165,6 @@ namespace AUI.FS
 		private readonly PinnedRoot pinned_;
 
 		private List<IFilesystemContainer> dirs_ = null;
-		private List<IFilesystemContainer> flatDirs_ = null;
 
 		public RootDirectory(Filesystem fs)
 			: base(fs, null, "VaM")
@@ -187,6 +186,21 @@ namespace AUI.FS
 		{
 			base.ClearCache();
 			dirs_ = null;
+		}
+
+		public AllFlatDirectory AllFlat
+		{
+			get { return allFlat_; }
+		}
+
+		public PackagesFlatDirectory PackagesFlat
+		{
+			get { return packagesFlat_; }
+		}
+
+		public PinnedFlatDirectory PinnedFlat
+		{
+			get { return pinnedFlat_; }
 		}
 
 		public SavesDirectory Saves
@@ -254,19 +268,33 @@ namespace AUI.FS
 			return "";
 		}
 
-		public List<IFilesystemContainer> GetDirectoriesForFlatten()
+		public List<IFilesystemContainer> GetDirectoriesForFlatten(Context cx)
 		{
-			if (flatDirs_ == null)
+			if (cx.PackagesRoot == "Saves/scene")
 			{
-				flatDirs_ = new List<IFilesystemContainer>
+				return new List<IFilesystemContainer>
+				{
+					new VirtualDirectory(fs_, this, saves_),
+					new VirtualDirectory(fs_, this, fs_.GetPackagesRoot())
+				};
+			}
+			else if (cx.PackagesRoot == "Custom/Scripts")
+			{
+				return new List<IFilesystemContainer>
+				{
+					new VirtualDirectory(fs_, this, custom_),
+					new VirtualDirectory(fs_, this, fs_.GetPackagesRoot())
+				};
+			}
+			else
+			{
+				return new List<IFilesystemContainer>
 				{
 					new VirtualDirectory(fs_, this, saves_),
 					new VirtualDirectory(fs_, this, custom_),
 					new VirtualDirectory(fs_, this, fs_.GetPackagesRoot())
 				};
 			}
-
-			return flatDirs_;
 		}
 
 		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)

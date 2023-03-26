@@ -62,7 +62,7 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			return fs_.GetRoot().GetDirectoriesForFlatten();
+			return fs_.GetRoot().GetDirectoriesForFlatten(cx);
 		}
 
 		protected override bool DoHasDirectories(Context cx)

@@ -252,7 +252,8 @@ namespace VUI
 
 			public void Toggle()
 			{
-				Expanded = !Expanded;
+				if (HasChildren)
+					Expanded = !Expanded;
 			}
 
 			public void ExpandAll()

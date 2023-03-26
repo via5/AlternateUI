@@ -517,12 +517,26 @@ namespace AUI.FileDialog
 
 		public FS.Context CreateFileContext(bool recursive)
 		{
+			int flags = MakeContextFlags(recursive, mode_.Options);
+
+			if (dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().AllFlat.VirtualPath)
+			{
+				// hack: the AllFlatDirectory object already includes the
+				// packages root in its directory list and so the merge flag
+				// is not necessary
+				//
+				// in fact, it's _really_ slow because it iterates and resolves
+				// every package for every directory, so the flag _must_ be
+				// removed
+				flags = flags & ~FS.Context.MergePackagesFlag;
+			}
+
 			return new FS.Context(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				mode_.Options.Sort, mode_.Options.SortDirection,
-				MakeContextFlags(recursive, mode_.Options),
+				flags,
 				"");
 		}
 
