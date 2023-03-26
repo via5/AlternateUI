@@ -36,27 +36,27 @@ namespace AUI.FileDialog
 			pin_ = buttons.Add(new VUI.ToolButton("Pin", OnTogglePin));
 			openInExplorer_ = buttons.Add(new VUI.ToolButton("Explorer", OpenInExplorer, "Open in Explorer"));
 
-			back_.Icon = Icons.Get(Icons.Back);
+			back_.Icon = Icons.GetIcon(Icons.Back);
 			back_.SetBorderless();
 
-			next_.Icon = Icons.Get(Icons.Next);
+			next_.Icon = Icons.GetIcon(Icons.Next);
 			next_.SetBorderless();
 
-			drop_.Button.Icon = Icons.Get(Icons.Drop);
+			drop_.Button.Icon = Icons.GetIcon(Icons.Drop);
 			drop_.Button.IconSize = new VUI.Size(16, 20);
 			drop_.Button.SetBorderless();
 			drop_.Button.Tooltip.Text = "Recent locations";
 
-			up_.Icon = Icons.Get(Icons.Up);
+			up_.Icon = Icons.GetIcon(Icons.Up);
 			up_.SetBorderless();
 
-			refresh_.Icon = Icons.Get(Icons.Reload);
+			refresh_.Icon = Icons.GetIcon(Icons.Reload);
 			refresh_.SetBorderless();
 
-			openInExplorer_.Icon = Icons.Get(Icons.OpenExternal);
+			openInExplorer_.Icon = Icons.GetIcon(Icons.OpenExternal);
 			openInExplorer_.SetBorderless();
 
-			pin_.Icon = Icons.Get(Icons.Unpinned);
+			pin_.Icon = Icons.GetIcon(Icons.Unpinned);
 			pin_.SetBorderless();
 			pin_.Borders = new VUI.Insets(1);
 			pin_.BorderColor = new Color(0, 0, 0, 0);
@@ -64,10 +64,16 @@ namespace AUI.FileDialog
 			left.Add(buttons, VUI.BorderLayout.Left);
 			path_ = left.Add(new VUI.TextBox(), VUI.BorderLayout.Center);
 			path_.Submitted += OnPathSubmitted;
+			path_.AutoComplete.Enabled = true;
+			path_.AutoComplete.File = AlternateUI.Instance.GetConfigFilePath(
+				"aui.filedialog.path.autocomplete.json");
 
 			search_ = new VUI.SearchBox("Search");
 			search_.MinimumSize = new VUI.Size(400, VUI.Widget.DontCare);
 			search_.Changed += OnSearchChanged;
+			search_.AutoComplete.Enabled = true;
+			search_.AutoComplete.File = AlternateUI.Instance.GetConfigFilePath(
+				"aui.filedialog.search.autocomplete.json");
 
 			var sp = new VUI.Splitter(left, search_, VUI.Splitter.MinimumSecond);
 
@@ -182,14 +188,14 @@ namespace AUI.FileDialog
 			{
 				pin_.Text = "Unpin";
 				pin_.Tooltip.Text = "Unpin";
-				pin_.Icon = Icons.Get(Icons.Pinned);
+				pin_.Icon = Icons.GetIcon(Icons.Pinned);
 				pin_.BorderColor = VUI.Style.Theme.BorderColor;
 			}
 			else
 			{
 				pin_.Text = "Pin";
 				pin_.Tooltip.Text = "Pin";
-				pin_.Icon = Icons.Get(Icons.Unpinned);
+				pin_.Icon = Icons.GetIcon(Icons.Unpinned);
 				pin_.BorderColor = new Color(0, 0, 0, 0);
 			}
 		}

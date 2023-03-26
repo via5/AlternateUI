@@ -122,7 +122,7 @@ namespace AUI
 				(s) => Log.Info(s),
 				(s) => Log.Warning(s),
 				(s) => Log.Error(s),
-				() => IconProvider.Instance);
+				() => CursorProvider.Instance);
 
 			tm_ = new VUI.TimerManager();
 			features_ = BasicFeature.CreateAllFeatures();

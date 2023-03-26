@@ -142,7 +142,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Package); }
+			get { return Icons.GetIcon(Icons.Package); }
 		}
 
 		public override bool CanPin
@@ -363,7 +363,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Package); }
+			get { return Icons.GetIcon(Icons.Package); }
 		}
 
 		public override bool CanPin

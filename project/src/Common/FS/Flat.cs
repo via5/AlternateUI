@@ -27,7 +27,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Directory); }
+			get { return Icons.GetIcon(Icons.Directory); }
 		}
 
 		public override bool CanPin
@@ -101,7 +101,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Package); }
+			get { return Icons.GetIcon(Icons.Package); }
 		}
 
 		public override bool CanPin
@@ -171,7 +171,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.UnpinnedDark); }
+			get { return Icons.GetIcon(Icons.UnpinnedDark); }
 		}
 
 		public override bool CanPin

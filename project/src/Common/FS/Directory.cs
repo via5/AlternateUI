@@ -230,9 +230,9 @@ namespace AUI.FS
 			get
 			{
 				if (HasRealDir())
-					return Icons.Get(Icons.Directory);
+					return Icons.GetIcon(Icons.Directory);
 				else
-					return Icons.Get(Icons.Package);
+					return Icons.GetIcon(Icons.Package);
 			}
 		}
 
@@ -588,7 +588,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Directory); }
+			get { return Icons.GetIcon(Icons.Directory); }
 		}
 
 		public override bool CanPin

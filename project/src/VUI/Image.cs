@@ -10,6 +10,7 @@ namespace VUI
 		private Texture texture_ = null;
 		private readonly string path_ = null;
 		private readonly int w_ = 0, h_ = 0;
+		private readonly bool forceResize_ = false;
 		private readonly Texture def_ = null;
 		private readonly List<Action<Texture>> callbacks_ = new List<Action<Texture>>();
 		private bool loading_ = false;
@@ -30,6 +31,20 @@ namespace VUI
 			w_ = w;
 			h_ = h;
 			def_ = def;
+		}
+
+		public Icon(string path, int w, int h, bool forceResize, Texture def = null)
+		{
+			path_ = path;
+			w_ = w;
+			h_ = h;
+			forceResize_ = forceResize;
+			def_ = def;
+		}
+
+		public override string ToString()
+		{
+			return $"Icon({path_}, tex={texture_})";
 		}
 
 		public Texture CachedTexture
@@ -71,13 +86,20 @@ namespace VUI
 			}
 			else
 			{
+				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(path_);
+
 				var tex = ImageLoaderThreaded.singleton.GetCachedThumbnail(path_);
 				if (tex != null)
 				{
 					texture_ = tex;
 
-					if (w_ != 0 && h_ != 0)
-						texture_ = ScaleTexture(texture_, w_, h_);
+					if (forceResize_ || w_ != 0 || h_ != 0)
+					{
+						int w = (w_ == 0 ? texture_.width : w_);
+						int h = (h_ == 0 ? texture_.height : h_);
+
+						texture_ = ScaleTexture(texture_, w, h);
+					}
 
 					texture_.wrapMode = TextureWrapMode.Clamp;
 
@@ -104,8 +126,13 @@ namespace VUI
 				{
 					texture_ = tex;
 
-					if (w_ != 0 && h_ != 0)
-						texture_ = ScaleTexture(texture_, w_, h_);
+					if (forceResize_ || w_ != 0 || h_ != 0)
+					{
+						int w = (w_ == 0 ? texture_.width : w_);
+						int h = (h_ == 0 ? texture_.height : h_);
+
+						texture_ = ScaleTexture(texture_, w, h);
+					}
 
 					texture_.wrapMode = TextureWrapMode.Clamp;
 				}
@@ -141,6 +168,27 @@ namespace VUI
 			RenderTexture.active = currentActiveRT;
 
 			return tex;
+		}
+	}
+
+	// for whatever reason, cursor textures are corrupted unless ScaleTexture()
+	// is called, even if the size is the same
+	//
+	public class Cursor : Icon
+	{
+		public Cursor(Texture t)
+			: base(t)
+		{
+		}
+
+		public Cursor(string path, Texture def = null)
+			: this(path, 0, 0, def)
+		{
+		}
+
+		public Cursor(string path, int w, int h, Texture def = null)
+			: base(path, w, h, true, def)
+		{
 		}
 	}
 

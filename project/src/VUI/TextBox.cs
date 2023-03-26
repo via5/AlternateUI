@@ -198,6 +198,7 @@ namespace VUI
 		private bool ignore_ = false;
 		private bool enabled_ = false;
 		private string file_ = null;
+		private float height_ = 500;
 
 		public AutoComplete(TextBox tb)
 		{
@@ -212,6 +213,12 @@ namespace VUI
 		public bool Visible
 		{
 			get { return panel_?.Visible ?? false; }
+		}
+
+		public float Height
+		{
+			get { return height_; }
+			set { height_ = value; }
 		}
 
 		public bool Enabled
@@ -399,7 +406,7 @@ namespace VUI
 
 			var r = tb_.AbsoluteClientBounds;
 			r.Top += r.Height;
-			r.Bottom = r.Top + 500;
+			r.Bottom = r.Top + height_;
 
 			panel_.SetBounds(r);
 			panel_.Visible = true;
@@ -574,6 +581,7 @@ namespace VUI
 
 			TextColor = Style.Theme.EditableTextColor;
 			Borders = new Insets(1);
+			Cursor = Glue.CursorProvider.Beam;
 
 			if (edited != null)
 				Edited += edited;
@@ -1212,6 +1220,11 @@ namespace VUI
 		public TextBox TextBox
 		{
 			get { return box_; }
+		}
+
+		public AutoComplete AutoComplete
+		{
+			get { return box_.AutoComplete; }
 		}
 	}
 }

@@ -84,6 +84,7 @@ namespace VUI
 		private DropShadow dropShadow_ = null;
 		private ContextMenu context_ = null;
 		private int contextMode_ = ContextMenuObject;
+		private Icon cursor_ = null;
 
 		private bool render_ = true;
 		private bool visible_ = true;
@@ -101,6 +102,7 @@ namespace VUI
 		private bool wantsFocus_ = true;
 		private bool didLayoutWhileRendered_ = false;
 		private bool bringToTop_ = false;
+		private bool hovered_ = false;
 
 		private bool dirty_ = true;
 		private bool destroyed_ = false;
@@ -291,6 +293,12 @@ namespace VUI
 				CheckDestroyed();
 				contextMode_ = value;
 			}
+		}
+
+		public Icon Cursor
+		{
+			get { return cursor_; }
+			set { cursor_ = value; }
 		}
 
 		public GameObject MainObject
@@ -1397,6 +1405,33 @@ namespace VUI
 		}
 
 
+		private void SetCursor()
+		{
+			if (cursor_ != null)
+			{
+				cursor_.GetTexture((t) =>
+				{
+					if (hovered_ && t != null)
+					{
+						UnityEngine.Cursor.SetCursor(
+							t as Texture2D,
+							new Vector2(t.width / 2, t.height / 2),
+							CursorMode.Auto);
+					}
+				});
+			}
+		}
+
+		private void ClearCursor()
+		{
+			if (cursor_ != null)
+			{
+				UnityEngine.Cursor.SetCursor(
+					null, new Vector2(0, 0), CursorMode.Auto);
+			}
+		}
+
+
 		public void OnFocusInternal(Widget w)
 		{
 			CheckDestroyed();
@@ -1433,6 +1468,9 @@ namespace VUI
 					GetRoot()?.WidgetEntered(this);
 					bubble = events_.FirePointerEnter(this, d, manualBubble);
 				}
+
+				hovered_ = true;
+				SetCursor();
 			}
 
 			if (manualBubble && bubble && parent_ != null)
@@ -1450,6 +1488,9 @@ namespace VUI
 		public void OnPointerExitInternal(PointerEventData d)
 		{
 			CheckDestroyed();
+
+			hovered_ = false;
+			ClearCursor();
 
 			if (IsVisibleOnScreen())
 			{

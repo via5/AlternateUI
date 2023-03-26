@@ -725,10 +725,13 @@ namespace AUI.FileDialog
 			var p = new VUI.Panel(new VUI.BorderLayout());
 			p.Add(tree_.Widget, VUI.BorderLayout.Center);
 
-			// needs work
 			packagesSearch_ = p.Add(new VUI.SearchBox("Search packages"), VUI.BorderLayout.Bottom);
 			packagesSearch_.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
 			packagesSearch_.Changed += (ss) => tree_.SearchPackages(ss);
+			packagesSearch_.AutoComplete.Enabled = true;
+			packagesSearch_.AutoComplete.Height = 400;
+			packagesSearch_.AutoComplete.File = AlternateUI.Instance.GetConfigFilePath(
+				"aui.filedialog.packagesSearch.autocomplete.json");
 
 			return p;
 		}

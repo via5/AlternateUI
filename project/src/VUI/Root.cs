@@ -257,11 +257,11 @@ namespace VUI
 			Glue.LogDelegate logInfo = null,
 			Glue.LogDelegate logWarning = null,
 			Glue.LogDelegate logError = null,
-			Glue.IconProviderDelegate icons = null)
+			Glue.CursorProviderDelegate cursors = null)
 		{
 			Glue.InitInternal(
 				prefix, getPluginManager, getString,
-				logVerbose, logInfo, logWarning, logError, icons);
+				logVerbose, logInfo, logWarning, logError, cursors);
 
 			BasicRootSupport.Cleanup();
 		}

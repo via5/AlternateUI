@@ -4,18 +4,23 @@ using UnityEngine;
 
 namespace AUI
 {
-	public class IconProvider : VUI.IIconProvider
+	public class CursorProvider : VUI.ICursorProvider
 	{
-		private static IconProvider instance_ = new IconProvider();
+		private static CursorProvider instance_ = new CursorProvider();
 
-		public static IconProvider Instance
+		public static CursorProvider Instance
 		{
 			get { return instance_; }
 		}
 
-		public VUI.Icon ResizeWE
+		public VUI.Cursor ResizeWE
 		{
-			get { return Icons.Get(Icons.ResizeWE); }
+			get { return Icons.GetCursor(Icons.ResizeWECursor); }
+		}
+
+		public VUI.Cursor Beam
+		{
+			get { return Icons.GetCursor(Icons.BeamCursor); }
 		}
 	}
 
@@ -30,12 +35,15 @@ namespace AUI
 		public const int Next = 6;
 		public const int Up = 7;
 		public const int Drop = 8;
-		public const int ResizeWE = 9;
-		public const int Directory = 10;
-		public const int Reload = 11;
-		public const int OpenExternal = 12;
+		public const int Directory = 9;
+		public const int Reload = 10;
+		public const int OpenExternal = 11;
+
+		public const int BeamCursor = 0;
+		public const int ResizeWECursor = 1;
 
 		private static Dictionary<int, VUI.Icon> icons_ = new Dictionary<int, VUI.Icon>();
+		private static Dictionary<int, VUI.Cursor> cursors_ = new Dictionary<int, VUI.Cursor>();
 		private static Dictionary<string, VUI.Icon> exts_ = new Dictionary<string, VUI.Icon>();
 		private static Dictionary<string, VUI.Icon> thumbs_ = new Dictionary<string, VUI.Icon>();
 
@@ -55,16 +63,26 @@ namespace AUI
 				{ Next, new VUI.Icon(pp + "/res/icons/next.png") },
 				{ Up, new VUI.Icon(pp + "/res/icons/up.png") },
 				{ Drop, new VUI.Icon(pp + "/res/icons/drop.png") },
-				{ ResizeWE, new VUI.Icon(pp + "/res/cursors/resize_w_e.png", 40, 40) },
 				{ Directory, new VUI.Icon(sc.fileBrowserUI.folderIcon.texture) },
 				{ Reload, new VUI.Icon(pp + "/res/icons/reload.png") },
 				{ OpenExternal, new VUI.Icon(pp + "/res/icons/open-external.png") },
 			};
+
+			cursors_ = new Dictionary<int, VUI.Cursor>
+			{
+				{ BeamCursor, new VUI.Cursor(pp + "/res/cursors/beam.png") },
+				{ ResizeWECursor, new VUI.Cursor(pp + "/res/cursors/resize_w_e.png") },
+			};
 		}
 
-		public static VUI.Icon Get(int type)
+		public static VUI.Icon GetIcon(int type)
 		{
 			return icons_[type];
+		}
+
+		public static VUI.Cursor GetCursor(int type)
+		{
+			return cursors_[type];
 		}
 
 		public static VUI.Icon File(string path)

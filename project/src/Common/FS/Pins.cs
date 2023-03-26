@@ -205,7 +205,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.UnpinnedDark); }
+			get { return Icons.GetIcon(Icons.UnpinnedDark); }
 		}
 
 		public override string MakeRealPath()

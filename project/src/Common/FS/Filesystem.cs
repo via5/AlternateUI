@@ -235,7 +235,7 @@ namespace AUI.FS
 
 		public override VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Directory); }
+			get { return Icons.GetIcon(Icons.Directory); }
 		}
 
 		public override bool CanPin
@@ -440,7 +440,7 @@ namespace AUI.FS
 
 		public VUI.Icon Icon
 		{
-			get { return Icons.Get(Icons.Null); }
+			get { return Icons.GetIcon(Icons.Null); }
 		}
 
 		public string MakeRealPath()
