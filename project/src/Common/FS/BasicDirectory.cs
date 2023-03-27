@@ -120,6 +120,7 @@ namespace AUI.FS
 			// dirs are not filtered for now
 			//Filter(cx, cache_.GetLocalDirectories());
 			SortInternal(cx, cache_.GetLocalDirectories());
+			cache_.GetLocalDirectories().UpdateLookup();
 
 			return cache_.GetLocalDirectories().Last;
 		}
@@ -180,6 +181,7 @@ namespace AUI.FS
 
 				dirs = GetDirectoriesInternal(cx2);
 				SetLocalDirectoriesCache(cx, dirs);
+				cache_.GetLocalDirectories().UpdateLookup();
 			}
 			else
 			{
@@ -323,7 +325,8 @@ namespace AUI.FS
 		private ResolveResult ResolveInternalInDirectories(
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
-			var dirs = GetDirectories(cx);
+			GetDirectories(cx);
+			var dirs = cache_.GetLocalDirectories().Lookup;
 
 			if (dirs.Count == 0)
 			{
@@ -331,25 +334,22 @@ namespace AUI.FS
 					debug.Info(this, $"resolveinternal, has no dirs");
 			}
 
-			for (int i = 0; i < dirs.Count; ++i)
+			IFilesystemContainer d;
+			if (dirs.TryGetValue(cs.Current, out d))
 			{
-				var d = dirs[i];
-				var r = d.ResolveInternal(cx, cs, flags, debug.Inc());
+				if (debug.Enabled)
+					debug.Info(this, $"resolveinternal, found '{cs.Current}' in lookup, {d}, cs={cs}");
 
-				if (r.o == null)
+				if (cs.Last)
 				{
 					if (debug.Enabled)
-						debug.Info(this, $"resolveinternal, not dir {d}, cs={cs}");
+						debug.Info(this, $"resolveinternal, is this final, cs={cs} <<<<<");
+
+					return ResolveResult.Found(d);
 				}
 				else
 				{
-					if (debug.Enabled)
-					{
-						debug.Info(this,
-							$"resolveinternal2, is dir {d}, cs={cs}");
-					}
-
-					return r;
+					return d.ResolveInternal(cx, cs, flags, debug.Inc());
 				}
 			}
 

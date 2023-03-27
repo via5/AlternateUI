@@ -77,11 +77,23 @@ namespace AUI
 
 		public static VUI.Icon GetIcon(int type)
 		{
+			if (type < 0 || type >= icons_.Count)
+			{
+				AlternateUI.Instance.Log.Error($"bad icon {type}");
+				return null;
+			}
+
 			return icons_[type];
 		}
 
 		public static VUI.Cursor GetCursor(int type)
 		{
+			if (type < 0 || type >= cursors_.Count)
+			{
+				AlternateUI.Instance.Log.Error($"bad cursor {type}");
+				return null;
+			}
+
 			return cursors_[type];
 		}
 

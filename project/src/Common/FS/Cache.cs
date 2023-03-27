@@ -72,6 +72,11 @@ namespace AUI.FS
 
 			listing_.SetRaw(list);
 		}
+
+		public void UpdateLookup()
+		{
+			listing_?.UpdateLookup();
+		}
 	}
 
 

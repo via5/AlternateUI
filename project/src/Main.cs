@@ -114,6 +114,8 @@ namespace AUI
 		{
 			Log.Verbose("init");
 
+			Icons.LoadAll();
+
 			VUI.Root.Init(
 				"AUI",
 				() => manager,

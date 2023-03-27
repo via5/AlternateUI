@@ -65,8 +65,12 @@ namespace AUI.FileDialog
 
 			if (o_ == null)
 			{
-				o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
-					CreateContext(), path_, FS.Filesystem.ResolveDefault | moreFlags);
+				FS.Instrumentation.Start(FS.I.FTIGetFSObject);
+				{
+					o_ = FS.Filesystem.Instance.Resolve<FS.IFilesystemContainer>(
+						CreateContext(), path_, FS.Filesystem.ResolveDefault | moreFlags);
+				}
+				FS.Instrumentation.End();
 			}
 
 			return o_;
@@ -100,9 +104,6 @@ namespace AUI.FileDialog
 
 			var o = GetFSObject();
 			Text = o?.DisplayName ?? "(dead)";
-
-			if (!checkedHasChildren_)
-				return;
 
 			checkedHasChildren_ = false;
 

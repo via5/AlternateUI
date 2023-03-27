@@ -94,6 +94,7 @@ namespace AUI.FS
 		where EntriesType : class, IFilesystemObject
 	{
 		private List<EntriesType> raw_ = null;
+		private Dictionary<string, EntriesType> lookup_ = null;
 		private string currentExtensions_ = null;
 		private List<EntriesType> perExtension_ = null;
 		public string currentSearch_ = null;
@@ -106,6 +107,22 @@ namespace AUI.FS
 		{
 			raw_ = list;
 			SetAllStale();
+		}
+
+		public void UpdateLookup()
+		{
+			var last = Last;
+
+			if (last != null)
+			{
+				if (lookup_ == null)
+					lookup_ = new Dictionary<string, EntriesType>();
+				else
+					lookup_.Clear();
+
+				foreach (var e in last)
+					lookup_.Add(e.Name, e);
+			}
 		}
 
 		public void AddRaw(List<EntriesType> list)
@@ -142,6 +159,11 @@ namespace AUI.FS
 			get { return sorted_ ?? searched_ ?? perExtension_ ?? raw_ ?? new List<EntriesType>(); }
 		}
 
+		public Dictionary<string, EntriesType> Lookup
+		{
+			get { return lookup_; }
+		}
+
 
 		public bool ExtensionsStale(Context cx)
 		{
@@ -155,6 +177,7 @@ namespace AUI.FS
 
 			SetSearchStale();
 			SetSortStale();
+			SetLookupStale();
 		}
 
 
@@ -168,6 +191,7 @@ namespace AUI.FS
 			currentSearch_ = cx.Search.String;
 			searched_ = list;
 			SetSortStale();
+			SetLookupStale();
 		}
 
 
@@ -181,6 +205,7 @@ namespace AUI.FS
 			currentSort_ = cx.Sort;
 			currentSortDir_ = cx.SortDirection;
 			sorted_ = list;
+			SetLookupStale();
 		}
 
 
@@ -189,6 +214,7 @@ namespace AUI.FS
 			SetPerExtensionStale();
 			SetSearchStale();
 			SetSortStale();
+			SetLookupStale();
 		}
 
 		private void SetPerExtensionStale()
@@ -208,6 +234,11 @@ namespace AUI.FS
 			currentSort_ = Context.NoSort;
 			currentSortDir_ = Context.NoSortDirection;
 			sorted_ = null;
+		}
+
+		private void SetLookupStale()
+		{
+			lookup_?.Clear();
 		}
 	}
 

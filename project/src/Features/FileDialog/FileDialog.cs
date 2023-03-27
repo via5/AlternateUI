@@ -673,8 +673,6 @@ namespace AUI.FileDialog
 
 		private void CreateUI()
 		{
-			Icons.LoadAll();
-
 			root_ = new VUI.Root(new VUI.TransformUIRootSupport(
 				SuperController.singleton.fileBrowserUI.transform.parent));
 

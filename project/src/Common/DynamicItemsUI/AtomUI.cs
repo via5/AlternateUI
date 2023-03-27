@@ -281,6 +281,7 @@ namespace AUI.DynamicItemsUI
 			}
 
 			controls_.Set(page_, PageCount);
+			root_.Tooltips.Hide();
 		}
 
 		public void CriteriaChangedInternal()
@@ -380,6 +381,7 @@ namespace AUI.DynamicItemsUI
 			controls_ = new Controls(this);
 			grid_ = new VUI.Panel();
 
+			grid_.Clickthrough = false;
 			grid_.Events.Wheel += OnWheel;
 
 			root_.ContentPanel.Add(controls_, VUI.BorderLayout.Top);
