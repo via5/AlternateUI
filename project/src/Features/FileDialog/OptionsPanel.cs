@@ -7,12 +7,13 @@ namespace AUI.FileDialog
 		private readonly FileDialog fd_;
 		private IFileDialogMode mode_ = null;
 
-		private readonly VUI.CheckBox flattenDirs_;
-		private readonly VUI.CheckBox flattenPackages_;
-		private readonly VUI.CheckBox mergePackages_;
-		private readonly VUI.CheckBox showHiddenFolders_;
-		private readonly VUI.CheckBox showHiddenFiles_;
-		private readonly VUI.CheckBox latestPackagesOnly_;
+		private readonly VUI.MenuButton optionsPanel_;
+		private readonly VUI.CheckBoxMenuItem flattenDirs_;
+		private readonly VUI.CheckBoxMenuItem flattenPackages_;
+		private readonly VUI.CheckBoxMenuItem mergePackages_;
+		private readonly VUI.CheckBoxMenuItem showHiddenFolders_;
+		private readonly VUI.CheckBoxMenuItem showHiddenFiles_;
+		private readonly VUI.CheckBoxMenuItem latestPackagesOnly_;
 		private readonly VUI.MenuButton sortPanel_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
@@ -28,29 +29,57 @@ namespace AUI.FileDialog
 		{
 			fd_ = fd;
 
-			var sortMenu = new VUI.Menu();
-			var sortGroup = new VUI.RadioButton.Group("sort");
-			var sortOrderGroup = new VUI.RadioButton.Group("sortOrder");
+			{
+				var sortMenu = new VUI.Menu();
+				var sortGroup = new VUI.RadioButton.Group("sort");
+				var sortOrderGroup = new VUI.RadioButton.Group("sortOrder");
 
-			AddSortItem(sortMenu, sortGroup, FS.Context.SortFilename);
-			AddSortItem(sortMenu, sortGroup, FS.Context.SortType);
-			AddSortItem(sortMenu, sortGroup, FS.Context.SortDateModified);
-			AddSortItem(sortMenu, sortGroup, FS.Context.SortDateCreated);
-			sortMenu.AddSeparator();
-			AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortAscending);
-			AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortDescending);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortFilename);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortType);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateModified);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateCreated);
+				sortMenu.AddSeparator();
+				AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortAscending);
+				AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortDescending);
 
-			sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
+				sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
+			}
+
+			{
+				var m = new VUI.Menu();
+
+				flattenDirs_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Flatten folders", SetFlattenDirectories, false,
+					"Show files from subfolders when a folder is selected."));
+
+				flattenPackages_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Flatten package content", SetFlattenPackages, false,
+					"Show files from subfolders when a package is selected."));
+
+				mergePackages_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Merge packages into folders", SetMergePackages, false,
+					"Find all packages that contain the current folder and " +
+					"merge their files in the current view."));
+
+				m.AddSeparator();
+
+				showHiddenFolders_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Show all folders", SetShowHiddenFolders, false,
+					"Show folders that are not usually relevant."));
+
+				showHiddenFiles_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Show all files", SetShowHiddenFiles, false,
+					"Show internal files like meta.json."));
+
+				latestPackagesOnly_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Latest packages only", SetLatestPackagesOnly, false,
+					"Only show the latest version of installed packages."));
+
+				optionsPanel_ = new VUI.MenuButton("Options", m);
+			}
 
 			Layout = new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
-
-			flattenDirs_ = Add(new VUI.CheckBox("Flatten folders", SetFlattenDirectories));
-			flattenPackages_ = Add(new VUI.CheckBox("Flatten package content", SetFlattenPackages));
-			mergePackages_ = Add(new VUI.CheckBox("Merge packages into folders", SetMergePackages));
-			showHiddenFolders_ = Add(new VUI.CheckBox("Show all folders", SetShowHiddenFolders));
-			showHiddenFiles_ = Add(new VUI.CheckBox("Show all files", SetShowHiddenFiles));
-			latestPackagesOnly_ = Add(new VUI.CheckBox("Latest packages", SetLatestPackagesOnly));
-
+			Add(optionsPanel_.Button);
 			Add(sortPanel_.Button);
 		}
 
@@ -74,17 +103,17 @@ namespace AUI.FileDialog
 
 				mode_ = mode;
 
-				flattenDirs_.Visible = !mode_.IsWritable;
-				flattenPackages_.Visible = !mode_.IsWritable;
-				mergePackages_.Visible = !mode_.IsWritable;
-				latestPackagesOnly_.Visible = !mode_.IsWritable;
+				flattenDirs_.CheckBox.Enabled = !mode_.IsWritable;
+				flattenPackages_.CheckBox.Enabled = !mode_.IsWritable;
+				mergePackages_.CheckBox.Enabled = !mode_.IsWritable;
+				latestPackagesOnly_.CheckBox.Enabled = !mode_.IsWritable;
 
-				flattenDirs_.Checked = mode_.Options.FlattenDirectories;
-				flattenPackages_.Checked = mode_.Options.FlattenPackages;
-				mergePackages_.Checked = mode_.Options.MergePackages;
-				showHiddenFolders_.Checked = mode_.Options.ShowHiddenFolders;
-				showHiddenFiles_.Checked = mode_.Options.ShowHiddenFiles;
-				latestPackagesOnly_.Checked = mode_.Options.LatestPackagesOnly;
+				flattenDirs_.CheckBox.Checked = mode_.Options.FlattenDirectories;
+				flattenPackages_.CheckBox.Checked = mode_.Options.FlattenPackages;
+				mergePackages_.CheckBox.Checked = mode_.Options.MergePackages;
+				showHiddenFolders_.CheckBox.Checked = mode_.Options.ShowHiddenFolders;
+				showHiddenFiles_.CheckBox.Checked = mode_.Options.ShowHiddenFiles;
+				latestPackagesOnly_.CheckBox.Checked = mode_.Options.LatestPackagesOnly;
 
 				VUI.RadioMenuItem item;
 
