@@ -185,6 +185,11 @@ namespace AUI.FS
 		public override void ClearCache()
 		{
 			base.ClearCache();
+			ClearImmediateChildrenCache();
+		}
+
+		public void ClearImmediateChildrenCache()
+		{
 			dirs_ = null;
 		}
 

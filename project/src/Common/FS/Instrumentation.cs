@@ -224,6 +224,7 @@ namespace AUI.FS
 					I.FTRefreshOnObjectchanged,
 
 					I.FTIGetFSObject,
+					I.RefreshShortCuts,
 				};
 			}
 		}
@@ -283,8 +284,9 @@ namespace AUI.FS
 		public static InstrumentationType FTRefreshOnObjectchanged = new InstrumentationType("FTRefreshOnObjectchanged", 44);
 
 		public static InstrumentationType FTIGetFSObject = new InstrumentationType("FTIGetFSObject", 45);
+		public static InstrumentationType RefreshShortCuts = new InstrumentationType("RefreshShortCuts", 46);
 
-		public const int Count = 46;
+		public const int Count = 47;
 	}
 
 
@@ -303,7 +305,7 @@ namespace AUI.FS
 				2, 2, 2, 2,
 			1,
 				2, 2, 2,
-			1, 1, 1, 1, 1, 1, 1, 1, 1
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

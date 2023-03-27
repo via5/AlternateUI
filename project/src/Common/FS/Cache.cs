@@ -87,12 +87,14 @@ namespace AUI.FS
 		private CachedListing<IFilesystemObject> recursiveFiles_ = null;
 		private Dictionary<string, IFilesystemObject> resolved_ = null;
 
-		public void Clear()
+		public void Clear(bool keepResolve=false)
 		{
 			localDirs_?.Clear();
 			localFiles_?.Clear();
 			recursiveFiles_?.Clear();
-			resolved_?.Clear();
+
+			if (!keepResolve)
+				resolved_?.Clear();
 		}
 
 

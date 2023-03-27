@@ -21,7 +21,12 @@ namespace AUI.FS
 
 		public override void ClearCache()
 		{
-			cache_?.Clear();
+			cache_?.Clear(false);
+		}
+
+		public void ClearCacheKeepResolve()
+		{
+			cache_?.Clear(true);
 		}
 
 		public virtual bool AlreadySorted

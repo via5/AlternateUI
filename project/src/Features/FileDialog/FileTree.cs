@@ -161,8 +161,8 @@ namespace AUI.FileDialog
 
 		public void SearchPackages(string s)
 		{
-			FS.Filesystem.Instance.GetRoot().ClearCache();
-			FS.Filesystem.Instance.GetPackagesRoot().ClearCache();
+			FS.Filesystem.Instance.GetRoot().ClearImmediateChildrenCache();
+			FS.Filesystem.Instance.GetPackagesRoot().ClearPackagesCache();
 
 			if (!string.IsNullOrEmpty(s))
 				Expand(FS.Filesystem.Instance.GetPackagesRoot());

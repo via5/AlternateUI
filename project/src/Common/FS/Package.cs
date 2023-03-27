@@ -6,22 +6,96 @@ namespace AUI.FS
 {
 	class PackageRootDirectory : BasicFilesystemContainer
 	{
-		class PackagesCache
+		class ShortCutsCache
 		{
-			private PackageRootDirectory pr_;
+			private readonly PackageRootDirectory pr_;
 			private readonly string root_;
-			private List<IFilesystemContainer> packages_ = null;
-			private Dictionary<string, ShortCut> shortCuts_ = null;
-
-			private string search_ = null;
-			private List<IFilesystemContainer> searchedPackages_ = null;
+			private List<ShortCut> list_ = null;
+			private Dictionary<string, ShortCut> map_ = null;
 			private bool latestOnly_ = false;
 			private int cacheToken_ = -1;
 
-			public PackagesCache(PackageRootDirectory pr, string root)
+			public ShortCutsCache(PackageRootDirectory pr, string root)
 			{
 				pr_ = pr;
 				root_ = root;
+			}
+
+			public List<ShortCut> GetShortCuts()
+			{
+				return list_;
+			}
+
+			public bool Stale(Context cx)
+			{
+				if (latestOnly_ != cx.LatestPackagesOnly)
+					return true;
+
+				return (cacheToken_ != pr_.fs_.CacheToken);
+			}
+
+			public ShortCut GetShortcut(string name)
+			{
+				ShortCut sc = null;
+				map_?.TryGetValue(name, out sc);
+
+				return sc;
+			}
+
+			public void Refresh(Context cx)
+			{
+				cacheToken_ = pr_.fs_.CacheToken;
+				latestOnly_ = cx.LatestPackagesOnly;
+
+				Instrumentation.Start(I.RefreshShortCuts);
+				{
+					if (list_ == null)
+						list_ = new List<ShortCut>();
+					else
+						list_.Clear();
+
+					if (map_ == null)
+						map_ = new Dictionary<string, ShortCut>();
+					else
+						map_.Clear();
+
+					var scs = Sys.GetShortCutsForDirectory(pr_, root_);
+
+					foreach (var sc in scs)
+					{
+						if (string.IsNullOrEmpty(sc.package))
+							continue;
+
+						if (!string.IsNullOrEmpty(sc.packageFilter))
+							continue;
+
+						if (sc.path == "AddonPackages")
+							continue;
+
+						if (cx.LatestPackagesOnly && !sc.isLatest)
+							continue;
+
+						list_.Add(sc);
+						map_.Add(sc.package, sc);
+					}
+				}
+				Instrumentation.End();
+			}
+		}
+
+
+		class PackagesCache
+		{
+			private readonly PackageRootDirectory pr_;
+			private List<IFilesystemContainer> packages_ = null;
+
+			private string search_ = null;
+			private List<IFilesystemContainer> searchedPackages_ = null;
+			private int cacheToken_ = -1;
+
+			public PackagesCache(PackageRootDirectory pr)
+			{
+				pr_ = pr;
 			}
 
 			public Logger Log
@@ -31,9 +105,6 @@ namespace AUI.FS
 
 			public bool Stale(Context cx)
 			{
-				if (latestOnly_ != cx.LatestPackagesOnly)
-					return true;
-
 				return (cacheToken_ != pr_.fs_.CacheToken);
 			}
 
@@ -61,18 +132,9 @@ namespace AUI.FS
 				return searchedPackages_;
 			}
 
-			public ShortCut GetShortcut(string name)
-			{
-				ShortCut sc = null;
-				shortCuts_.TryGetValue(name, out sc);
-
-				return sc;
-			}
-
-			public void Refresh(Context cx)
+			public void Refresh(Context cx, ShortCutsCache scs)
 			{
 				cacheToken_ = pr_.fs_.CacheToken;
-				latestOnly_ = cx.LatestPackagesOnly;
 
 				Instrumentation.Start(I.RefreshPackages);
 				{
@@ -81,34 +143,16 @@ namespace AUI.FS
 					else
 						packages_.Clear();
 
-					if (shortCuts_ == null)
-						shortCuts_ = new Dictionary<string, ShortCut>();
-					else
-						shortCuts_.Clear();
-
-					var scs = Sys.GetShortCutsForDirectory(pr_, root_);
-
-					foreach (var sc in scs)
-					{
-						if (string.IsNullOrEmpty(sc.package))
-							continue;
-
-						if (!string.IsNullOrEmpty(sc.packageFilter))
-							continue;
-
-						if (sc.path == "AddonPackages")
-							continue;
-
-						if (cx.LatestPackagesOnly && !sc.isLatest)
-							continue;
-
+					foreach (var sc in scs.GetShortCuts())
 						packages_.Add(new Package(pr_.fs_, pr_, sc));
-						shortCuts_.Add(sc.package, sc);
-					}
 				}
 				Instrumentation.End();
 			}
 		}
+
+
+		private readonly Dictionary<string, ShortCutsCache> shortcuts_ =
+			new Dictionary<string, ShortCutsCache>();
 
 		private readonly Dictionary<string, PackagesCache> packages_ =
 			new Dictionary<string, PackagesCache>();
@@ -120,6 +164,13 @@ namespace AUI.FS
 		}
 
 		public override void ClearCache()
+		{
+			base.ClearCache();
+			shortcuts_.Clear();
+			packages_.Clear();
+		}
+
+		public void ClearPackagesCache()
 		{
 			base.ClearCache();
 			packages_.Clear();
@@ -194,20 +245,35 @@ namespace AUI.FS
 
 		private PackagesCache GetPackagesInfo(Context cx)
 		{
+			ShortCutsCache scc;
+
+			if (shortcuts_.TryGetValue(cx.PackagesRoot, out scc))
+			{
+				if (scc.Stale(cx))
+					scc.Refresh(cx);
+			}
+			else
+			{
+				scc = new ShortCutsCache(this, cx.PackagesRoot);
+				scc.Refresh(cx);
+				shortcuts_.Add(cx.PackagesRoot, scc);
+			}
+
+
 			PackagesCache pc;
 
 			if (packages_.TryGetValue(cx.PackagesRoot, out pc))
 			{
 				if (pc.Stale(cx))
-					pc.Refresh(cx);
+					pc.Refresh(cx, scc);
 
 				return pc;
 			}
 			else
 			{
-				pc = new PackagesCache(this, cx.PackagesRoot);
+				pc = new PackagesCache(this);
 				packages_.Add(cx.PackagesRoot, pc);
-				pc.Refresh(cx);
+				pc.Refresh(cx, scc);
 			}
 
 			return pc;
