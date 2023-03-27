@@ -3,7 +3,7 @@ using uFileBrowser;
 
 namespace AUI.FileDialog
 {
-	class FileDialogFeature : BasicFeature
+	class FileDialogFeature : UIReplacementFeature
 	{
 		private FileDialog fd_ = new FileDialog();
 
@@ -95,7 +95,7 @@ namespace AUI.FileDialog
 
 			fd_.Enable();
 
-			//fd_.Show(Modes.OpenScene(), null, "VaM/Saves/scene");
+			//fd_.Show(Modes.OpenScene(), null, "VaM/Packages");
 
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>

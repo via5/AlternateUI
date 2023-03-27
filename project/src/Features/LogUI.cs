@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace AUI.LogUI
 {
-	class LogUI : BasicFeature
+	class LogUI : TweakFeature
 	{
 		// changing the font breaks something in
 		// InputFieldAutoSizing.SyncPreferredHeight(), the calculated

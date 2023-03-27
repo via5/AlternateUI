@@ -1,6 +1,7 @@
 ﻿using MVR.FileManagementSecure;
 using SimpleJSON;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -152,31 +153,76 @@ namespace AUI
 		{
 			CreateVersion();
 
+			var uiReplacements = new List<IFeature>();
+			var tweaks = new List<IFeature>();
+
 			for (int i = 0; i < features_.Length; ++i)
 			{
-				if (i > 0)
+				switch (features_[i].FeatureType)
 				{
-					var s = CreateSpacer();
-					s.height = 85;
-				}
+					case BasicFeature.UIReplacement:
+					{
+						uiReplacements.Add(features_[i]);
+						break;
+					}
 
+					case BasicFeature.Tweak:
+					{
+						tweaks.Add(features_[i]);
+						break;
+					}
+
+					default:
+					{
+						Log.Error($"bad feature type {features_[i].FeatureType}");
+						break;
+					}
+				}
+			}
+
+			CreateHeader("UI replacements");
+			CreateFeatureUIs(uiReplacements);
+
+			CreateHeader("Tweaks");
+			CreateFeatureUIs(tweaks);
+		}
+
+		private void CreateFeatureUIs(List<IFeature> list)
+		{
+			foreach (var f in list)
+			{
 				try
 				{
-					features_[i].CreateUI();
+					f.CreateUI();
 				}
 				catch (Exception e)
 				{
-					Log.Error($"exception in {features_[i].Name} CreateUI:");
+					Log.Error($"exception in {f.Name} CreateUI:");
 					Log.Error(e.ToString());
 				}
+
+				var s = CreateSpacer();
+				s.height = 85;
 			}
 		}
 
 		private void CreateVersion()
 		{
-			var t = CreateButton($"AlternateUI {Version.String}");
+			CreateHeader($"AlternateUI {Version.String}");
+
+			var s = CreateSpacer();
+			s.height = 20;
+
+			s = CreateSpacer(true);
+			s.height = 20;
+		}
+
+		private void CreateHeader(string text, bool right = false)
+		{
+			var t = CreateButton(text, right);
 			t.buttonColor = new Color(0, 0, 0, 0);
 			t.buttonText.alignment = TextAnchor.MiddleLeft;
+			t.buttonText.fontStyle = FontStyle.Bold;
 			t.button.interactable = false;
 			t.height = 15;
 			t.GetComponent<LayoutElement>().minHeight = 15;

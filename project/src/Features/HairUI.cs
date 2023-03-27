@@ -162,7 +162,7 @@
 	}
 
 
-	class HairUI : BasicFeature
+	class HairUI : UIReplacementFeature
 	{
 		private readonly AtomHairUIModifier uiMod_;
 

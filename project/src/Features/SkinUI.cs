@@ -38,7 +38,7 @@ namespace AUI.SkinUI
 	}
 
 
-	class RightClickSkinReload : BasicFeature
+	class RightClickSkinReload : TweakFeature
 	{
 		private SuperController sc_ = SuperController.singleton;
 
@@ -302,7 +302,7 @@ namespace AUI.SkinUI
 	}
 
 
-	class SkinMaterialsReset : BasicFeature
+	class SkinMaterialsReset : TweakFeature
 	{
 		private const string ButtonName = "aui.skinui.resetmaterials";
 		private const float DeferredCheckInterval = 2;

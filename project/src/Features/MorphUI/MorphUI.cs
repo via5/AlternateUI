@@ -381,7 +381,7 @@ namespace AUI.MorphUI
 	}
 
 
-	class MorphUI : BasicFeature
+	class MorphUI : UIReplacementFeature
 	{
 		private SuperController sc_;
 		private readonly List<PersonMorphUI> uis_ = new List<PersonMorphUI>();

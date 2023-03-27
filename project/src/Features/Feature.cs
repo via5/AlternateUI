@@ -20,16 +20,23 @@ namespace AUI
 
 	public abstract class BasicFeature : IFeature
 	{
+		public const int UIReplacement = 0;
+		public const int UIChange = 1;
+		public const int Tweak = 2;
+
 		private readonly string name_, displayName_;
+		private readonly int type_;
 		private readonly Logger log_;
 		private JSONStorableBool enabledParam_;
 		private bool enabled_;
 		private bool failed_ = false;
 
-		protected BasicFeature(string name, string displayName, bool defaultEnabled)
+		protected BasicFeature(
+			string name, int type, string displayName, bool defaultEnabled)
 		{
 			name_ = name;
 			displayName_ = displayName;
+			type_ = type;
 			log_ = new Logger("aui." + name_);
 			enabled_ = defaultEnabled;
 
@@ -65,10 +72,12 @@ namespace AUI
 				new PluginsUI.PluginsUI(),
 				new LightUI.LightUI(),
 				new SelectUI.SelectUI(),
+				new AddAtomUI.AddAtomUI(),
 				new SkinUI.RightClickSkinReload(),
 				new SkinUI.SkinMaterialsReset(),
 				new LogUI.LogUI(),
 				new CuaUI.CuaUI(),
+
 				new Tweaks.EscapeDialogs(),
 				new Tweaks.DisableCuaCollision(),
 				new Tweaks.SpaceBarFreeze(),
@@ -91,6 +100,11 @@ namespace AUI
 		public string DisplayName
 		{
 			get { return displayName_; }
+		}
+
+		public int FeatureType
+		{
+			get { return type_; }
 		}
 
 		public Logger Log
@@ -268,6 +282,26 @@ namespace AUI
 		protected virtual void DoDisable()
 		{
 			// no-op
+		}
+	}
+
+
+	abstract class UIReplacementFeature : BasicFeature
+	{
+		protected UIReplacementFeature(
+			string name, string displayName, bool defaultEnabled)
+				: base(name, UIReplacement, displayName, defaultEnabled)
+		{
+		}
+	}
+
+
+	abstract class TweakFeature : BasicFeature
+	{
+		protected TweakFeature(
+			string name, string displayName, bool defaultEnabled)
+				: base(name, Tweak, displayName, defaultEnabled)
+		{
 		}
 	}
 }

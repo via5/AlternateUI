@@ -43,7 +43,7 @@ namespace AUI.SelectUI
 	}
 
 
-	class SelectUI : BasicFeature
+	class SelectUI : TweakFeature
 	{
 		private const float Interval = 0.2f;
 
@@ -54,7 +54,7 @@ namespace AUI.SelectUI
 		private string[] lastValues_ = null;
 
 		public SelectUI()
-			: base("select", "Middle-click remove", true)
+			: base("select", "Remove atom middle-click", true)
 		{
 		}
 

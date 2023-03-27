@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 
 namespace AUI.Tweaks
 {
-	class QuickSaveScreenshot : BasicFeature
+	class QuickSaveScreenshot : TweakFeature
 	{
 		public QuickSaveScreenshot()
 			: base("quickSaveScreenshot", "Quick save with SS (Shift+F2)", false)
@@ -44,7 +44,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class QuickSave : BasicFeature
+	class QuickSave : TweakFeature
 	{
 		public QuickSave()
 			: base("quickSave", "Quick save no SS (Shift+F3)", false)
@@ -90,7 +90,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class EditMode : BasicFeature
+	class EditMode : TweakFeature
 	{
 		public EditMode()
 			: base("editMode", "Edit mode on load", false)
@@ -124,7 +124,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class SpaceBarFreeze : BasicFeature
+	class SpaceBarFreeze : TweakFeature
 	{
 		public SpaceBarFreeze()
 			: base("spaceBarFreeze", "Spacebar freeze", false)
@@ -151,7 +151,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class HideTargetsInVR : BasicFeature
+	class HideTargetsInVR : TweakFeature
 	{
 		private class AtomInfo
 		{
@@ -297,7 +297,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class FocusHead : BasicFeature
+	class FocusHead : TweakFeature
 	{
 		public FocusHead()
 			: base("focusHead", "Focus head on load", false)
@@ -347,7 +347,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class DisableLoadPosition : BasicFeature
+	class DisableLoadPosition : TweakFeature
 	{
 		public DisableLoadPosition()
 			: base("disableLoadPosition", "Disable load position", false)
@@ -382,7 +382,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class MoveNewLight : BasicFeature
+	class MoveNewLight : TweakFeature
 	{
 		public MoveNewLight()
 			: base("moveNewLight", "Move new lights", false)
@@ -422,7 +422,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class DisableCuaCollision : BasicFeature
+	class DisableCuaCollision : TweakFeature
 	{
 		public DisableCuaCollision()
 			: base("disableCuaCollision", "Disable collison on new CUAs", false)
@@ -456,7 +456,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class EscapeDialogs : BasicFeature
+	class EscapeDialogs : TweakFeature
 	{
 		private UnityEngine.UI.Button closePackageManager_;
 		private UnityEngine.UI.Button closePackageBuilder_;
@@ -533,7 +533,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class RightClickPackagesReload : BasicFeature
+	class RightClickPackagesReload : TweakFeature
 	{
 		private const string ButtonName = "ButtonOpenPackageManager";
 		private UnityEngine.UI.Button button_ = null;

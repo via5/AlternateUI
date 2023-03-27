@@ -242,7 +242,7 @@ namespace AUI.ClothingUI
 	}
 
 
-	class ClothingUI : BasicFeature
+	class ClothingUI : UIReplacementFeature
 	{
 		private readonly AtomClothingUIModifier uiMod_;
 

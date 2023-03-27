@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace AUI.PluginsUI
@@ -318,7 +317,7 @@ namespace AUI.PluginsUI
 	}
 
 
-	class PluginsUI : BasicFeature
+	class PluginsUI : TweakFeature
 	{
 		private readonly PluginsUIModifier uiMod_;
 

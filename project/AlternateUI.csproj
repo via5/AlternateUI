@@ -116,6 +116,7 @@
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
+    <Compile Include="src\Features\AddAtomUI.cs" />
     <Compile Include="src\Features\ClothingUI.cs" />
     <Compile Include="src\Features\CuaUI.cs" />
     <Compile Include="src\Features\Feature.cs" />

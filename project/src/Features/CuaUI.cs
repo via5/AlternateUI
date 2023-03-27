@@ -170,7 +170,7 @@ namespace AUI.CuaUI
 	}
 
 
-	class CuaUI : BasicFeature
+	class CuaUI : TweakFeature
 	{
 		private readonly CuaUIModifier uiMod_;
 
