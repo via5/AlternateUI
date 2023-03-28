@@ -58,7 +58,7 @@ namespace AUI.FS
 			return false;
 		}
 
-		public void SetRaw(Filesystem fs, Context cx, List<T> list)
+		public void SetRaw(Filesystem fs, Context cx, List<T> all, List<T> filtered)
 		{
 			cacheToken_ = fs.CacheToken;
 			showHiddenFolders_ = cx.ShowHiddenFolders;
@@ -70,7 +70,7 @@ namespace AUI.FS
 			if (listing_ == null)
 				listing_ = new Listing<T>();
 
-			listing_.SetRaw(list);
+			listing_.SetRaw(all, filtered);
 		}
 
 		public void UpdateLookup()
@@ -143,12 +143,14 @@ namespace AUI.FS
 		}
 
 		public void SetLocalDirectoriesCache(
-			Filesystem fs, Context cx, List<IFilesystemContainer> list)
+			Filesystem fs, Context cx,
+			List<IFilesystemContainer> allDirs,
+			List<IFilesystemContainer> filteredDirs)
 		{
 			if (localDirs_ == null)
 				localDirs_ = new CachedListing<IFilesystemContainer>();
 
-			localDirs_.SetRaw(fs, cx, list);
+			localDirs_.SetRaw(fs, cx, allDirs, filteredDirs);
 			resolved_?.Clear();
 		}
 
@@ -189,7 +191,7 @@ namespace AUI.FS
 			if (localFiles_ == null)
 				localFiles_ = new CachedListing<IFilesystemObject>();
 
-			localFiles_.SetRaw(fs, cx, list);
+			localFiles_.SetRaw(fs, cx, list, null);
 			resolved_?.Clear();
 		}
 
@@ -227,7 +229,7 @@ namespace AUI.FS
 			if (recursiveFiles_ == null)
 				recursiveFiles_ = new CachedListing<IFilesystemObject>();
 
-			recursiveFiles_.SetRaw(fs, cx, null);
+			recursiveFiles_.SetRaw(fs, cx, null, null);
 			resolved_?.Clear();
 		}
 

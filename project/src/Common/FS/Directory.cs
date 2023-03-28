@@ -201,28 +201,22 @@ namespace AUI.FS
 			sortedDirs_ = null;
 		}
 
-		public override DateTime DateCreated
+		protected override DateTime GetDateCreated()
 		{
-			get
-			{
-				var c = SingleContent;
-				if (c == null)
-					return DateTime.MaxValue;
-				else
-					return c.DateCreated;
-			}
+			var c = SingleContent;
+			if (c == null)
+				return DateTime.MaxValue;
+			else
+				return c.DateCreated;
 		}
 
-		public override DateTime DateModified
+		protected override DateTime GetDateModified()
 		{
-			get
-			{
-				var c = SingleContent;
-				if (c == null)
-					return DateTime.MaxValue;
-				else
-					return c.DateModified;
-			}
+			var c = SingleContent;
+			if (c == null)
+				return DateTime.MaxValue;
+			else
+				return c.DateModified;
 		}
 
 		public override VUI.Icon Icon
@@ -551,9 +545,6 @@ namespace AUI.FS
 
 	class FSDirectory : BasicFilesystemContainer, IDirectory
 	{
-		private DateTime dateCreated_ = DateTime.MaxValue;
-		private DateTime dateModified_ = DateTime.MaxValue;
-
 		public FSDirectory(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
@@ -564,26 +555,14 @@ namespace AUI.FS
 			return $"FSDirectory({VirtualPath})";
 		}
 
-		public override DateTime DateCreated
+		protected override DateTime GetDateCreated()
 		{
-			get
-			{
-				if (dateCreated_ == DateTime.MaxValue)
-					dateCreated_ = Sys.DirectoryCreationTime(this, MakeRealPath());
-
-				return DateTime.MaxValue;
-			}
+			return Sys.DirectoryCreationTime(this, MakeRealPath());
 		}
 
-		public override DateTime DateModified
+		protected override DateTime GetDateModified()
 		{
-			get
-			{
-				if (dateModified_ == DateTime.MaxValue)
-					dateModified_ = Sys.DirectoryLastWriteTime(this, MakeRealPath());
-
-				return DateTime.MaxValue;
-			}
+			return Sys.DirectoryLastWriteTime(this, MakeRealPath());
 		}
 
 		public override VUI.Icon Icon

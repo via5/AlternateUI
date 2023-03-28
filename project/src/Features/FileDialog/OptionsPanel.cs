@@ -14,6 +14,7 @@ namespace AUI.FileDialog
 		private readonly VUI.CheckBoxMenuItem showHiddenFolders_;
 		private readonly VUI.CheckBoxMenuItem showHiddenFiles_;
 		private readonly VUI.CheckBoxMenuItem latestPackagesOnly_;
+		private readonly VUI.CheckBoxMenuItem usePackageTime_;
 		private readonly VUI.MenuButton sortPanel_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
@@ -75,6 +76,13 @@ namespace AUI.FileDialog
 					"Latest packages only", SetLatestPackagesOnly, false,
 					"Only show the latest version of installed packages."));
 
+				m.AddSeparator();
+
+				usePackageTime_ = m.AddMenuItem(new VUI.CheckBoxMenuItem(
+					"Use package time", SetUsePackageTime, fd_.UsePackageTime,
+					"Files in packages will use the package modification " +
+					"date/time instead of the files themselves."));
+
 				optionsPanel_ = new VUI.MenuButton("Options", m);
 			}
 
@@ -114,6 +122,7 @@ namespace AUI.FileDialog
 				showHiddenFolders_.CheckBox.Checked = mode_.Options.ShowHiddenFolders;
 				showHiddenFiles_.CheckBox.Checked = mode_.Options.ShowHiddenFiles;
 				latestPackagesOnly_.CheckBox.Checked = mode_.Options.LatestPackagesOnly;
+				usePackageTime_.CheckBox.Checked = fd_.UsePackageTime;
 
 				VUI.RadioMenuItem item;
 
@@ -220,6 +229,12 @@ namespace AUI.FileDialog
 			mode_.Options.SortDirection = s;
 			fd_.RefreshFiles();
 			UpdateSortButton();
+		}
+
+		private void SetUsePackageTime(bool b)
+		{
+			if (ignore_) return;
+			fd_.UsePackageTime = b;
 		}
 
 		private void UpdateSortButton()

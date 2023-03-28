@@ -94,6 +94,7 @@ namespace AUI.FS
 		where EntriesType : class, IFilesystemObject
 	{
 		private List<EntriesType> raw_ = null;
+		private List<EntriesType> filtered_ = null;
 		private Dictionary<string, EntriesType> lookup_ = null;
 		private string currentExtensions_ = null;
 		private List<EntriesType> perExtension_ = null;
@@ -103,24 +104,23 @@ namespace AUI.FS
 		public int currentSortDir_ = Context.NoSortDirection;
 		private List<EntriesType> sorted_ = null;
 
-		public void SetRaw(List<EntriesType> list)
+		public void SetRaw(List<EntriesType> all, List<EntriesType> filtered)
 		{
-			raw_ = list;
+			raw_ = all;
+			filtered_ = filtered;
 			SetAllStale();
 		}
 
 		public void UpdateLookup()
 		{
-			var last = Last;
-
-			if (last != null)
+			if (raw_ != null)
 			{
 				if (lookup_ == null)
 					lookup_ = new Dictionary<string, EntriesType>();
 				else
 					lookup_.Clear();
 
-				foreach (var e in last)
+				foreach (var e in raw_)
 					lookup_.Add(e.Name, e);
 			}
 		}
@@ -136,7 +136,7 @@ namespace AUI.FS
 
 		public List<EntriesType> Raw
 		{
-			get { return raw_; }
+			get { return filtered_ ?? raw_; }
 		}
 
 		public List<EntriesType> PerExtension
@@ -156,7 +156,7 @@ namespace AUI.FS
 
 		public List<EntriesType> Last
 		{
-			get { return sorted_ ?? searched_ ?? perExtension_ ?? raw_ ?? new List<EntriesType>(); }
+			get { return sorted_ ?? searched_ ?? perExtension_ ?? filtered_ ?? raw_ ?? new List<EntriesType>(); }
 		}
 
 		public Dictionary<string, EntriesType> Lookup
@@ -275,11 +275,13 @@ namespace AUI.FS
 
 	struct ResolveDebug
 	{
-		public int indent;
+		private int indent_;
+		private bool enabled_;
 
 		public ResolveDebug(int i)
 		{
-			indent = i;
+			indent_ = i;
+			enabled_ = (i >= 0);
 		}
 
 		public static ResolveDebug Null
@@ -289,15 +291,15 @@ namespace AUI.FS
 
 		public bool Enabled
 		{
-			get { return (indent >= 0); }
+			get { return enabled_; }
 		}
 
 		public ResolveDebug Inc()
 		{
-			if (indent < 0)
-				return Null;
+			if (Enabled)
+				return new ResolveDebug(indent_ + 1);
 			else
-				return new ResolveDebug(indent + 1);
+				return Null;
 		}
 
 		public void Info(object o, string s)
@@ -307,12 +309,12 @@ namespace AUI.FS
 				if (o == null)
 				{
 					AlternateUI.Instance.Log.Info(
-						new string(' ', indent * 4) + $"{s}");
+						new string(' ', indent_ * 4) + $"{s}");
 				}
 				else
 				{
 					AlternateUI.Instance.Log.Info(
-						new string(' ', indent * 4) + $"{o} {s}");
+						new string(' ', indent_ * 4) + $"{o} {s}");
 				}
 			}
 		}
@@ -324,12 +326,12 @@ namespace AUI.FS
 				if (o == null)
 				{
 					AlternateUI.Instance.Log.Error(
-						new string(' ', indent * 4) + $"{s}");
+						new string(' ', indent_ * 4) + $"{s}");
 				}
 				else
 				{
 					AlternateUI.Instance.Log.Error(
-						new string(' ', indent * 4) + $"{o} {s}");
+						new string(' ', indent_ * 4) + $"{o} {s}");
 				}
 			}
 		}

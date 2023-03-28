@@ -183,7 +183,7 @@ namespace VUI
 
 		private void OnPointerDown(PointerEvent e)
 		{
-			if (!Enabled)
+			if (!Enabled || e.Button != PointerEvent.LeftButton)
 				return;
 
 			var r = AbsoluteClientBounds;

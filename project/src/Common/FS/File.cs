@@ -5,8 +5,6 @@ namespace AUI.FS
 	class FSFile : BasicFilesystemObject, IFile
 	{
 		private readonly string name_;
-		private DateTime dateCreated_ = DateTime.MaxValue;
-		private DateTime dateModified_ = DateTime.MaxValue;
 
 		public FSFile(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent)
@@ -17,9 +15,6 @@ namespace AUI.FS
 		public override void ClearCache()
 		{
 			base.ClearCache();
-
-			dateCreated_ = DateTime.MaxValue;
-			dateModified_ = DateTime.MaxValue;
 			Icons.ClearFileCache(MakeRealPath());
 		}
 
@@ -33,26 +28,14 @@ namespace AUI.FS
 			get { return name_; }
 		}
 
-		public override DateTime DateCreated
+		protected override DateTime GetDateCreated()
 		{
-			get
-			{
-				if (dateCreated_ == DateTime.MaxValue)
-					dateCreated_ = Sys.FileCreationTime(this, MakeRealPath());
-
-				return dateCreated_;
-			}
+			return Sys.FileCreationTime(this, MakeRealPath());
 		}
 
-		public override DateTime DateModified
+		protected override DateTime GetDateModified()
 		{
-			get
-			{
-				if (dateModified_ == DateTime.MaxValue)
-					dateModified_ = Sys.FileLastWriteTime(this, MakeRealPath());
-
-				return dateModified_;
-			}
+			return Sys.FileLastWriteTime(this, MakeRealPath());
 		}
 
 		public override bool CanPin

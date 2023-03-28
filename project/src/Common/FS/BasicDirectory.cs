@@ -21,6 +21,7 @@ namespace AUI.FS
 
 		public override void ClearCache()
 		{
+			base.ClearCache();
 			cache_?.Clear(false);
 		}
 
@@ -53,12 +54,14 @@ namespace AUI.FS
 		}
 
 		private void SetLocalDirectoriesCache(
-			Context cx, List<IFilesystemContainer> list)
+			Context cx,
+			List<IFilesystemContainer> allDirs,
+			List<IFilesystemContainer> filteredDirs)
 		{
 			if (cache_ == null)
 				cache_ = new Cache();
 
-			cache_.SetLocalDirectoriesCache(fs_, cx, list);
+			cache_.SetLocalDirectoriesCache(fs_, cx, allDirs, filteredDirs);
 		}
 
 		private Listing<IFilesystemContainer> GetLocalDirectoriesCache()
@@ -118,8 +121,11 @@ namespace AUI.FS
 		{
 			if (StaleLocalDirectoriesCache(cx))
 			{
-				var dirs = GetDirectoriesInternal(cx);
-				SetLocalDirectoriesCache(cx, dirs);
+				List<IFilesystemContainer> allDirs = null;
+				List<IFilesystemContainer> filteredDirs = null;
+
+				GetDirectoriesInternal(cx, out allDirs, out filteredDirs);
+				SetLocalDirectoriesCache(cx, allDirs, filteredDirs);
 			}
 
 			// dirs are not filtered for now
@@ -174,8 +180,6 @@ namespace AUI.FS
 				listing.AddRaw(GetLocalFilesCache().Raw);
 			}
 
-			List<IFilesystemContainer> dirs;
-
 			if (StaleLocalDirectoriesCache(cx))
 			{
 				// don't use context, it'll filter with extensions, etc.
@@ -184,25 +188,16 @@ namespace AUI.FS
 					"", null, cx.PackagesRoot,
 					Context.NoSort, Context.NoSortDirection, cx.Flags, "");
 
-				dirs = GetDirectoriesInternal(cx2);
-				SetLocalDirectoriesCache(cx, dirs);
+				List<IFilesystemContainer> allDirs = null;
+				List<IFilesystemContainer> filteredDirs = null;
+
+				GetDirectoriesInternal(cx, out allDirs, out filteredDirs);
+				SetLocalDirectoriesCache(cx, allDirs, filteredDirs);
+
 				cache_.GetLocalDirectories().UpdateLookup();
 			}
-			else
-			{
-				dirs = GetLocalDirectoriesCache().Raw;
-			}
 
-			if (dirs != null)
-			{
-				foreach (var sd in dirs)
-				{
-					if (sd.IsFlattened || sd.IsRedundant)
-						continue;
-
-					sd.GetFilesRecursiveInternal(cx, listing);
-				}
-			}
+			DoGetFilesRecursive(cx, listing, GetLocalDirectoriesCache().Raw);
 		}
 
 		public override IFilesystemObject Resolve(
@@ -254,10 +249,14 @@ namespace AUI.FS
 				if (debug.Enabled)
 					debug.Info(null, "");
 
-				if (cache_ == null)
-					cache_ = new Cache();
+				if (!Bits.IsSet(flags, Filesystem.ResolveNoCache))
+				{
+					if (cache_ == null)
+						cache_ = new Cache();
 
-				cache_.AddResolve(path, r.o);
+					cache_.AddResolve(path, r.o);
+				}
+
 				return r.o;
 			}
 			catch (Exception e)
@@ -445,6 +444,22 @@ namespace AUI.FS
 			return list;
 		}
 
+		protected virtual void DoGetFilesRecursive(
+			Context cx, Listing<IFilesystemObject> listing,
+			List<IFilesystemContainer> dirs)
+		{
+			if (dirs != null)
+			{
+				foreach (var sd in dirs)
+				{
+					if (sd.IsFlattened || sd.IsRedundant)
+						continue;
+
+					sd.GetFilesRecursiveInternal(cx, listing);
+				}
+			}
+		}
+
 
 		protected virtual bool IncludeDirectory(Context cx, IFilesystemContainer o)
 		{
@@ -469,50 +484,47 @@ namespace AUI.FS
 			return b;
 		}
 
-		private List<IFilesystemContainer> GetDirectoriesInternal(Context cx)
+		private void GetDirectoriesInternal(
+			Context cx,
+			out List<IFilesystemContainer> allDirs,
+			out List<IFilesystemContainer> filteredDirs)
 		{
-			List<IFilesystemContainer> dirs;
+			allDirs = null;
+			filteredDirs = null;
 
 			Instrumentation.Start(I.CallingDoGetDirectories);
 			{
-				dirs = DoGetDirectories(cx);
+				allDirs = DoGetDirectories(cx);
 			}
 			Instrumentation.End();
 
 			Instrumentation.Start(I.CheckDirectories);
 			{
-				if (dirs != null)
+				if (allDirs != null)
 				{
-					List<IFilesystemContainer> checkedDirs = null;
-
-					for (int i = 0; i < dirs.Count; ++i)
+					for (int i = 0; i < allDirs.Count; ++i)
 					{
-						var d = dirs[i];
+						var d = allDirs[i];
 
-						if (checkedDirs == null)
+						if (filteredDirs == null)
 						{
 							if (!IncludeDirectory(cx, d))
 							{
-								checkedDirs = new List<IFilesystemContainer>();
+								filteredDirs = new List<IFilesystemContainer>();
 
 								for (int j = 0; j < i; ++j)
-									checkedDirs.Add(dirs[j]);
+									filteredDirs.Add(allDirs[j]);
 							}
 						}
 						else
 						{
 							if (IncludeDirectory(cx, d))
-								checkedDirs.Add(d);
+								filteredDirs.Add(d);
 						}
 					}
-
-					if (checkedDirs != null)
-						dirs = checkedDirs;
 				}
 			}
 			Instrumentation.End();
-
-			return dirs;
 		}
 
 		private List<IFilesystemObject> GetFilesInternal(Context cx)

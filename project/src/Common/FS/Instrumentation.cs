@@ -225,6 +225,11 @@ namespace AUI.FS
 
 					I.FTIGetFSObject,
 					I.RefreshShortCuts,
+
+					I.PackageResolveInternal1,
+					I.PackageResolveInternal2,
+					I.PackageResolveInternal3,
+					I.BasicDirectoryResolve
 				};
 			}
 		}
@@ -286,7 +291,13 @@ namespace AUI.FS
 		public static InstrumentationType FTIGetFSObject = new InstrumentationType("FTIGetFSObject", 45);
 		public static InstrumentationType RefreshShortCuts = new InstrumentationType("RefreshShortCuts", 46);
 
-		public const int Count = 47;
+		public static InstrumentationType PackageResolveInternal1 = new InstrumentationType("PackageResolveInternal1", 47);
+		public static InstrumentationType PackageResolveInternal2 = new InstrumentationType("PackageResolveInternal2", 48);
+		public static InstrumentationType PackageResolveInternal3 = new InstrumentationType("PackageResolveInternal3", 49);
+
+		public static InstrumentationType BasicDirectoryResolve = new InstrumentationType("BasicDirectoryResolve", 50);
+
+		public const int Count = 51;
 	}
 
 
@@ -305,7 +316,8 @@ namespace AUI.FS
 				2, 2, 2, 2,
 			1,
 				2, 2, 2,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

@@ -15,16 +15,6 @@ namespace AUI.FS
 			return "AllFlatDirectory";
 		}
 
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
 		public override VUI.Icon Icon
 		{
 			get { return Icons.GetIcon(Icons.Directory); }
@@ -89,16 +79,6 @@ namespace AUI.FS
 			return "PackagesFlatDirectory";
 		}
 
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
 		public override VUI.Icon Icon
 		{
 			get { return Icons.GetIcon(Icons.Package); }
@@ -157,16 +137,6 @@ namespace AUI.FS
 		public override string ToString()
 		{
 			return "PinnedFlatDirectory";
-		}
-
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
 		}
 
 		public override VUI.Icon Icon

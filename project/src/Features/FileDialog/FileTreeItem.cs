@@ -178,7 +178,7 @@ namespace AUI.FileDialog
 				{
 					for (int i = 0; i < dirs.Count; ++i)
 					{
-						if (i >= cs.Count || !(cs[i] as FileTreeItem).GetFSObject().IsSameObject(dirs[i]))
+						if (i >= cs.Count || !((cs[i] as FileTreeItem).GetFSObject()?.IsSameObject(dirs[i]) ?? false))
 							Insert(i, CreateItem(dirs[i]));
 					}
 				}

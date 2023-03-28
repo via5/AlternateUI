@@ -342,9 +342,9 @@ namespace VUI
 			{
 				panel_.GetRoot().FloatingPanel.BackgroundColor =
 					Style.Theme.ActiveOverlayColor;
-			}
 
-			panel_.GetRoot().FloatingPanel.Clickthrough = false;
+				panel_.GetRoot().FloatingPanel.Clickthrough = false;
+			}
 
 			panel_.DoLayout();
 
@@ -362,9 +362,9 @@ namespace VUI
 			{
 				panel_.GetRoot().FloatingPanel.BackgroundColor =
 					new UnityEngine.Color(0, 0, 0, 0);
-			}
 
-			panel_.GetRoot().FloatingPanel.Clickthrough = true;
+				panel_.GetRoot().FloatingPanel.Clickthrough = true;
+			}
 
 			button_.BackgroundColor = oldBackground_;
 			Toggled?.Invoke(panel_.Visible);

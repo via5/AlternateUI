@@ -371,6 +371,11 @@ namespace AUI.FileDialog
 					continue;
 
 				var o = fi.Object;
+				if (o == null)
+				{
+					if (debug)
+						Log.Info($"{cs}: {fi} has null object, so not '{cs[0]}'");
+				}
 
 				if (o.Name == cs[0])
 				{

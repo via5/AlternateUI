@@ -30,6 +30,7 @@ namespace AUI.FS
 		public const int ResolveDefault = 0x00;
 		public const int ResolveDirsOnly = 0x01;
 		public const int ResolveDebug = 0x02;
+		public const int ResolveNoCache = 0x04;
 
 		private static readonly Filesystem instance_ = new Filesystem();
 
@@ -37,6 +38,8 @@ namespace AUI.FS
 		private readonly RootDirectory root_;
 		private readonly PackageRootDirectory packagesRoot_;
 		private int cacheToken_ = 1;
+
+		private bool usePackageTime_ = true;
 
 
 		public Filesystem()
@@ -56,6 +59,12 @@ namespace AUI.FS
 		public Logger Log
 		{
 			get { return log_; }
+		}
+
+		public bool UsePackageTime
+		{
+			get { return usePackageTime_; }
+			set { usePackageTime_ = value; }
 		}
 
 		public int CacheToken
@@ -228,16 +237,6 @@ namespace AUI.FS
 			get { return true; }
 		}
 
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
 		public override VUI.Icon Icon
 		{
 			get { return Icons.GetIcon(Icons.Directory); }
@@ -316,6 +315,11 @@ namespace AUI.FS
 				return true;
 		}
 
+		protected override bool DoHasDirectories(Context cx)
+		{
+			return true;
+		}
+
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
 			if (dirs_ == null)
@@ -345,9 +349,22 @@ namespace AUI.FS
 			return dirs_;
 		}
 
-		protected override bool DoHasDirectories(Context cx)
+		protected override List<IFilesystemObject> DoGetFiles(Context cx)
 		{
-			return true;
+			return new List<IFilesystemObject>();
+		}
+
+		protected override void DoGetFilesRecursive(
+			Context cx, Listing<IFilesystemObject> listing,
+			List<IFilesystemContainer> dirs)
+		{
+			foreach (var sd in GetDirectoriesForFlatten(cx))
+			{
+				if (sd.IsFlattened || sd.IsRedundant)
+					continue;
+
+				sd.GetFilesRecursiveInternal(cx, listing);
+			}
 		}
 	}
 

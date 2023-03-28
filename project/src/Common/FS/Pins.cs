@@ -163,16 +163,6 @@ namespace AUI.FS
 			fs_.FireObjectChanged(this);
 		}
 
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
 		public override bool CanPin
 		{
 			get { return false; }
@@ -266,8 +256,6 @@ namespace AUI.FS
 
 		public override string Name { get { return c_.Name; } }
 		public override string VirtualPath { get { return c_.VirtualPath; } }
-		public override DateTime DateCreated { get { return c_.DateCreated; } }
-		public override DateTime DateModified { get { return c_.DateModified; } }
 		public override VUI.Icon Icon { get { return c_.Icon; } }
 		public override bool CanPin { get { return true; } }
 		public override bool Virtual { get { return c_.Virtual; } }
@@ -277,6 +265,15 @@ namespace AUI.FS
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 		public override bool IsInternal { get { return c_.IsInternal; } }
 
+		protected override DateTime GetDateCreated()
+		{
+			return c_.DateCreated;
+		}
+
+		protected override DateTime GetDateModified()
+		{
+			return c_.DateModified;
+		}
 
 		public override bool UnderlyingCanChange
 		{

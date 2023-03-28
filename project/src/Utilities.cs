@@ -38,6 +38,70 @@ namespace AUI
 	}
 
 
+
+	struct StringView
+	{
+		private string s_;
+		private int begin_, end_;
+
+		public StringView(string s)
+		{
+			s_ = s;
+			begin_ = 0;
+			end_ = s_.Length;
+		}
+
+		public StringView(string s, int start, int count)
+		{
+			s_ = s;
+			begin_ = start;
+			end_ = start + count;
+		}
+
+		public int Length
+		{
+			get { return end_ - begin_; }
+		}
+
+		public bool EndsWith(string with)
+		{
+			if (Length < with.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				s_, Length - with.Length,
+				with, 0,
+				with.Length);
+
+			return (r == 0);
+		}
+
+		public StringView Substring(int start, int count)
+		{
+			return new StringView(s_, begin_ + start, count);
+		}
+
+		public static bool operator ==(StringView a, string b)
+		{
+			if (a.Length != b.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				a.s_, a.begin_,
+				b, 0,
+				a.Length);
+
+			return (r == 0);
+		}
+
+		public static bool operator !=(StringView a, string b)
+		{
+			return !(a == b);
+		}
+	}
+
+
+
 	static class HashHelper
 	{
 		public static int HashArray<T>(T[] array)

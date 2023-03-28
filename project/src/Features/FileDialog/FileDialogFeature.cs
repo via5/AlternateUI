@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SimpleJSON;
+using System.Collections.Generic;
 using uFileBrowser;
 
 namespace AUI.FileDialog
@@ -29,6 +30,12 @@ namespace AUI.FileDialog
 			new FS.Extension("DLL files", ".dll"),
 		};
 
+		public static string DefaultPresetExtension = ".vap";
+		public static FS.Extension[] PresetExtensions = new FS.Extension[]
+		{
+			new FS.Extension("VAP files", ".vap")
+		};
+
 
 		public FileDialogFeature()
 			: base("fileDialog", "File dialog", false)
@@ -48,6 +55,11 @@ namespace AUI.FileDialog
 		public static ExtensionItem[] GetPluginExtensions(bool includeAll)
 		{
 			return GetExtensions(PluginExtensions, "All plugin files", includeAll);
+		}
+
+		public static ExtensionItem[] GetPresetExtensions(bool includeAll)
+		{
+			return GetExtensions(PresetExtensions, "All preset files", includeAll);
 		}
 
 		public static ExtensionItem[] GetExtensions(
@@ -123,6 +135,8 @@ namespace AUI.FileDialog
 
 				Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool", () =>
 				{
+					fb.gameObject.SetActive(true);
+					fb.transform.parent.gameObject.SetActive(true);
 					fb.Show(cb, cd);
 				});
 			};
@@ -146,6 +160,11 @@ namespace AUI.FileDialog
 							Show(Modes.OpenPlugin(), cb);
 							return;
 						}
+						//else if (fb.fileFormat == "vap")
+						//{
+						//	Show(Modes.OpenPreset(fb.defaultPath), cb, null);
+						//	return;
+						//}
 					}
 				}
 
@@ -154,6 +173,8 @@ namespace AUI.FileDialog
 
 				Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool", () =>
 				{
+					fb.gameObject.SetActive(true);
+					fb.transform.parent.gameObject.SetActive(true);
 					fb.Show(cb, cd);
 				});
 			};
@@ -162,7 +183,14 @@ namespace AUI.FileDialog
 			Vamos.API.Instance.uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool += (fb, path, pkgFilter, flatten, includeRegularDirs) =>
 			{
 				if (!fd_.Visible)
+				{
+					Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_GotoDirectory__FileBrowser_FileBrowserCallback_string_string_bool_bool", () =>
+					{
+						fb.GotoDirectory(path, pkgFilter, flatten, includeRegularDirs);
+					});
+
 					return;
+				}
 
 				path = path.Replace("\\", "/");
 				path = "VaM/" + path;
@@ -176,14 +204,14 @@ namespace AUI.FileDialog
 			};
 		}
 
-		private void Show(IFileDialogMode mode, FileBrowserCallback cb)
+		private void Show(IFileDialogMode mode, FileBrowserCallback cb, string cwd = null)
 		{
-			fd_.Show(mode, (path) => cb?.Invoke(path));
+			fd_.Show(mode, (path) => cb?.Invoke(path), cwd);
 		}
 
-		private void Show(IFileDialogMode mode, FileBrowserFullCallback cb)
+		private void Show(IFileDialogMode mode, FileBrowserFullCallback cb, string cwd = null)
 		{
-			fd_.Show(mode, (path) => cb?.Invoke(path, true));
+			fd_.Show(mode, (path) => cb?.Invoke(path, true), cwd);
 		}
 
 		protected override void DoDisable()
@@ -194,6 +222,18 @@ namespace AUI.FileDialog
 		protected override void DoUpdate(float s)
 		{
 			fd_.Update(s);
+		}
+
+		protected override void DoLoadOptions(JSONClass o)
+		{
+			base.DoLoadOptions(o);
+			fd_.LoadOptions(o);
+		}
+
+		protected override void DoSaveOptions(JSONClass o)
+		{
+			base.DoSaveOptions(o);
+			fd_.SaveOptions(o);
 		}
 	}
 }

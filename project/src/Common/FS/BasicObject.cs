@@ -8,6 +8,8 @@ namespace AUI.FS
 		protected readonly Filesystem fs_;
 		private readonly IFilesystemContainer parent_;
 		private string displayName_ = null;
+		private DateTime dateCreated_ = DateTime.MaxValue;
+		private DateTime dateModified_ = DateTime.MaxValue;
 
 		public BasicFilesystemObject(
 			Filesystem fs, IFilesystemContainer parent,
@@ -73,14 +75,52 @@ namespace AUI.FS
 		}
 
 		public abstract string Name { get; }
-		public abstract DateTime DateCreated { get; }
-		public abstract DateTime DateModified { get; }
 		public abstract VUI.Icon Icon { get; }
 		public abstract bool CanPin { get; }
 		public abstract bool Virtual { get; }
 		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
 		public abstract bool IsInternal { get; }
+
+		public DateTime DateCreated
+		{
+			get
+			{
+				if (fs_.UsePackageTime)
+				{
+					var pp = ParentPackage;
+
+					if (pp != null && pp != this)
+						return ParentPackage.DateCreated;
+				}
+
+				{
+					if (dateCreated_ == DateTime.MaxValue)
+						dateCreated_ = GetDateCreated();
+
+					return dateCreated_;
+				}
+			}
+		}
+
+		public DateTime DateModified
+		{
+			get
+			{
+				if (fs_.UsePackageTime)
+				{
+					var pp = ParentPackage;
+
+					if (pp != null && pp != this)
+						return ParentPackage.DateModified;
+				}
+
+				if (dateModified_ == DateTime.MaxValue)
+					dateModified_ = GetDateModified();
+
+				return dateModified_;
+			}
+		}
 
 		public virtual bool IsRedundant
 		{
@@ -169,7 +209,8 @@ namespace AUI.FS
 
 		public virtual void ClearCache()
 		{
-			// no-op
+			dateCreated_ = DateTime.MaxValue;
+			dateModified_ = DateTime.MaxValue;
 		}
 
 		protected virtual string GetDisplayName()
@@ -180,6 +221,16 @@ namespace AUI.FS
 		protected virtual void DisplayNameChanged()
 		{
 			// no-op
+		}
+
+		protected virtual DateTime GetDateCreated()
+		{
+			return DateTime.MaxValue;
+		}
+
+		protected virtual DateTime GetDateModified()
+		{
+			return DateTime.MaxValue;
 		}
 	}
 }

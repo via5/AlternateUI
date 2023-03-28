@@ -330,7 +330,7 @@ namespace AUI.FileDialog
 		string Title { get; }
 		ExtensionItem[] Extensions { get; }
 		string PackageRoot { get; }
-		string DefaultDirectory { get; }
+		string DefaultDirectory { get; set; }
 		string ActionText { get; }
 		bool IsWritable { get; }
 
@@ -347,7 +347,7 @@ namespace AUI.FileDialog
 		private readonly string title_;
 		private readonly ExtensionItem[] exts_;
 		private readonly string packageRoot_;
-		private readonly string defaultPath_;
+		private string defaultPath_;
 		private readonly Options opts_;
 
 		protected BasicMode(
@@ -399,6 +399,7 @@ namespace AUI.FileDialog
 		public string DefaultDirectory
 		{
 			get { return defaultPath_; }
+			set { defaultPath_ = value; }
 		}
 
 		public abstract string ActionText { get; }
@@ -627,6 +628,7 @@ namespace AUI.FileDialog
 		static IFileDialogMode saveScene_ = null;
 		static IFileDialogMode openCUA_ = null;
 		static IFileDialogMode openPlugin_ = null;
+		static IFileDialogMode openPreset_ = null;
 
 		public static IFileDialogMode OpenScene()
 		{
@@ -686,6 +688,25 @@ namespace AUI.FileDialog
 			}
 
 			return openPlugin_;
+		}
+
+		public static IFileDialogMode OpenPreset(string path)
+		{
+			if (openPreset_ == null)
+			{
+				openPreset_ = new OpenMode(
+					"preset", "Open preset",
+					FileDialogFeature.GetPluginExtensions(true),
+					path, "VaM/" + path,
+					false, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending);
+			}
+			else
+			{
+				openPreset_.DefaultDirectory = path;
+			}
+
+			return openPreset_;
 		}
 	}
 }

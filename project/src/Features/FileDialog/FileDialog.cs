@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SimpleJSON;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -57,6 +58,34 @@ namespace AUI.FileDialog
 		public bool Visible
 		{
 			get { return root_?.Visible ?? false; }
+		}
+
+		public bool UsePackageTime
+		{
+			get
+			{
+				return FS.Filesystem.Instance.UsePackageTime;
+			}
+
+			set
+			{
+				if (FS.Filesystem.Instance.UsePackageTime != value)
+				{
+					FS.Filesystem.Instance.UsePackageTime = value;
+					Refresh();
+				}
+			}
+		}
+
+		public void LoadOptions(JSONClass o)
+		{
+			if (o.HasKey("usePackageTime"))
+				FS.Filesystem.Instance.UsePackageTime = o["usePackageTime"].AsBool;
+		}
+
+		public void SaveOptions(JSONClass o)
+		{
+			o["usePackageTime"] = new JSONData(FS.Filesystem.Instance.UsePackageTime);
 		}
 
 		public void Update(float s)
@@ -519,10 +548,11 @@ namespace AUI.FileDialog
 		{
 			int flags = MakeContextFlags(recursive, mode_.Options);
 
-			if (dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().AllFlat.VirtualPath)
+			if (dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().AllFlat.VirtualPath ||
+				dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().VirtualPath)
 			{
-				// hack: the AllFlatDirectory object already includes the
-				// packages root in its directory list and so the merge flag
+				// hack: the root and AllFlatDirectory objects already includes
+				// the packages root in its directory list and so the merge flag
 				// is not necessary
 				//
 				// in fact, it's _really_ slow because it iterates and resolves
@@ -627,7 +657,7 @@ namespace AUI.FileDialog
 				while (p != null)
 				{
 					var po = p.Object;
-					if (po.IsSameObject(FS.Filesystem.Instance.GetPackagesRoot()))
+					if (po != null && po.IsSameObject(FS.Filesystem.Instance.GetPackagesRoot()))
 						return true;
 
 					p = p.Parent as FileTreeItem;

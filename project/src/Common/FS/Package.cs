@@ -181,16 +181,6 @@ namespace AUI.FS
 			return $"PackageRootDirectory";
 		}
 
-		public override DateTime DateCreated
-		{
-			get { return DateTime.MaxValue; }
-		}
-
-		public override DateTime DateModified
-		{
-			get { return DateTime.MaxValue; }
-		}
-
 		public override VUI.Icon Icon
 		{
 			get { return Icons.GetIcon(Icons.Package); }
@@ -405,26 +395,14 @@ namespace AUI.FS
 			return ShortCut.package;
 		}
 
-		public override DateTime DateCreated
+		protected override DateTime GetDateCreated()
 		{
-			get
-			{
-				if (created_ == DateTime.MaxValue)
-					created_ = Sys.FileCreationTime(this, sc_.path);
-
-				return created_;
-			}
+			return Sys.FileCreationTime(this, GetFilePath());
 		}
 
-		public override DateTime DateModified
+		protected override DateTime GetDateModified()
 		{
-			get
-			{
-				if (modified_ == DateTime.MaxValue)
-					modified_ = Sys.FileLastWriteTime(this, sc_.path);
-
-				return modified_;
-			}
+			return Sys.FileLastWriteTime(this, GetFilePath());
 		}
 
 		public override VUI.Icon Icon
@@ -502,19 +480,24 @@ namespace AUI.FS
 				return ResolveResult.NotFound();
 			}
 
-			var pn = cs.Current;
-			if (pn.EndsWith(":"))
-				pn = pn.Substring(0, pn.Length - 1);
 
-			if (pn.EndsWith(".var"))
-				pn = pn.Substring(0, pn.Length - 4);
-
-			if (pn != sc_.package)
 			{
-				if (debug.Enabled)
-					debug.Info(this, $"resolve bad, {pn}!={sc_.package}");
+				var pn = new StringView(cs.Current);
 
-				return ResolveResult.NotFound();
+				if (pn.EndsWith(":"))
+					pn = pn.Substring(0, pn.Length - 1);
+
+				if (pn.EndsWith(".var"))
+					pn = pn.Substring(0, pn.Length - 4);
+
+				if (pn != sc_.package)
+				{
+					if (debug.Enabled)
+						debug.Info(this, $"resolve bad, {pn}!={sc_.package}");
+
+					return ResolveResult.NotFound();
+				}
+
 			}
 
 			if (debug.Enabled)
@@ -560,6 +543,16 @@ namespace AUI.FS
 			return (o.Name != "meta.json");
 		}
 
+		private string GetFilePath()
+		{
+			string path = sc_.path;
+			var col = path.IndexOf(":");
+
+			if (col == -1)
+				return path;
+			else
+				return path.Substring(0, col);
+		}
 
 		private IFilesystemContainer GetRootDirectory(Context cx)
 		{
