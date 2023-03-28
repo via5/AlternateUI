@@ -233,6 +233,11 @@ namespace AUI.FS
 			return (ps != null && ps.Count > 0);
 		}
 
+		protected override bool DoIncludeDirectory(Context cx, IFilesystemContainer o)
+		{
+			return true;
+		}
+
 		private PackagesCache GetPackagesInfo(Context cx)
 		{
 			ShortCutsCache scc;
@@ -405,6 +410,23 @@ namespace AUI.FS
 			return Sys.FileLastWriteTime(this, GetFilePath());
 		}
 
+		public virtual string GetRelativeVirtualPath(IFilesystemObject o)
+		{
+			var thisVP = VirtualPath;
+			var oVP = o.VirtualPath;
+
+			if (!thisVP.EndsWith("/"))
+				thisVP += "/";
+
+			if (!oVP.EndsWith("/"))
+				oVP += "/";
+
+			if (oVP.StartsWith(thisVP))
+				return fs_.GetRoot().Name + "/" + oVP.Substring(thisVP.Length);
+			else
+				return o.VirtualPath;
+		}
+
 		public override VUI.Icon Icon
 		{
 			get { return Icons.GetIcon(Icons.Package); }
@@ -535,7 +557,7 @@ namespace AUI.FS
 			return base.DoGetFiles(cx);
 		}
 
-		protected override bool IncludeFile(Context cx, IFilesystemObject o)
+		protected override bool DoIncludeFile(Context cx, IFilesystemObject o)
 		{
 			if (cx.ShowHiddenFiles)
 				return true;

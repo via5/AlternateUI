@@ -160,11 +160,11 @@ namespace AUI.FileDialog
 							Show(Modes.OpenPlugin(), cb);
 							return;
 						}
-						//else if (fb.fileFormat == "vap")
-						//{
-						//	Show(Modes.OpenPreset(fb.defaultPath), cb, null);
-						//	return;
-						//}
+						else if (fb.fileFormat == "vap")
+						{
+							Show(Modes.OpenPreset(fb.defaultPath), cb, null);
+							return;
+						}
 					}
 				}
 

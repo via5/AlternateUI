@@ -566,8 +566,7 @@ namespace AUI.FileDialog
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				mode_.Options.Sort, mode_.Options.SortDirection,
-				flags,
-				"");
+				flags, "", null);
 		}
 
 		public FS.Context CreateTreeContext(bool recursive)
@@ -577,7 +576,7 @@ namespace AUI.FileDialog
 				mode_.PackageRoot,
 				FS.Context.SortFilename, FS.Context.SortAscending,
 				MakeContextFlags(recursive, mode_.Options),
-				packagesSearch_.Text);
+				packagesSearch_.Text, mode_.Whitelist);
 		}
 
 		public void Refresh()

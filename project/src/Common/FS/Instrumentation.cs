@@ -229,7 +229,10 @@ namespace AUI.FS
 					I.PackageResolveInternal1,
 					I.PackageResolveInternal2,
 					I.PackageResolveInternal3,
-					I.BasicDirectoryResolve
+					I.BasicDirectoryResolve,
+
+					I.IncludeDirectoryGetRVP,
+					I.IncludeDirectoryWhitelistMatches
 				};
 			}
 		}
@@ -296,8 +299,10 @@ namespace AUI.FS
 		public static InstrumentationType PackageResolveInternal3 = new InstrumentationType("PackageResolveInternal3", 49);
 
 		public static InstrumentationType BasicDirectoryResolve = new InstrumentationType("BasicDirectoryResolve", 50);
+		public static InstrumentationType IncludeDirectoryGetRVP = new InstrumentationType("IncludeDirectoryGetRVP", 51);
+		public static InstrumentationType IncludeDirectoryWhitelistMatches = new InstrumentationType("IncludeDirectoryWhitelistMatches", 52);
 
-		public const int Count = 51;
+		public const int Count = 53;
 	}
 
 
@@ -317,7 +322,7 @@ namespace AUI.FS
 			1,
 				2, 2, 2,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1
+			1, 1, 1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

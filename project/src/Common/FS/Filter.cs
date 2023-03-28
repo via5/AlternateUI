@@ -67,6 +67,65 @@ namespace AUI.FS
 	}
 
 
+	class Whitelist
+	{
+		private readonly PathComponents[] paths_;
+
+		public Whitelist(string[] paths)
+		{
+			var list = new List<PathComponents>();
+
+			for (int i = 0; i < paths.Length; ++i)
+				list.Add(new PathComponents(paths[i]));
+
+			paths_ = list.ToArray();
+		}
+
+		public bool Matches(string path)
+		{
+			if (paths_ == null)
+				return true;
+
+			for (int i = 0; i < paths_.Length; ++i)
+			{
+				if (Matches(paths_[i], path))
+					return true;
+			}
+
+			return false;
+		}
+
+		private bool Matches(PathComponents cs, string vp)
+		{
+			int start = 0;
+
+			while (!cs.Done)
+			{
+				int sep = vp.IndexOf('/', start);
+				if (sep != -1 && sep == vp.Length - 1)
+					break;
+
+				string vpc;
+				if (sep == -1)
+					vpc = vp.Substring(start);
+				else
+					vpc = vp.Substring(start, sep - start);
+
+				if (cs.Current != vpc)
+					return false;
+
+				if (sep == -1)
+					break;
+
+				start = sep + 1;
+				cs.Next();
+			}
+
+			return true;
+		}
+	}
+
+
 	class Context
 	{
 		public const int NoSort = 0;
@@ -96,10 +155,12 @@ namespace AUI.FS
 		private readonly SearchString search_;
 		private readonly SearchString packagesSearch_;
 		private int flags_;
+		private readonly Whitelist whitelist_;
 
 		public Context(
 			string search, string[] extensions, string packagesRoot,
-			int sort, int sortDir, int flags, string packagesSearch)
+			int sort, int sortDir, int flags, string packagesSearch,
+			Whitelist whitelist)
 		{
 			search_ = new SearchString(search);
 			exts_ = extensions;
@@ -108,6 +169,7 @@ namespace AUI.FS
 			sortDir_ = sortDir;
 			flags_ = flags;
 			packagesSearch_ = new SearchString(packagesSearch);
+			whitelist_ = whitelist;
 		}
 
 		public static string SortToString(int s)
@@ -176,7 +238,7 @@ namespace AUI.FS
 			get
 			{
 				return new Context(
-					"", null, "", NoSort, NoSortDirection, NoFlags, "");
+					"", null, "", NoSort, NoSortDirection, NoFlags, "", null);
 			}
 		}
 
@@ -234,6 +296,11 @@ namespace AUI.FS
 		public int Flags
 		{
 			get { return flags_; }
+		}
+
+		public Whitelist Whitelist
+		{
+			get { return whitelist_; }
 		}
 
 		public bool Debug
@@ -296,6 +363,14 @@ namespace AUI.FS
 		public bool SearchMatches(string path)
 		{
 			return search_.Matches(Path.Filename(path));
+		}
+
+		public bool WhitelistMatches(string path)
+		{
+			if (whitelist_ == null)
+				return true;
+
+			return whitelist_.Matches(path);
 		}
 
 

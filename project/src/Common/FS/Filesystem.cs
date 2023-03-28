@@ -92,6 +92,11 @@ namespace AUI.FS
 			return root_.PinnedRoot.IsPinned(o);
 		}
 
+		public bool HasPinnedParent(IFilesystemContainer o)
+		{
+			return root_.PinnedRoot.HasPinnedParent(o);
+		}
+
 		public bool DirectoryInPackage(string path)
 		{
 			return Sys.IsDirectoryInPackage(null, path);
@@ -301,18 +306,17 @@ namespace AUI.FS
 			}
 		}
 
-		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
+		protected override bool DoIncludeDirectory(Context cx, IFilesystemContainer o)
 		{
 			if (cx.ShowHiddenFolders)
 				return true;
 
-			// todo
-			if (cx.PackagesRoot == "Saves/scene")
-				return !o.IsSameObject(custom_);
-			else if (cx.PackagesRoot == "Custom/Scripts")
-				return !o.IsSameObject(saves_);
-			else
-				return true;
+			return
+				o.IsSameObject(allFlat_) ||
+				o.IsSameObject(packagesFlat_) ||
+				o.IsSameObject(pinnedFlat_) ||
+				o.IsSameObject(pinned_) ||
+				o.IsSameObject(fs_.GetPackagesRoot());
 		}
 
 		protected override bool DoHasDirectories(Context cx)
@@ -371,30 +375,9 @@ namespace AUI.FS
 
 	class SavesDirectory : FSDirectory
 	{
-		private readonly string[] whitelist_;
-
 		public SavesDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Saves")
 		{
-			whitelist_ = new string[]
-			{
-				"Downloads",
-				"scene",
-			};
-		}
-
-		protected override bool IncludeDirectory(Context cx, IFilesystemContainer o)
-		{
-			if (cx.ShowHiddenFolders)
-				return true;
-
-			for (int i = 0; i < whitelist_.Length; ++i)
-			{
-				if (whitelist_[i] == o.Name)
-					return true;
-			}
-
-			return false;
 		}
 	}
 
@@ -408,6 +391,7 @@ namespace AUI.FS
 		public Logger Log { get { return AlternateUI.Instance.Log; } }
 		public string Name { get { return ""; } }
 		public string VirtualPath { get { return ""; } }
+		public string RelativeVirtualPath { get { return VirtualPath; } }
 		public string DisplayName { get { return ""; } set { } }
 		public string Tooltip { get { return ""; } }
 		public bool HasCustomDisplayName { get { return false; } }

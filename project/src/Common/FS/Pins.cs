@@ -155,6 +155,19 @@ namespace AUI.FS
 			return b;
 		}
 
+		public bool HasPinnedParent(IFilesystemContainer o)
+		{
+			while (o != null)
+			{
+				if (IsPinned(o))
+					return true;
+
+				o = o.Parent;
+			}
+
+			return false;
+		}
+
 		private void Changed()
 		{
 			Save();

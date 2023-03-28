@@ -81,6 +81,24 @@ namespace AUI
 			return new StringView(s_, begin_ + start, count);
 		}
 
+		public static bool operator ==(StringView a, StringView b)
+		{
+			if (a.Length != b.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				a.s_, a.begin_,
+				b.s_, b.begin_,
+				a.Length);
+
+			return (r == 0);
+		}
+
+		public static bool operator !=(StringView a, StringView b)
+		{
+			return !(a == b);
+		}
+
 		public static bool operator ==(StringView a, string b)
 		{
 			if (a.Length != b.Length)
@@ -97,6 +115,19 @@ namespace AUI
 		public static bool operator !=(StringView a, string b)
 		{
 			return !(a == b);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashHelper.GetHashCode(s_, begin_, end_);
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is StringView)
+				return (this == (StringView)obj);
+			else
+				return false;
 		}
 	}
 

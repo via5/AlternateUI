@@ -186,7 +186,8 @@ namespace AUI.FS
 
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "");
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					cx.Whitelist);
 
 				List<IFilesystemContainer> allDirs = null;
 				List<IFilesystemContainer> filteredDirs = null;
@@ -461,15 +462,55 @@ namespace AUI.FS
 		}
 
 
-		protected virtual bool IncludeDirectory(Context cx, IFilesystemContainer o)
+		private bool IncludeDirectory(Context cx, IFilesystemContainer o)
+		{
+			if (cx.ShowHiddenFolders)
+				return true;
+
+
+			string rvp;
+
+			Instrumentation.Start(I.IncludeDirectoryGetRVP);
+			{
+				rvp = o.RelativeVirtualPath;
+			}
+			Instrumentation.End();
+
+
+			bool wm;
+
+			Instrumentation.Start(I.IncludeDirectoryWhitelistMatches);
+			{
+				wm = cx.WhitelistMatches(rvp);
+			}
+			Instrumentation.End();
+
+			if (wm)
+				return true;
+
+
+			if (fs_.HasPinnedParent(o))
+				return true;
+
+			return DoIncludeDirectory(cx, o);
+		}
+
+		protected virtual bool DoIncludeDirectory(Context cx, IFilesystemContainer o)
+		{
+			return false;
+		}
+
+
+		private bool IncludeFile(Context cx, IFilesystemObject o)
+		{
+			return DoIncludeFile(cx, o);
+		}
+
+		protected virtual bool DoIncludeFile(Context cx, IFilesystemObject o)
 		{
 			return true;
 		}
 
-		protected virtual bool IncludeFile(Context cx, IFilesystemObject o)
-		{
-			return true;
-		}
 
 		private bool HasDirectoriesInternal(Context cx)
 		{

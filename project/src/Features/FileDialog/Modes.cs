@@ -321,6 +321,7 @@ namespace AUI.FileDialog
 		}
 	}
 
+
 	public delegate void ExecuteHandler();
 
 	interface IFileDialogMode
@@ -333,6 +334,7 @@ namespace AUI.FileDialog
 		string DefaultDirectory { get; set; }
 		string ActionText { get; }
 		bool IsWritable { get; }
+		FS.Whitelist Whitelist { get; }
 
 		bool CanExecute(FileDialog fd);
 		void Execute(FileDialog fd, ExecuteHandler h);
@@ -348,19 +350,22 @@ namespace AUI.FileDialog
 		private readonly ExtensionItem[] exts_;
 		private readonly string packageRoot_;
 		private string defaultPath_;
+		private readonly FS.Whitelist whitelist_;
 		private readonly Options opts_;
 
 		protected BasicMode(
 			string name, string title, ExtensionItem[] exts,
 			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir,
+			FS.Whitelist whitelist)
 		{
 			name_ = name;
 			title_ = title;
 			exts_ = exts;
 			packageRoot_ = packageRoot;
 			defaultPath_ = defaultPath;
+			whitelist_ = whitelist;
 
 			opts_ = Options.Get(name_);
 			if (opts_ == null)
@@ -402,6 +407,11 @@ namespace AUI.FileDialog
 			set { defaultPath_ = value; }
 		}
 
+		public FS.Whitelist Whitelist
+		{
+			get { return whitelist_; }
+		}
+
 		public abstract string ActionText { get; }
 		public abstract bool IsWritable { get; }
 
@@ -433,7 +443,7 @@ namespace AUI.FileDialog
 			: base(
 				  null, "", new ExtensionItem[0], "", "",
 				  false, false, false, false, false,
-				  FS.Context.NoSort, FS.Context.NoSortDirection)
+				  FS.Context.NoSort, FS.Context.NoSortDirection, null)
 		{
 		}
 
@@ -470,11 +480,13 @@ namespace AUI.FileDialog
 			string name, string title, ExtensionItem[] exts,
 			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir,
+			FS.Whitelist whitelist)
 				: base(
 					  name, title, exts, packageRoot, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
-					  showHiddenFolders, showHiddenFiles, sort, sortDir)
+					  showHiddenFolders, showHiddenFiles, sort, sortDir,
+					  whitelist)
 		{
 		}
 
@@ -539,11 +551,13 @@ namespace AUI.FileDialog
 			string name, string title, ExtensionItem[] exts,
 			string packageRoot, string defaultPath,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
-			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
+			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir,
+			FS.Whitelist whitelist)
 				: base(
 					  name, title, exts, packageRoot, defaultPath,
 					  flattenDirs, flattenPackages, mergePackages,
-					  showHiddenFolders, showHiddenFiles, sort, sortDir)
+					  showHiddenFolders, showHiddenFiles, sort, sortDir,
+					  whitelist)
 		{
 		}
 
@@ -639,7 +653,8 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
 					true, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending);
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
 
 			return openScene_;
@@ -654,7 +669,8 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetSceneExtensions(false),
 					"Saves/scene", "VaM/Saves/scene",
 					false, false, false, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending);
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
 
 			return saveScene_;
@@ -669,7 +685,8 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetCUAExtensions(true),
 					"Custom/Assets", "VaM/Custom/Assets",
 					true, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending);
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/Custom/Assets" }));
 			}
 
 			return openCUA_;
@@ -684,7 +701,8 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetPluginExtensions(true),
 					"Custom/Scripts", "VaM/Custom/Scripts",
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending);
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/Custom/Scripts" }));
 			}
 
 			return openPlugin_;
@@ -696,10 +714,11 @@ namespace AUI.FileDialog
 			{
 				openPreset_ = new OpenMode(
 					"preset", "Open preset",
-					FileDialogFeature.GetPluginExtensions(true),
+					FileDialogFeature.GetPresetExtensions(true),
 					path, "VaM/" + path,
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending);
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/" + path }));
 			}
 			else
 			{

@@ -69,6 +69,19 @@ namespace AUI.FS
 			}
 		}
 
+		public virtual string RelativeVirtualPath
+		{
+			get
+			{
+				var pp = ParentPackage;
+
+				if (pp == null)
+					return VirtualPath;
+				else
+					return pp.GetRelativeVirtualPath(this);
+			}
+		}
+
 		public virtual IPackage ParentPackage
 		{
 			get { return parent_?.ParentPackage ?? null; }

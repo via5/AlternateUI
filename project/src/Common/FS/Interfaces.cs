@@ -250,6 +250,7 @@ namespace AUI.FS
 		Logger Log { get; }
 		string Name { get; }
 		string VirtualPath { get; }
+		string RelativeVirtualPath { get; }
 		string DisplayName { get; set; }
 		string Tooltip { get; }
 		bool HasCustomDisplayName { get; }
@@ -385,6 +386,7 @@ namespace AUI.FS
 
 	interface IPackage : IFilesystemContainer
 	{
+		string GetRelativeVirtualPath(IFilesystemObject o);
 	}
 
 

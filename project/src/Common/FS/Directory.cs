@@ -316,7 +316,8 @@ namespace AUI.FS
 				// see DoGetFiles() below
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "");
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					cx.Whitelist);
 
 				foreach (var d in dirs_)
 				{
@@ -362,7 +363,8 @@ namespace AUI.FS
 			// see DoGetFiles() below
 			var cx2 = new Context(
 				"", null, cx.PackagesRoot,
-				Context.NoSort, Context.NoSortDirection, cx.Flags, "");
+				Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+				cx.Whitelist);
 
 			foreach (var d in dirs_)
 			{
@@ -386,7 +388,8 @@ namespace AUI.FS
 				// context with the same flags only
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "");
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					cx.Whitelist);
 
 				foreach (var d in dirs_)
 				{
