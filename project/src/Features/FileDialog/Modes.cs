@@ -638,11 +638,33 @@ namespace AUI.FileDialog
 
 	static class Modes
 	{
+		struct PresetInfo
+		{
+			public string type, loadCaption, saveCaption;
+			public ExtensionItem[] extensions;
+
+			public PresetInfo(
+				string type, string loadCaption, string saveCaption,
+				ExtensionItem[] extensions)
+			{
+				this.type = type;
+				this.loadCaption = loadCaption;
+				this.saveCaption = saveCaption;
+				this.extensions = extensions;
+			}
+		}
+
 		static IFileDialogMode openScene_ = null;
 		static IFileDialogMode saveScene_ = null;
 		static IFileDialogMode openCUA_ = null;
 		static IFileDialogMode openPlugin_ = null;
-		static IFileDialogMode openPreset_ = null;
+
+		static readonly Dictionary<string, IFileDialogMode> openPreset_ =
+			new Dictionary<string, IFileDialogMode>();
+
+		static readonly Dictionary<string, IFileDialogMode> savePreset_ =
+			new Dictionary<string, IFileDialogMode>();
+
 
 		public static IFileDialogMode OpenScene()
 		{
@@ -710,22 +732,183 @@ namespace AUI.FileDialog
 
 		public static IFileDialogMode OpenPreset(string path)
 		{
-			if (openPreset_ == null)
+			var info = GetPresetInfo(path);
+
+			IFileDialogMode m;
+
+			if (!openPreset_.TryGetValue(path, out m))
 			{
-				openPreset_ = new OpenMode(
-					"preset", "Open preset",
-					FileDialogFeature.GetPresetExtensions(true),
+				m = new OpenMode(
+					info.type, info.loadCaption, info.extensions,
 					path, "VaM/" + path,
 					false, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/" + path }));
-			}
-			else
-			{
-				openPreset_.DefaultDirectory = path;
+
+				openPreset_.Add(path, m);
 			}
 
-			return openPreset_;
+			return m;
+		}
+
+		public static IFileDialogMode SavePreset(string path)
+		{
+			var info = GetPresetInfo(path);
+
+			IFileDialogMode m;
+
+			if (!savePreset_.TryGetValue(path, out m))
+			{
+				m = new SaveMode(
+					info.type, info.saveCaption, info.extensions,
+					path, "VaM/" + path,
+					false, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/" + path }));
+
+				savePreset_.Add(path, m);
+			}
+
+			return m;
+		}
+
+		private static PresetInfo GetPresetInfo(string path)
+		{
+			path = path.Replace("\\", "/");
+
+			switch (path)
+			{
+				case "Custom/Atom/Person/Plugins":
+				{
+					return new PresetInfo(
+						"pluginPreset",
+						"Open plugin preset", "Save plugin preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/General":
+				{
+					return new PresetInfo(
+						"generalPreset",
+						"Open general preset", "Save general preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Appearance":
+				{
+					return new PresetInfo(
+						"appearancePreset",
+						"Open appearance preset", "Save appearance preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Pose":
+				{
+					return new PresetInfo(
+						"posePreset",
+						"Open pose preset", "Save pose preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/BreastPhysics":
+				{
+					return new PresetInfo(
+						"breastPhysicsPreset",
+						"Open breast physics preset",
+						"Save breast physics preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/GlutePhysics":
+				{
+					return new PresetInfo(
+						"glutePhysicsPreset",
+						"Open glute physics preset",
+						"Save glute physics preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/AnimationPresets":
+				{
+					return new PresetInfo(
+						"animationPreset",
+						"Open animation preset",
+						"Save animation preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Clothing":
+				{
+					return new PresetInfo(
+						"clothingPreset",
+						"Open clothing preset",
+						"Save clothing preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Hair":
+				{
+					return new PresetInfo(
+						"hairPreset",
+						"Open hair preset",
+						"Save hair preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Morphs":
+				{
+					return new PresetInfo(
+						"morphPreset",
+						"Open morphs preset",
+						"Save morphs preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+				case "Custom/Atom/Person/Skin":
+				{
+					return new PresetInfo(
+						"skinPreset",
+						"Open skin preset",
+						"Save skin preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+
+
+				case "Saves/Person/full":
+				{
+					return new PresetInfo(
+						"legacyPreset",
+						"Open preset (legacy)", "Save preset (legacy)",
+						FileDialogFeature.GetLegacyPresetExtensions(true));
+				}
+
+				case "Saves/Person/appearance":
+				{
+					return new PresetInfo(
+						"legacyAppearancePreset",
+						"Open appearance preset (legacy)",
+						"Save appearance preset (legacy)",
+						FileDialogFeature.GetLegacyPresetExtensions(true));
+				}
+
+				case "Saves/Person/pose":
+				{
+					return new PresetInfo(
+						"legacyPosePreset",
+						"Open pose preset (legacy)",
+						"Save pose preset (legacy)",
+						FileDialogFeature.GetLegacyPresetExtensions(true));
+				}
+
+				default:
+				{
+					AlternateUI.Instance.Log.Error($"unknown preset '{path}'");
+
+					return new PresetInfo(
+						"unknownPreset", "Open preset", "Save preset",
+						FileDialogFeature.GetPresetExtensions(true));
+				}
+			}
 		}
 	}
 }

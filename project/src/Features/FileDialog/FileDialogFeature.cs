@@ -11,7 +11,7 @@ namespace AUI.FileDialog
 		public static string DefaultSceneExtension = ".json";
 		public static FS.Extension[] SceneExtensions = new FS.Extension[]
 		{
-			new FS.Extension("Scenes", ".json"),
+			new FS.Extension("JSON files", ".json"),
 			new FS.Extension("VAC files", ".vac"),
 			new FS.Extension("Zip files", ".zip"),
 		};
@@ -34,6 +34,14 @@ namespace AUI.FileDialog
 		public static FS.Extension[] PresetExtensions = new FS.Extension[]
 		{
 			new FS.Extension("VAP files", ".vap")
+		};
+
+		public static string DefaultLegacyPresetExtension = ".json";
+		public static FS.Extension[] LegacyPresetExtensions = new FS.Extension[]
+		{
+			new FS.Extension("JSON files", ".json"),
+			new FS.Extension("VAC files", ".vac"),
+			new FS.Extension("Zip files", ".zip")
 		};
 
 
@@ -60,6 +68,11 @@ namespace AUI.FileDialog
 		public static ExtensionItem[] GetPresetExtensions(bool includeAll)
 		{
 			return GetExtensions(PresetExtensions, "All preset files", includeAll);
+		}
+
+		public static ExtensionItem[] GetLegacyPresetExtensions(bool includeAll)
+		{
+			return GetExtensions(LegacyPresetExtensions, "All preset files", includeAll);
 		}
 
 		public static ExtensionItem[] GetExtensions(
@@ -112,6 +125,8 @@ namespace AUI.FileDialog
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>
 			{
+				Log.Info($"show filebrowser request fb={fb} title={fb.titleText?.text} ff={fb.fileFormat} path={fb.defaultPath}");
+
 				if (fb == SuperController.singleton.fileBrowserUI)
 				{
 					var t = fb.titleText?.text ?? "";
@@ -128,10 +143,26 @@ namespace AUI.FileDialog
 						Show(Modes.SaveScene(), cb);
 						return;
 					}
+					else if (t == "Select Preset File")
+					{
+						if (fb.fileFormat == "json|vac|zip")
+						{
+							Show(Modes.OpenPreset(fb.defaultPath), cb, null);
+							return;
+						}
+					}
+					else if (t == "Select Save Preset File")
+					{
+						if (fb.fileFormat == "json|vac|zip")
+						{
+							Show(Modes.SavePreset(fb.defaultPath), cb, null);
+							return;
+						}
+					}
 				}
 
 				Log.Error($"unknown show filebrowser request");
-				Log.Error($"fb={fb} title={fb.titleText?.text} ff={fb.fileFormat}");
+				Log.Error($"fb={fb} title={fb.titleText?.text} ff={fb.fileFormat} path={fb.defaultPath}");
 
 				Vamos.API.Instance.InhibitNext("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool", () =>
 				{
@@ -144,6 +175,8 @@ namespace AUI.FileDialog
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserFullCallback_bool += (fb, cb, cd) =>
 			{
+				Log.Info($"show filebrowser request (full) fb={fb} title={fb.titleText?.text} ff={fb.fileFormat} path={fb.defaultPath}");
+
 				if (fb == SuperController.singleton.mediaFileBrowserUI)
 				{
 					var t = fb.titleText?.text ?? "";
