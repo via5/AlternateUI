@@ -206,5 +206,10 @@ namespace AUI.FS
 
 			return b;
 		}
+
+		public static string NormalizePath(string path)
+		{
+			return Sys.NormalizePath(path);
+		}
 	}
 }

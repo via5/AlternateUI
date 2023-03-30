@@ -5,13 +5,46 @@ namespace AUI.FS
 {
 	public struct Extension
 	{
-		public string name;
-		public string ext;
+		private readonly string name_;
+		private readonly string[] exts_;
 
 		public Extension(string name, string ext)
+			: this(name, new string[] { ext })
 		{
-			this.name = name;
-			this.ext = ext;
+		}
+
+		public Extension(string name, string[] exts)
+		{
+			name_ = name;
+			exts_ = exts;
+		}
+
+		public string Name
+		{
+			get { return name_; }
+		}
+
+		public string[] Extensions
+		{
+			get { return exts_; }
+		}
+
+		public string ExtensionString
+		{
+			get
+			{
+				string s = "";
+
+				for (int i = 0; i < exts_.Length; ++i)
+				{
+					if (s != "")
+						s += "; ";
+
+					s += "*" + exts_[i];
+				}
+
+				return s;
+			}
 		}
 	}
 
@@ -165,6 +198,27 @@ namespace AUI.FS
 			Instrumentation.End();
 
 			return t;
+		}
+
+		public string NormalizePath(string originalPath)
+		{
+			string path = Sys.NormalizePath(originalPath);
+
+			path = path.Replace("\\", "/");
+
+			return path;
+		}
+
+		public string MakeFSPath(string originalPath)
+		{
+			string path = NormalizePath(originalPath);
+
+			path = "VaM/" + path;
+			path = path.Replace("/AddonPackages/", "/Packages/");
+			path = path.Replace(".var:", "");
+			path = path.Replace(".var", "");
+
+			return path;
 		}
 	}
 

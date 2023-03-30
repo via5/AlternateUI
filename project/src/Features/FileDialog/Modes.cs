@@ -126,12 +126,12 @@ namespace AUI.FileDialog
 			new Dictionary<string, Options>();
 
 		public Options(
-			string name, string lastPath,
+			string name,
 			bool flattenDirs, bool flattenPackages, bool mergePackages,
 			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 		{
 			name_ = name;
-			lastPath_ = lastPath;
+			lastPath_ = null;
 			lastPathRootInPinned_ = "";
 			lastFile_ = "";
 			flattenDirs_ = flattenDirs;
@@ -253,8 +253,8 @@ namespace AUI.FileDialog
 			if (j == null)
 				return;
 
-			if (j.HasKey("lastPath"))
-				lastPath_ = j["lastPath"].Value;
+			//if (j.HasKey("lastPath"))
+			//	lastPath_ = j["lastPath"].Value;
 
 			if (j.HasKey("lastPathRootInPinned"))
 				lastPathRootInPinned_ = j["lastPathRootInPinned"].Value;
@@ -292,7 +292,7 @@ namespace AUI.FileDialog
 
 			var j = new JSONClass();
 
-			j["lastPath"] = new JSONData(lastPath_);
+			//j["lastPath"] = new JSONData(lastPath_);
 			j["lastPathRootInPinned"] = new JSONData(lastPathRootInPinned_);
 			j["flattenDirectories"] = new JSONData(flattenDirs_);
 			j["flattenPackages"] = new JSONData(flattenPackages_);
@@ -371,7 +371,7 @@ namespace AUI.FileDialog
 			if (opts_ == null)
 			{
 				opts_ = new Options(
-					name_, defaultPath, flattenDirs, flattenPackages,
+					name_, flattenDirs, flattenPackages,
 					mergePackages, showHiddenFolders, showHiddenFiles,
 					sort, sortDir);
 
@@ -638,12 +638,12 @@ namespace AUI.FileDialog
 
 	static class Modes
 	{
-		struct PresetInfo
+		struct ModeInfo
 		{
 			public string type, loadCaption, saveCaption;
 			public ExtensionItem[] extensions;
 
-			public PresetInfo(
+			public ModeInfo(
 				string type, string loadCaption, string saveCaption,
 				ExtensionItem[] extensions)
 			{
@@ -663,6 +663,9 @@ namespace AUI.FileDialog
 			new Dictionary<string, IFileDialogMode>();
 
 		static readonly Dictionary<string, IFileDialogMode> savePreset_ =
+			new Dictionary<string, IFileDialogMode>();
+
+		static readonly Dictionary<string, IFileDialogMode> openTexture_ =
 			new Dictionary<string, IFileDialogMode>();
 
 
@@ -740,10 +743,10 @@ namespace AUI.FileDialog
 			{
 				m = new OpenMode(
 					info.type, info.loadCaption, info.extensions,
-					path, "VaM/" + path,
+					MakePackageRoot(path), MakeDefaultPath(path),
 					false, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending,
-					new FS.Whitelist(new string[] { "VaM/" + path }));
+					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
 				openPreset_.Add(path, m);
 			}
@@ -761,10 +764,10 @@ namespace AUI.FileDialog
 			{
 				m = new SaveMode(
 					info.type, info.saveCaption, info.extensions,
-					path, "VaM/" + path,
+					MakePackageRoot(path), MakeDefaultPath(path),
 					false, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending,
-					new FS.Whitelist(new string[] { "VaM/" + path }));
+					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
 				savePreset_.Add(path, m);
 			}
@@ -772,7 +775,52 @@ namespace AUI.FileDialog
 			return m;
 		}
 
-		private static PresetInfo GetPresetInfo(string path)
+		public static IFileDialogMode OpenTexture(string path)
+		{
+			var info = GetTextureInfo(path);
+
+			IFileDialogMode m;
+
+			if (!openTexture_.TryGetValue(path, out m))
+			{
+				m = new OpenMode(
+					info.type, info.loadCaption, info.extensions,
+					MakePackageRoot(path), MakeDefaultPath(path),
+					false, true, true, false, false,
+					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
+
+				openTexture_.Add(path, m);
+			}
+
+			return m;
+		}
+
+
+		private static string MakePackageRoot(string path)
+		{
+			int col = path.IndexOf(":");
+			if (col == -1)
+				return path;
+
+			path = path.Substring(col + 1);
+			if (path.StartsWith("/"))
+				path = path.Substring(1);
+
+			return path;
+		}
+
+		private static string MakeWhitelist(string path)
+		{
+			return "VaM/" + MakePackageRoot(path);
+		}
+
+		private static string MakeDefaultPath(string path)
+		{
+			return FS.Filesystem.Instance.MakeFSPath(path);
+		}
+
+		private static ModeInfo GetPresetInfo(string path)
 		{
 			path = path.Replace("\\", "/");
 
@@ -780,7 +828,7 @@ namespace AUI.FileDialog
 			{
 				case "Custom/Atom/Person/Plugins":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"pluginPreset",
 						"Open plugin preset", "Save plugin preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -788,7 +836,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/General":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"generalPreset",
 						"Open general preset", "Save general preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -796,7 +844,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Appearance":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"appearancePreset",
 						"Open appearance preset", "Save appearance preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -804,7 +852,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Pose":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"posePreset",
 						"Open pose preset", "Save pose preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -812,7 +860,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/BreastPhysics":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"breastPhysicsPreset",
 						"Open breast physics preset",
 						"Save breast physics preset",
@@ -821,7 +869,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/GlutePhysics":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"glutePhysicsPreset",
 						"Open glute physics preset",
 						"Save glute physics preset",
@@ -830,7 +878,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/AnimationPresets":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"animationPreset",
 						"Open animation preset",
 						"Save animation preset",
@@ -839,7 +887,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Clothing":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"clothingPreset",
 						"Open clothing preset",
 						"Save clothing preset",
@@ -848,7 +896,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Hair":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"hairPreset",
 						"Open hair preset",
 						"Save hair preset",
@@ -857,7 +905,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Morphs":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"morphPreset",
 						"Open morphs preset",
 						"Save morphs preset",
@@ -866,7 +914,7 @@ namespace AUI.FileDialog
 
 				case "Custom/Atom/Person/Skin":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"skinPreset",
 						"Open skin preset",
 						"Save skin preset",
@@ -876,7 +924,7 @@ namespace AUI.FileDialog
 
 				case "Saves/Person/full":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"legacyPreset",
 						"Open preset (legacy)", "Save preset (legacy)",
 						FileDialogFeature.GetLegacyPresetExtensions(true));
@@ -884,7 +932,7 @@ namespace AUI.FileDialog
 
 				case "Saves/Person/appearance":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"legacyAppearancePreset",
 						"Open appearance preset (legacy)",
 						"Save appearance preset (legacy)",
@@ -893,7 +941,7 @@ namespace AUI.FileDialog
 
 				case "Saves/Person/pose":
 				{
-					return new PresetInfo(
+					return new ModeInfo(
 						"legacyPosePreset",
 						"Open pose preset (legacy)",
 						"Save pose preset (legacy)",
@@ -904,11 +952,21 @@ namespace AUI.FileDialog
 				{
 					AlternateUI.Instance.Log.Error($"unknown preset '{path}'");
 
-					return new PresetInfo(
+					return new ModeInfo(
 						"unknownPreset", "Open preset", "Save preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
 			}
+		}
+
+		private static ModeInfo GetTextureInfo(string path)
+		{
+			path = path.Replace("\\", "/");
+
+			return new ModeInfo(
+				"texture",
+				"Open texture", "Save texture",
+				FileDialogFeature.GetTextureExtensions(true));
 		}
 	}
 }

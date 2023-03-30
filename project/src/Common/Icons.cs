@@ -38,6 +38,7 @@ namespace AUI
 		public const int Directory = 9;
 		public const int Reload = 10;
 		public const int OpenExternal = 11;
+		public const int GotoDirectory = 12;
 
 		public const int BeamCursor = 0;
 		public const int ResizeWECursor = 1;
@@ -66,6 +67,7 @@ namespace AUI
 				{ Directory, new VUI.Icon(sc.fileBrowserUI.folderIcon.texture) },
 				{ Reload, new VUI.Icon(pp + "/res/icons/reload.png") },
 				{ OpenExternal, new VUI.Icon(pp + "/res/icons/open-external.png") },
+				{ GotoDirectory, new VUI.Icon(pp + "/res/icons/goto-directory.png") },
 			};
 
 			cursors_ = new Dictionary<int, VUI.Cursor>
@@ -107,6 +109,17 @@ namespace AUI
 				return GetThumbnailIcon(thumbPath);
 		}
 
+		public static void ClearCache()
+		{
+			foreach (var p in exts_)
+				p.Value.ClearCache();
+			exts_.Clear();
+
+			foreach (var p in thumbs_)
+				p.Value.ClearCache();
+			thumbs_.Clear();
+		}
+
 		public static void ClearFileCache(string path)
 		{
 			var thumbPath = GetThumbnailPath(path);
@@ -114,12 +127,23 @@ namespace AUI
 			if (thumbPath == null)
 			{
 				string ext = Path.Extension(path);
-				exts_.Remove(ext);
+
+				VUI.Icon icon;
+				if (exts_.TryGetValue(ext, out icon))
+				{
+					icon.ClearCache();
+					exts_.Remove(ext);
+				}
 			}
 			else
 			{
-				thumbs_.Remove(thumbPath);
-				ImageLoaderThreaded.singleton.ClearCacheThumbnail(thumbPath);
+				VUI.Icon icon;
+				if (thumbs_.TryGetValue(thumbPath, out icon))
+				{
+					icon.ClearCache();
+					thumbs_.Remove(thumbPath);
+					ImageLoaderThreaded.singleton.ClearCacheThumbnail(thumbPath);
+				}
 			}
 		}
 

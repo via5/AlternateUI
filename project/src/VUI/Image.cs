@@ -52,6 +52,14 @@ namespace VUI
 			get { return texture_; }
 		}
 
+		public void ClearCache()
+		{
+			if (path_ != null)
+				ImageLoaderThreaded.singleton.ClearCacheThumbnail(path_);
+
+			texture_ = null;
+		}
+
 		public void GetTexture(Action<Texture> f)
 		{
 			if (texture_ != null)

@@ -400,7 +400,9 @@ namespace AUI.FileDialog
 			var flags = SelectDirectoryNoFlags;
 			var opts = mode_.Options;
 
-			if (cwd != null)
+			//Log.Info($"SelectInitialDirectory '{cwd}' '{opts.CurrentDirectory}' '{mode_.DefaultDirectory}' '{mode_.PackageRoot}'");
+
+			if (!string.IsNullOrEmpty(cwd))
 			{
 				if (SelectDirectory(cwd, flags, scrollTo))
 				{
@@ -408,10 +410,10 @@ namespace AUI.FileDialog
 					return;
 				}
 
-				Log.Error($"(1) bad initial directory {cwd}");
+				Log.Error($"bad initial directory (cwd) {cwd}");
 			}
 
-			if (opts.CurrentDirectoryInPinned != "")
+			if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
 			{
 				if (SelectDirectoryInPinned(
 						opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
@@ -419,20 +421,29 @@ namespace AUI.FileDialog
 				{
 					return;
 				}
+
+				Log.Error($"bad initial directory (opts current in pinned) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
 			}
 
-			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
-				return;
-
-			Log.Error($"(2) bad initial directory {opts.CurrentDirectory}");
-
-			if (SelectDirectory(mode_.DefaultDirectory, flags, scrollTo))
+			if (!string.IsNullOrEmpty(opts.CurrentDirectory))
 			{
-				opts.CurrentDirectory = mode_.DefaultDirectory;
-				return;
+				if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
+					return;
+
+				Log.Error($"bad initial directory (opts current dir) {opts.CurrentDirectory}");
 			}
 
-			Log.Error($"(3) bad initial directory {mode_.DefaultDirectory}");
+			if (!string.IsNullOrEmpty(mode_.DefaultDirectory))
+			{
+				if (SelectDirectory(mode_.DefaultDirectory, flags, scrollTo))
+				{
+					opts.CurrentDirectory = mode_.DefaultDirectory;
+					return;
+				}
+
+				Log.Error($"bad initial directory (mode default dir) {mode_.DefaultDirectory}");
+			}
+
 			opts.CurrentDirectory = FS.Filesystem.Instance.GetRoot().VirtualPath;
 
 			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
@@ -582,6 +593,7 @@ namespace AUI.FileDialog
 		public void Refresh()
 		{
 			FS.Filesystem.Instance.ClearCaches();
+			Icons.ClearCache();
 
 			// give some time for the panels to clear so there's a visual
 			// feedback that a refresh has occured

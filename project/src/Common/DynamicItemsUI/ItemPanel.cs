@@ -24,7 +24,11 @@ namespace AUI.DynamicItemsUI
 			Layout = new VUI.BorderLayout(5);
 
 			Clickthrough = false;
-			Events.PointerClick += (e) => ToggleActive();
+			Events.PointerClick += (e) =>
+			{
+				if (e.Button == VUI.PointerEvent.LeftButton)
+					ToggleActive();
+			};
 
 			var top = new VUI.Panel(new VUI.BorderLayout(5));
 			active_ = top.Add(new VUI.CheckBox(

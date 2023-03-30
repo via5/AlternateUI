@@ -511,7 +511,10 @@ namespace AUI.FS
 
 			foreach (var c in list)
 			{
-				if (c is VirtualDirectory)
+				// todo; a VirtualPackageDirectory isn't a real virtual
+				// directory, it has no content, but it has its own children,
+				// so treat is separately for now
+				if (c is VirtualDirectory && !(c is VirtualPackageDirectory))
 				{
 					var vd = c as VirtualDirectory;
 					if (vd.dirs_ != null)

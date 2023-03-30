@@ -249,7 +249,7 @@ namespace AUI.FileDialog
 				return false;
 
 			if (debug)
-				Log.Info($"selecting {path}: {cs}");
+				Log.Info($"selecting '{path}': {string.Join(";", cs.ToArray())}");
 
 			return Select(tree_.RootItem, cs, expand, scrollTo, debug);
 		}
@@ -352,6 +352,22 @@ namespace AUI.FileDialog
 			VUI.TreeView.Item parent, List<string> cs,
 			bool expand, int scrollTo, bool debug)
 		{
+			while (cs.Count > 0 && cs[0] == "")
+				cs.RemoveAt(0);
+
+			if (cs.Count == 0)
+			{
+				if (debug)
+					Log.Info($"{cs}: {parent} is final");
+
+				tree_.Select(parent, true, scrollTo);
+
+				if (expand && tree_.Selected != null)
+					tree_.Selected.Expanded = true;
+
+				return true;
+			}
+
 			if (parent.Children == null)
 			{
 				if (debug)

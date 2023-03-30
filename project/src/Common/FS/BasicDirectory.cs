@@ -488,7 +488,6 @@ namespace AUI.FS
 			if (wm)
 				return true;
 
-
 			if (fs_.HasPinnedParent(o))
 				return true;
 

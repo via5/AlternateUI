@@ -29,9 +29,9 @@
 			filename_.Submitted += (s) => fd_.ExecuteAction();
 
 			extensions_ = fn.Add(new VUI.ComboBox<ExtensionItem>(), VUI.BorderLayout.Right);
-			extensions_.MinimumSize = new VUI.Size(500, VUI.Widget.DontCare);
-			extensions_.MaximumSize = new VUI.Size(500, VUI.Widget.DontCare);
-			extensions_.PopupWidth = 500;
+			extensions_.MinimumSize = new VUI.Size(600, VUI.Widget.DontCare);
+			extensions_.MaximumSize = new VUI.Size(600, VUI.Widget.DontCare);
+			extensions_.PopupWidth = 600;
 			extensions_.SelectionChanged += OnExtensionChanged;
 
 			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));

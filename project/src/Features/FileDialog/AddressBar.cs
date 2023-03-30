@@ -8,7 +8,7 @@ namespace AUI.FileDialog
 
 		private readonly VUI.ToolButton back_, next_, up_, refresh_;
 		private readonly VUI.MenuButton drop_;
-		private readonly VUI.ToolButton pin_, openInExplorer_;
+		private readonly VUI.ToolButton pin_, gotoDir_, openInExplorer_;
 		private readonly VUI.TextBox path_;
 		private readonly VUI.SearchBox search_;
 		private readonly VUI.Menu dropMenu_;
@@ -34,6 +34,10 @@ namespace AUI.FileDialog
 			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up(), "Up"));
 			refresh_ = buttons.Add(new VUI.ToolButton("Refresh", () => fd_.Refresh(), "Refresh"));
 			pin_ = buttons.Add(new VUI.ToolButton("Pin", OnTogglePin));
+			gotoDir_ = buttons.Add(new VUI.ToolButton("Merged folder", GotoDir,
+				"Go to the corresponding merged folder. Available when " +
+				"'Merged packages into folders' is set and the current " +
+				"folder is in a package"));
 			openInExplorer_ = buttons.Add(new VUI.ToolButton("Explorer", OpenInExplorer, "Open in Explorer"));
 
 			back_.Icon = Icons.GetIcon(Icons.Back);
@@ -52,6 +56,9 @@ namespace AUI.FileDialog
 
 			refresh_.Icon = Icons.GetIcon(Icons.Reload);
 			refresh_.SetBorderless();
+
+			gotoDir_.Icon = Icons.GetIcon(Icons.GotoDirectory);
+			gotoDir_.SetBorderless();
 
 			openInExplorer_.Icon = Icons.GetIcon(Icons.OpenExternal);
 			openInExplorer_.SetBorderless();
@@ -102,6 +109,7 @@ namespace AUI.FileDialog
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
 				drop_.Button.Enabled = (fd_.CanGoBack() || fd_.CanGoNext());
+				gotoDir_.Enabled = CanGotoDir(dir);
 				openInExplorer_.Enabled = CanOpenInExplorer(dir);
 
 				UpdatePin();
@@ -150,6 +158,26 @@ namespace AUI.FileDialog
 
 				mi.RadioButton.FontSize = FileDialog.FontSize;
 			}
+		}
+
+		private bool CanGotoDir(FS.IFilesystemContainer dir)
+		{
+			if (dir != null)
+			{
+				var cx = fd_.CreateTreeContext(false);
+				if (cx.MergePackages)
+					return (dir.VirtualPath != dir.RelativeVirtualPath);
+			}
+
+			return false;
+		}
+
+		public void GotoDir()
+		{
+			var dir = fd_.SelectedDirectory;
+
+			if (CanGotoDir(dir))
+				fd_.SelectDirectory(dir.RelativeVirtualPath);
 		}
 
 		public void OpenInExplorer()

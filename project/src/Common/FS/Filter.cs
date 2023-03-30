@@ -123,6 +123,21 @@ namespace AUI.FS
 
 			return true;
 		}
+
+		public override string ToString()
+		{
+			string s = "";
+
+			foreach (var c in paths_)
+			{
+				if (s != "")
+					s += ";";
+
+				s += c.ToString();
+			}
+
+			return s;
+		}
 	}
 
 

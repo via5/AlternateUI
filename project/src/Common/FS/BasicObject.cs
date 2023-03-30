@@ -158,7 +158,8 @@ namespace AUI.FS
 						$"{ToString()}\n" +
 						$"Virtual path: {VirtualPath}\n" +
 						$"Real path: {MakeRealPath()}\n" +
-						$"Devirt: {DeVirtualize()}";
+						$"Devirt: {DeVirtualize()}\n" +
+						$"RVP: {RelativeVirtualPath}";
 
 					var p = ParentPackage;
 
