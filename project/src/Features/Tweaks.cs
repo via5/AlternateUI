@@ -648,4 +648,78 @@ namespace AUI.Tweaks
 			}
 		}
 	}
+
+
+	class DoubleClickFocus : TweakFeature
+	{
+		private float lastDown_ = 0;
+		private UnityEngine.UI.Text text_ = null;
+
+		public DoubleClickFocus()
+			: base("doubleClickFocus", "Double-click focus", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Double-click the middle mouse button to focus the " +
+					"controller.";
+			}
+		}
+
+		public void Focus()
+		{
+			if (text_ == null)
+			{
+				var mm = SuperController.singleton.MonitorModeAuxUI;
+				var h = VUI.Utilities.FindChildRecursive(mm, "HighlightText2");
+				text_ = h.GetComponent<UnityEngine.UI.Text>();
+			}
+
+			if (text_ != null && text_.gameObject.activeInHierarchy)
+			{
+				var fc = SuperController.singleton.FreeControllerNameToFreeController(text_.text);
+				if (fc != null)
+					AlternateUI.Instance.StartCoroutine(CoFocus(fc));
+			}
+		}
+
+		private IEnumerator CoFocus(FreeControllerV3 fc)
+		{
+			yield return new WaitForEndOfFrame();
+			SuperController.singleton.FocusOnController(fc);
+		}
+
+		protected override void DoInit()
+		{
+		}
+
+		protected override void DoEnable()
+		{
+		}
+
+		protected override void DoDisable()
+		{
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			if (!EventSystem.current.IsPointerOverGameObject())
+			{
+				if (Input.GetMouseButtonDown(2))
+				{
+					var now = Time.unscaledTime;
+					if (now - lastDown_ < 0.3f)
+					{
+						Focus();
+					}
+
+					lastDown_ = now;
+				}
+			}
+		}
+	}
 }

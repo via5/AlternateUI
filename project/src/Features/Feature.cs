@@ -79,6 +79,7 @@ namespace AUI
 				new CuaUI.CuaUI(),
 
 				new Tweaks.EscapeDialogs(),
+				new Tweaks.DoubleClickFocus(),
 				new Tweaks.DisableCuaCollision(),
 				new Tweaks.SpaceBarFreeze(),
 				new Tweaks.RightClickPackagesReload(),
