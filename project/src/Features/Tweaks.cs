@@ -494,6 +494,8 @@ namespace AUI.Tweaks
 
 				TryCloseLog(sc.errorLogPanel, ref closeErrorLog_);
 				TryCloseLog(sc.msgLogPanel, ref closeMessageLog_);
+
+				TryCloseOverwrite();
 			}
 		}
 
@@ -528,6 +530,18 @@ namespace AUI.Tweaks
 				}
 
 				b?.onClick?.Invoke();
+			}
+		}
+
+		private void TryCloseOverwrite()
+		{
+			var p = SuperController.singleton.overwriteConfirmPanel;
+
+			if (p.gameObject.activeInHierarchy)
+			{
+				var cancel = VUI.Utilities.FindChildRecursive(p, "CancelButton");
+				var button = cancel?.GetComponent<UnityEngine.UI.Button>();
+				button?.onClick?.Invoke();
 			}
 		}
 	}

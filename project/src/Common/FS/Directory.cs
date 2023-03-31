@@ -6,6 +6,8 @@ namespace AUI.FS
 {
 	class VirtualDirectory : BasicFilesystemContainer, IDirectory
 	{
+		private const int MaxTooltip = 20;
+
 		private HashSet<IFilesystemContainer> dirs_ = null;
 		private List<IFilesystemContainer> sortedDirs_ = null;
 		private List<string> tooltip_ = null;
@@ -67,34 +69,7 @@ namespace AUI.FS
 
 		public override string Tooltip
 		{
-			get
-			{
-				RequireAllDirectories(lastContext_);
-
-				var s = base.Tooltip;
-
-				if (dirs_ != null && dirs_.Count > 0)
-				{
-					if (tooltip_ == null)
-						tooltip_ = new List<string>();
-					else
-						tooltip_.Clear();
-
-					MakeTooltip(lastContext_, SortedDirs(lastContext_), U.DevMode);
-
-					string dirSources = "";
-
-					for (int i = 0; i < Math.Min(tooltip_.Count, 20); ++i)
-						dirSources += $"\n  - {tooltip_[i]}";
-
-					if (tooltip_.Count > 20)
-						dirSources += $"\n  - +{tooltip_.Count - 20} more";
-
-					s += $"\nSources:{dirSources}";
-				}
-
-				return s;
-			}
+			get { return MakeTooltip(); }
 		}
 
 		private bool RequireAllDirectories(Context cx)
@@ -147,35 +122,85 @@ namespace AUI.FS
 			return sortedDirs_;
 		}
 
-		private void MakeTooltip(
-			Context cx, List<IFilesystemContainer> dirs, bool devMode)
+		private string MakeTooltip()
 		{
-			if (dirs == null)
-				return;
+			RequireAllDirectories(lastContext_);
 
-			foreach (var d in dirs)
+			var s = base.Tooltip;
+
+			if (dirs_ != null && dirs_.Count > 0)
 			{
-				string s = "";
-
-				if (devMode)
-				{
-					s += d.ToString();
-				}
+				if (tooltip_ == null)
+					tooltip_ = new List<string>();
 				else
-				{
-					var p = d.ParentPackage;
+					tooltip_.Clear();
 
-					if (p == null)
-						s += d.VirtualPath;
-					else
-						s += p.DisplayName;
-				}
+				int count = MakeTooltipInternal(
+					lastContext_, tooltip_, MaxTooltip, U.DevMode);
 
-				tooltip_.Add(s);
+				string dirSources = "";
 
-				if (d is VirtualDirectory)
-					MakeTooltip(cx, (d as VirtualDirectory).SortedDirs(cx), devMode);
+				for (int i = 0; i < Math.Min(tooltip_.Count, MaxTooltip); ++i)
+					dirSources += $"\n  - {tooltip_[i]}";
+
+				if (count > MaxTooltip)
+					dirSources += $"\n  +{count - MaxTooltip} more";
+
+				s += $"\nSources:{dirSources}";
 			}
+
+			return s;
+		}
+
+		private int MakeTooltipInternal(
+			Context cx, List<string> outList, int max, bool devMode)
+		{
+			if (dirs_ == null)
+				return 0;
+
+			int count = 0;
+
+			if (outList.Count < int.MaxValue)
+			{
+				foreach (var d in SortedDirs(cx))
+				{
+					string s = "";
+
+					if (devMode)
+					{
+						s += d.ToString();
+					}
+					else
+					{
+						var p = d.ParentPackage;
+
+						if (p == null)
+							s += d.VirtualPath;
+						else
+							s += p.DisplayName;
+					}
+
+					if (tooltip_.Count < max)
+						tooltip_.Add(s);
+
+					++count;
+
+					if (d is VirtualDirectory)
+						count += (d as VirtualDirectory).MakeTooltipInternal(cx, outList, max, devMode);
+				}
+			}
+			else
+			{
+				foreach (var d in dirs_)
+				{
+					++count;
+
+					if (d is VirtualDirectory)
+						count += (d as VirtualDirectory).MakeTooltipInternal(cx, outList, max, devMode);
+				}
+			}
+
+			return count;
 		}
 
 		public void Add(IFilesystemContainer c)

@@ -254,9 +254,9 @@ namespace AUI.FileDialog
 
 				if (selected_ != null)
 					filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
-
-				UpdateActionButton();
 			}
+
+			UpdateActionButton();
 		}
 
 		public bool SelectDirectory(
