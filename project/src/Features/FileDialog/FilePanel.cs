@@ -191,6 +191,7 @@ namespace AUI.FileDialog
 		private readonly FilePanel[] panels_;
 		private List<FS.IFilesystemObject> files_ = null;
 		private float setScroll_ = -1;
+		private int setTop_ = -1;
 
 		public FilesPanel(FileDialog fd, int cols, int rows)
 		{
@@ -230,9 +231,28 @@ namespace AUI.FileDialog
 			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
 		}
 
-		public void SetSelected(FS.IFilesystemObject o, bool b)
+		public void SetSelected(FS.IFilesystemObject o, bool b, bool scroll)
 		{
-			FindPanel(o)?.SetSelectedInternal(b);
+			var p = FindPanel(o);
+			if (p != null)
+			{
+				p.SetSelectedInternal(b);
+				return;
+			}
+
+			if (b && scroll)
+			{
+				for (int i = 0; i < files_.Count; ++i)
+				{
+					if (files_[i] == o)
+					{
+						setTop_ = i / cols_;
+						SetSelected(o, true, false);
+						AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+						break;
+					}
+				}
+			}
 		}
 
 		public void ScrollToTop()
@@ -304,10 +324,20 @@ namespace AUI.FileDialog
 			int offscreenRows = totalRows - rows_;
 			float scrollbarSize = scroll_.ContentPanel.ClientBounds.Height / rows_ / 3;
 
-			float pos = (setScroll_ >= 0 ? setScroll_ : 0);
+			float pos = 0;
+
+			if (setScroll_ >= 0)
+			{
+				pos = (setScroll_ >= 0 ? setScroll_ : 0);
+				setScroll_ = -1;
+			}
+			else if (setTop_ >= 0)
+			{
+				pos = setTop_ * scrollbarSize;
+				setTop_ = -1;
+			}
 
 			scroll_.Set(offscreenRows, scrollbarSize, pos);
-			setScroll_ = -1;
 		}
 
 		private void OnScroll(int top)

@@ -1,5 +1,4 @@
-﻿using SimpleJSON;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +11,7 @@ namespace AUI.FileDialog
 
 		public const int SelectFileNoFlags = 0x00;
 		public const int SelectFileKeepFilename = 0x01;
+		public const int SelectFileScrollTo = 0x02;
 
 		public const int SelectDirectoryNoFlags = 0x00;
 		public const int SelectDirectoryExpand = 0x01;
@@ -245,7 +245,7 @@ namespace AUI.FileDialog
 			else
 			{
 				if (selected_ != null)
-					filesPanel_.SetSelected(selected_, false);
+					filesPanel_.SetSelected(selected_, false, false);
 
 				selected_ = o;
 
@@ -253,7 +253,7 @@ namespace AUI.FileDialog
 					UpdateFilename();
 
 				if (selected_ != null)
-					filesPanel_.SetSelected(selected_, true);
+					filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
 
 				UpdateActionButton();
 			}
@@ -402,6 +402,31 @@ namespace AUI.FileDialog
 				Log.Error($"bad initial directory (cwd) {cwd}");
 			}
 
+			if (mode_.IsWritable)
+			{
+				if (!string.IsNullOrEmpty(opts.CurrentFile))
+				{
+					var dir = FS.Path.Parent(opts.CurrentFile);
+
+					if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
+					{
+						if (SelectDirectoryInPinned(
+								dir, opts.CurrentDirectoryInPinned,
+								flags, scrollTo))
+						{
+							return;
+						}
+
+						Log.Error($"bad initial directory (opts current file in pinned for write) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
+					}
+
+					if (SelectDirectory(dir, flags, scrollTo))
+						return;
+
+					Log.Error($"bad initial directory (opts current file for write) {dir}");
+				}
+			}
+
 			if (!string.IsNullOrEmpty(opts.CurrentDirectory))
 			{
 				if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
@@ -425,15 +450,10 @@ namespace AUI.FileDialog
 			if (!string.IsNullOrEmpty(mode_.DefaultDirectory))
 			{
 				if (SelectDirectory(mode_.DefaultDirectory, flags, scrollTo))
-				{
-					opts.CurrentDirectory = mode_.DefaultDirectory;
 					return;
-				}
 
 				Log.Error($"bad initial directory (mode default dir) {mode_.DefaultDirectory}");
 			}
-
-			opts.CurrentDirectory = FS.Filesystem.Instance.GetRoot().VirtualPath;
 
 			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
 				return;
@@ -441,29 +461,29 @@ namespace AUI.FileDialog
 			Log.Error($"can't select any initial directory");
 		}
 
-		private void SelectInitialFile(string name)
+		private void SelectInitialFile(string path)
 		{
 			if (dir_ == null)
 				return;
 
-			if (string.IsNullOrEmpty(name))
+			if (string.IsNullOrEmpty(path))
 			{
 				buttonsPanel_.Filename = mode_.MakeNewFilename(this);
 				return;
 			}
 
-			var cx = CreateFileContext(false);
+			var name = FS.Path.Filename(path);
 
-			foreach (var f in dir_.GetFiles(cx))
+			foreach (var f in GetFiles())
 			{
 				if (f.Name == name)
 				{
-					SelectFile(f);
+					SelectFile(f, SelectFileScrollTo);
 					return;
 				}
 			}
 
-			Log.Error($"bad last file {name}");
+			Log.Error($"bad last file {path}");
 		}
 
 		private void UpdateFilename()

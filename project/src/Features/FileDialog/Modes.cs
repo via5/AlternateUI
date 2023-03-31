@@ -99,6 +99,9 @@ namespace AUI.FileDialog
 			while (paths_.Count > Max)
 				paths_.RemoveAt(0);
 
+			if (paths_.Count > 0 && paths_[paths_.Count - 1] == s)
+				return;
+
 			paths_.Add(s);
 			++index_;
 		}
@@ -108,9 +111,9 @@ namespace AUI.FileDialog
 	class Options
 	{
 		private string name_;
-		private string lastPath_;
-		private string lastPathRootInPinned_;
 		private string lastFile_;
+		private string lastDir_;
+		private string lastDirInPinned_;
 		private bool flattenDirs_;
 		private bool flattenPackages_;
 		private bool mergePackages_;
@@ -131,9 +134,8 @@ namespace AUI.FileDialog
 			bool showHiddenFolders, bool showHiddenFiles, int sort, int sortDir)
 		{
 			name_ = name;
-			lastPath_ = null;
-			lastPathRootInPinned_ = "";
-			lastFile_ = "";
+			lastFile_ = null;
+			lastDirInPinned_ = null;
 			flattenDirs_ = flattenDirs;
 			flattenPackages_ = flattenPackages;
 			mergePackages_ = mergePackages;
@@ -227,20 +229,44 @@ namespace AUI.FileDialog
 
 		public string CurrentDirectory
 		{
-			get { return lastPath_; }
-			set { lastPath_ = value; Changed(); }
+			get
+			{
+				return lastDir_;
+			}
+
+			set
+			{
+				lastDir_ = value;
+				Changed();
+			}
 		}
 
 		public string CurrentDirectoryInPinned
 		{
-			get { return lastPathRootInPinned_; }
-			set { lastPathRootInPinned_ = value; Changed(); }
+			get
+			{
+				return lastDirInPinned_;
+			}
+
+			set
+			{
+				lastDirInPinned_ = value;
+				Changed();
+			}
 		}
 
 		public string CurrentFile
 		{
-			get { return lastFile_; }
-			set { lastFile_ = value; Changed(); }
+			get
+			{
+				return lastFile_;
+			}
+
+			set
+			{
+				lastFile_ = value;
+				Changed();
+			}
 		}
 
 		public void Load()
@@ -253,11 +279,14 @@ namespace AUI.FileDialog
 			if (j == null)
 				return;
 
-			//if (j.HasKey("lastPath"))
-			//	lastPath_ = j["lastPath"].Value;
+			if (j.HasKey("lastFile"))
+				lastFile_ = j["lastFile"].Value;
 
-			if (j.HasKey("lastPathRootInPinned"))
-				lastPathRootInPinned_ = j["lastPathRootInPinned"].Value;
+			if (j.HasKey("lastDir"))
+				lastDir_ = j["lastDir"].Value;
+
+			if (j.HasKey("lastDirInPinned"))
+				lastDirInPinned_ = j["lastDirInPinned"].Value;
 
 			if (j.HasKey("flattenDirectories"))
 				flattenDirs_ = j["flattenDirectories"].AsBool;
@@ -292,8 +321,9 @@ namespace AUI.FileDialog
 
 			var j = new JSONClass();
 
-			//j["lastPath"] = new JSONData(lastPath_);
-			j["lastPathRootInPinned"] = new JSONData(lastPathRootInPinned_);
+			j["lastFile"] = new JSONData(lastFile_);
+			j["lastDir"] = new JSONData(lastDir_);
+			j["lastDirInPinned"] = new JSONData(lastDirInPinned_);
 			j["flattenDirectories"] = new JSONData(flattenDirs_);
 			j["flattenPackages"] = new JSONData(flattenPackages_);
 			j["mergePackages"] = new JSONData(mergePackages_);
@@ -422,9 +452,9 @@ namespace AUI.FileDialog
 
 		public void Execute(FileDialog fd, ExecuteHandler h)
 		{
-			opts_.CurrentDirectory = fd.SelectedDirectory.VirtualPath;
+			opts_.CurrentFile = fd.SelectedFile?.VirtualPath;
+			opts_.CurrentDirectory = fd.SelectedDirectory?.VirtualPath;
 			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
-			opts_.CurrentFile = fd.SelectedFile?.Name;
 			opts_.Search = fd.Search;
 			opts_.Scroll = fd.Scroll;
 
