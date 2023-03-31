@@ -119,6 +119,12 @@ namespace VUI
 			widget_.Destroy();
 		}
 
+		public void MouseMoved(Point mp)
+		{
+			if (timer_ != null)
+				timer_.Restart();
+		}
+
 		public void WidgetEntered(Widget w)
 		{
 			if (active_ == w)

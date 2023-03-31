@@ -195,6 +195,9 @@ namespace AUI.FileDialog
 			FS.Instrumentation.Start(FS.I.FTRefreshOnObjectchanged);
 			{
 				item.Refresh(false);
+
+				if (FS.Filesystem.Instance.GetPinnedRoot().IsSameObject(o))
+					item.Expanded = true;
 			}
 			FS.Instrumentation.End();
 		}

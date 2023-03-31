@@ -449,6 +449,10 @@ namespace VUI
 						content_.NeedsLayout("root visibility changed");
 						floating_?.NeedsLayout("root visibility changed");
 					}
+					else
+					{
+						tooltips_.Hide();
+					}
 				}
 			}
 		}
@@ -508,6 +512,9 @@ namespace VUI
 					}
 				}
 			}
+
+			if (mp != lastMouse_)
+				Tooltips.MouseMoved(mp);
 
 			lastMouse_ = mp;
 		}

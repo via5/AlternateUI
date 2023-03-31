@@ -1,9 +1,247 @@
-﻿using SimpleJSON;
+﻿using MVR.FileManagementSecure;
+using SimpleJSON;
 using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
 {
+	struct StringView
+	{
+		private string s_;
+		private int begin_, end_;
+
+		public StringView(string s)
+		{
+			s_ = s;
+			begin_ = 0;
+			end_ = s_.Length;
+		}
+
+		public StringView(string s, int start, int count = -1)
+		{
+			s_ = s;
+			begin_ = start;
+
+			if (count < 0)
+				end_ = s.Length;
+			else
+				end_ = Math.Min(start + count, s.Length);
+		}
+
+		public int Length
+		{
+			get { return end_ - begin_; }
+		}
+
+		public bool StartsWith(string with)
+		{
+			if (Length < with.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				s_, begin_,
+				with, 0,
+				with.Length);
+
+			return (r == 0);
+		}
+
+		public bool EndsWith(string with)
+		{
+			if (Length < with.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				s_, Length - with.Length,
+				with, 0,
+				with.Length);
+
+			return (r == 0);
+		}
+
+		public int LastIndexOf(char c)
+		{
+			if (Length == 0)
+				return -1;
+
+			int r = s_.LastIndexOf(c, end_ - 1, Length);
+			if (r == -1)
+				return -1;
+
+			return (r - begin_);
+		}
+
+		public int LastIndexOfAny(char[] anyOf)
+		{
+			if (Length == 0)
+				return -1;
+
+			int r = s_.LastIndexOfAny(anyOf, end_ - 1, Length);
+			if (r == -1)
+				return -1;
+
+			return (r - begin_);
+		}
+
+		public StringView Substring(int start, int count = -1)
+		{
+			return new StringView(s_, begin_ + start, count);
+		}
+
+		public static implicit operator string(StringView v)
+		{
+			return v.ToString();
+		}
+
+		public override string ToString()
+		{
+			return s_.Substring(begin_, end_ - begin_);
+		}
+
+		public int Compare(string other, bool ignoreCase = false)
+		{
+			return Compare(new StringView(other), ignoreCase);
+		}
+
+		public int Compare(StringView other, bool ignoreCase = false)
+		{
+			if (Length < other.Length)
+				return -1;
+			else if (Length > other.Length)
+				return 1;
+
+			return string.Compare(
+				s_, begin_,
+				other.s_, other.begin_,
+				Length, ignoreCase);
+		}
+
+		public static bool operator ==(StringView a, StringView b)
+		{
+			if (a.Length != b.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				a.s_, a.begin_,
+				b.s_, b.begin_,
+				a.Length);
+
+			return (r == 0);
+		}
+
+		public static bool operator !=(StringView a, StringView b)
+		{
+			return !(a == b);
+		}
+
+		public static bool operator ==(StringView a, string b)
+		{
+			if (a.Length != b.Length)
+				return false;
+
+			int r = string.CompareOrdinal(
+				a.s_, a.begin_,
+				b, 0,
+				a.Length);
+
+			return (r == 0);
+		}
+
+		public static bool operator !=(StringView a, string b)
+		{
+			return !(a == b);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashHelper.GetHashCode(s_, begin_, end_);
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is StringView)
+				return (this == (StringView)obj);
+			else
+				return false;
+		}
+	}
+
+
+	static class Path
+	{
+		public static StringView Filename(string f)
+		{
+			return Filename(new StringView(f));
+		}
+
+		public static StringView Filename(StringView f)
+		{
+			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			if (slash == -1)
+				return new StringView(f);
+
+			return new StringView(f, slash + 1);
+		}
+
+		public static StringView Parent(string f)
+		{
+			return Parent(new StringView(f));
+		}
+
+		public static StringView Parent(StringView f)
+		{
+			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			if (slash == -1)
+				return new StringView("");
+
+			return new StringView(f, 0, slash);
+		}
+
+		public static StringView Stem(string f)
+		{
+			return Stem(new StringView(f));
+		}
+
+		public static StringView Stem(StringView f)
+		{
+			var n = Filename(f);
+
+			var dot = n.LastIndexOf('.');
+			if (dot == -1)
+				return n;
+
+			return n.Substring(0, dot);
+		}
+
+		public static StringView Extension(string f)
+		{
+			return Extension(new StringView(f));
+		}
+
+		public static StringView Extension(StringView f)
+		{
+			var dot = f.LastIndexOf('.');
+			if (dot == -1)
+				return new StringView("");
+
+			return new StringView(f, dot);
+		}
+
+		public static string Join(string a, string b)
+		{
+			a = a.Replace('\\', '/');
+			b = b.Replace('\\', '/');
+
+			if (a.EndsWith("/") && b.StartsWith("/"))
+				return a + b.Substring(1);
+			else if (a.EndsWith("/") || b.StartsWith("/"))
+				return a + b;
+			else
+				return a + "/" + b;
+		}
+	}
+
+
 	public struct Extension
 	{
 		private readonly string name_;
@@ -105,6 +343,10 @@ namespace AUI.FS
 
 		private void LoadOptions()
 		{
+			var file = GetConfigFile();
+			if (!FileManagerSecure.FileExists(file))
+				return;
+
 			var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
 			if (j == null)
 				return;
@@ -535,6 +777,7 @@ namespace AUI.FS
 		public bool AlreadySorted { get { return false; } }
 		public bool UnderlyingCanChange { get { return false; } }
 		public bool IsInternal { get { return true; } }
+		public bool IsFile { get { return false; } }
 
 		public string DebugInfo()
 		{

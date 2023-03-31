@@ -141,6 +141,11 @@ namespace AUI.FS
 			get { return filtered_ ?? raw_; }
 		}
 
+		public List<EntriesType> RawUnfiltered
+		{
+			get { return raw_; }
+		}
+
 		public List<EntriesType> PerExtension
 		{
 			get { return perExtension_; }
@@ -256,6 +261,7 @@ namespace AUI.FS
 		string DisplayName { get; set; }
 		string Tooltip { get; }
 		bool HasCustomDisplayName { get; }
+		bool IsFile { get; }
 		DateTime DateCreated { get; }
 		DateTime DateModified { get; }
 		VUI.Icon Icon { get; }

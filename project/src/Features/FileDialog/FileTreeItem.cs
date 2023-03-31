@@ -98,12 +98,19 @@ namespace AUI.FileDialog
 			RefreshInternal(cx, recursive);
 		}
 
-		private void RefreshInternal(FS.Context cx, bool recursive)
+		private void RefreshInternal(FS.Context cx, bool recursive, FS.IFilesystemContainer o = null)
 		{
-			o_ = null;
+			o_ = o;
 
-			var o = GetFSObject();
-			Text = o?.DisplayName ?? "(dead)";
+			if (o_ == null)
+			{
+				o = GetFSObject();
+
+				if (o == null)
+					Text = FS.Path.Filename(path_) + " (dead)";
+				else
+					Text = o.DisplayName;
+			}
 
 			checkedHasChildren_ = false;
 
@@ -163,7 +170,7 @@ namespace AUI.FileDialog
 						else
 						{
 							if (recursive)
-								c.RefreshInternal(cx, true);
+								c.RefreshInternal(cx, true, samePath);
 
 							++i;
 						}
@@ -173,14 +180,12 @@ namespace AUI.FileDialog
 
 			{
 				var cs = GetInternalChildren();
+				int count = (cs == null ? 0 : cs.Count);
 
-				if (cs != null)
+				for (int i = 0; i < dirs.Count; ++i)
 				{
-					for (int i = 0; i < dirs.Count; ++i)
-					{
-						if (i >= cs.Count || !((cs[i] as FileTreeItem).GetFSObject()?.IsSameObject(dirs[i]) ?? false))
-							Insert(i, CreateItem(dirs[i]));
-					}
+					if (i >= count || !((cs[i] as FileTreeItem).GetFSObject()?.IsSameObject(dirs[i]) ?? false))
+						Insert(i, CreateItem(dirs[i]));
 				}
 			}
 		}

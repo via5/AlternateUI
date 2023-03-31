@@ -328,7 +328,7 @@ namespace AUI.FileDialog
 	{
 		Options Options { get; }
 
-		string Title { get; }
+		string Title { get; set; }
 		ExtensionItem[] Extensions { get; }
 		string PackageRoot { get; }
 		string DefaultDirectory { get; set; }
@@ -346,7 +346,7 @@ namespace AUI.FileDialog
 	abstract class BasicMode : IFileDialogMode
 	{
 		private readonly string name_;
-		private readonly string title_;
+		private string title_;
 		private readonly ExtensionItem[] exts_;
 		private readonly string packageRoot_;
 		private string defaultPath_;
@@ -389,6 +389,7 @@ namespace AUI.FileDialog
 		public string Title
 		{
 			get { return title_; }
+			set { title_ = value; }
 		}
 
 		public ExtensionItem[] Extensions
@@ -524,7 +525,7 @@ namespace AUI.FileDialog
 					if (file == "")
 						return "";
 
-					path = Path.Join(dir, file);
+					path = FS.Path.Join(dir, file);
 				}
 			}
 			else
@@ -625,7 +626,7 @@ namespace AUI.FileDialog
 			if (file.IndexOf('.') == -1)
 				file += fd.GetDefaultExtension();
 
-			return Path.Join(dir, file);
+			return FS.Path.Join(dir, file);
 		}
 
 		public override string MakeNewFilename(FileDialog fd)
@@ -669,17 +670,24 @@ namespace AUI.FileDialog
 			new Dictionary<string, IFileDialogMode>();
 
 
-		public static IFileDialogMode OpenScene()
+		public static IFileDialogMode OpenScene(string caption = null)
 		{
+			if (caption == null)
+				caption = "Open scene";
+
 			if (openScene_ == null)
 			{
 				openScene_ = new OpenMode(
-					"scene", "Open scene",
+					"scene", caption,
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
 					true, true, true, false, false,
 					FS.Context.SortDateCreated, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
+			}
+			else
+			{
+				openScene_.Title = caption;
 			}
 
 			return openScene_;

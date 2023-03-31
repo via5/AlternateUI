@@ -210,9 +210,17 @@ namespace AUI.FileDialog
 			{
 				var t = fb.titleText?.text ?? "";
 
-				if (t == "Select Scene For Merge" ||
-					t == "Select Scene For Edit" ||
-					t == "Select Scene To Load")
+				if (t == "Select Scene For Merge")
+				{
+					Show(Modes.OpenScene("Merge scene"), cb);
+					return true;
+				}
+				else if (t == "Select Scene For Edit")
+				{
+					Show(Modes.OpenScene("Open scene for edit"), cb);
+					return true;
+				}
+				else if (t == "Select Scene To Load")
 				{
 					Show(Modes.OpenScene(), cb);
 					return true;

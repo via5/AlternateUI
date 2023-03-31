@@ -124,7 +124,7 @@ namespace AUI.FS
 
 					foreach (var p in packages_)
 					{
-						if (cx.PackagesSearch.Matches(p.DisplayName))
+						if (cx.PackagesSearch.Matches(p))
 							searchedPackages_.Add(p);
 					}
 				}
@@ -424,7 +424,7 @@ namespace AUI.FS
 			if (!thisVP.EndsWith("/"))
 				thisVP += "/";
 
-			if (!oVP.EndsWith("/"))
+			if (!o.IsFile && !oVP.EndsWith("/"))
 				oVP += "/";
 
 			if (oVP.StartsWith(thisVP))

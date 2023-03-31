@@ -126,7 +126,7 @@ namespace AUI
 
 			if (thumbPath == null)
 			{
-				string ext = Path.Extension(path);
+				string ext = FS.Path.Extension(path);
 
 				VUI.Icon icon;
 				if (exts_.TryGetValue(ext, out icon))
@@ -149,7 +149,7 @@ namespace AUI
 
 		private static VUI.Icon GetFileIcon(string path)
 		{
-			string ext = Path.Extension(path);
+			string ext = FS.Path.Extension(path);
 			VUI.Icon i;
 
 			if (!exts_.TryGetValue(ext, out i))
@@ -191,7 +191,7 @@ namespace AUI
 
 			foreach (var e in exts)
 			{
-				var relImgPath = Path.Parent(file) + "\\" + Path.Stem(file) + e;
+				var relImgPath = FS.Path.Parent(file) + "/" + FS.Path.Stem(file) + e;
 				var imgPath = FileManagerSecure.GetFullPath(relImgPath);
 
 				if (FileManagerSecure.FileExists(imgPath))

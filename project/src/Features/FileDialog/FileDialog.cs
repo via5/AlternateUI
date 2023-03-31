@@ -469,7 +469,7 @@ namespace AUI.FileDialog
 		private void UpdateFilename()
 		{
 			if (selected_ != null)
-				buttonsPanel_.Filename = selected_.DisplayName;
+				buttonsPanel_.Filename = selected_.Name;
 		}
 
 		private IEnumerator CoRunCallback(Action<string> f, string path)
@@ -755,11 +755,20 @@ namespace AUI.FileDialog
 
 			packagesSearch_ = p.Add(new VUI.SearchBox("Search packages"), VUI.BorderLayout.Bottom);
 			packagesSearch_.TextBox.Borders = new VUI.Insets(0, 1, 1, 0);
-			packagesSearch_.Changed += (ss) => tree_.SearchPackages(ss);
 			packagesSearch_.AutoComplete.Enabled = true;
 			packagesSearch_.AutoComplete.Height = 400;
 			packagesSearch_.AutoComplete.File = AlternateUI.Instance.GetConfigFilePath(
 				"aui.filedialog.packagesSearch.autocomplete.json");
+
+			packagesSearch_.Changed += (ss) =>
+			{
+				if (string.IsNullOrEmpty(ss))
+					packagesSearch_.TextBox.BackgroundColor = new Color(0, 0, 0, 0);
+				else
+					packagesSearch_.TextBox.BackgroundColor = new Color(0, 0.2f, 0);
+
+				tree_.SearchPackages(ss);
+			};
 
 			return p;
 		}

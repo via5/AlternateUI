@@ -44,7 +44,12 @@ namespace AUI.FS
 			}
 		}
 
-		public bool Matches(string s)
+		public bool Matches(IFilesystemObject o)
+		{
+			return DoMatches(o.Name) || DoMatches(o.DisplayName);
+		}
+
+		private bool DoMatches(string s)
 		{
 			if (lc_ != null)
 			{
@@ -359,13 +364,13 @@ namespace AUI.FS
 			get { return Bits.IsSet(flags_, LatestPackagesOnlyFlag); }
 		}
 
-		public bool ExtensionMatches(string path)
+		public bool ExtensionMatches(IFilesystemObject o)
 		{
 			if (exts_ != null)
 			{
 				foreach (var e in exts_)
 				{
-					if (e == "*.*" || path.EndsWith(e))
+					if (e == "*.*" || o.Name.EndsWith(e))
 						return true;
 				}
 
@@ -375,9 +380,9 @@ namespace AUI.FS
 			return true;
 		}
 
-		public bool SearchMatches(string path)
+		public bool SearchMatches(IFilesystemObject o)
 		{
-			return search_.Matches(Path.Filename(path));
+			return search_.Matches(o);
 		}
 
 		public bool WhitelistMatches(string path)

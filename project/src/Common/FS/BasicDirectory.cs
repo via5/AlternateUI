@@ -19,6 +19,11 @@ namespace AUI.FS
 			get { return name_; }
 		}
 
+		public override bool IsFile
+		{
+			get { return false; }
+		}
+
 		public override void ClearCache()
 		{
 			base.ClearCache();
@@ -221,16 +226,22 @@ namespace AUI.FS
 			try
 			{
 				if (path == null)
+				{
+					Log.Error($"{this} ResolveImpl path is null");
 					return null;
+				}
 
 				if (path == "")
 					return this;
 
-				if (cache_ != null)
+				if (!Bits.IsSet(flags, Filesystem.ResolveNoCache))
 				{
-					IFilesystemObject o;
-					if (cache_.Resolve(path, out o))
-						return o;
+					if (cache_ != null)
+					{
+						IFilesystemObject o;
+						if (cache_.Resolve(path, out o))
+							return o;
+					}
 				}
 
 				var cs = new PathComponents(path);
@@ -636,7 +647,7 @@ namespace AUI.FS
 
 						foreach (var f in listing.Raw)
 						{
-							if (cx.ExtensionMatches(f.DisplayName))
+							if (cx.ExtensionMatches(f))
 								perExtension.Add(f);
 						}
 					}
@@ -661,7 +672,7 @@ namespace AUI.FS
 
 						foreach (var f in (listing.PerExtension ?? listing.Raw))
 						{
-							if (cx.SearchMatches(f.DisplayName))
+							if (cx.SearchMatches(f))
 								searched.Add(f);
 						}
 					}

@@ -94,6 +94,7 @@ namespace AUI.FS
 		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
 		public abstract bool IsInternal { get; }
+		public abstract bool IsFile { get; }
 
 		public DateTime DateCreated
 		{
