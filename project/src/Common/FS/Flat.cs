@@ -10,7 +10,7 @@ namespace AUI.FS
 		{
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return "AllFlatDirectory";
 		}
@@ -74,7 +74,7 @@ namespace AUI.FS
 			get { return "Packages flattened"; }
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return "PackagesFlatDirectory";
 		}
@@ -134,7 +134,7 @@ namespace AUI.FS
 			fs_.PinsChanged += ClearCache;
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return "PinnedFlatDirectory";
 		}

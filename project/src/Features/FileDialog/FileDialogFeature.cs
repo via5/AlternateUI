@@ -134,6 +134,8 @@ namespace AUI.FileDialog
 
 		protected override void DoEnable()
 		{
+			FS.Filesystem.Init();
+
 			var root = SuperController.singleton.transform;
 
 			fd_.Enable();
@@ -322,18 +324,6 @@ namespace AUI.FileDialog
 		protected override void DoUpdate(float s)
 		{
 			fd_.Update(s);
-		}
-
-		protected override void DoLoadOptions(JSONClass o)
-		{
-			base.DoLoadOptions(o);
-			fd_.LoadOptions(o);
-		}
-
-		protected override void DoSaveOptions(JSONClass o)
-		{
-			base.DoSaveOptions(o);
-			fd_.SaveOptions(o);
 		}
 	}
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SimpleJSON;
+using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
@@ -65,11 +66,11 @@ namespace AUI.FS
 		public const int ResolveDebug = 0x02;
 		public const int ResolveNoCache = 0x04;
 
-		private static readonly Filesystem instance_ = new Filesystem();
+		private static Filesystem instance_;
 
-		private readonly Logger log_;
-		private readonly RootDirectory root_;
-		private readonly PackageRootDirectory packagesRoot_;
+		private Logger log_;
+		private RootDirectory root_;
+		private PackageRootDirectory packagesRoot_;
 		private int cacheToken_ = 1;
 
 		private bool usePackageTime_ = true;
@@ -77,11 +78,89 @@ namespace AUI.FS
 
 		public Filesystem()
 		{
+		}
+
+		public static void Init()
+		{
+			if (instance_ == null)
+			{
+				instance_ = new Filesystem();
+				instance_.DoInit();
+			}
+		}
+
+		private void DoInit()
+		{
 			log_ = new Logger("fs");
 			root_ = new RootDirectory(this);
 			packagesRoot_ = new PackageRootDirectory(this, root_);
 
-			root_.PinnedRoot.Load();
+			LoadOptions();
+		}
+
+		private string GetConfigFile()
+		{
+			return AlternateUI.Instance.GetConfigFilePath("aui.fs.json");
+		}
+
+		private void LoadOptions()
+		{
+			var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
+			if (j == null)
+				return;
+
+			if (j.HasKey("usePackageTime"))
+				UsePackageTime = j["usePackageTime"].AsBool;
+
+			var pins = j?["pins"]?.AsArray;
+			if (pins != null)
+			{
+				foreach (JSONNode p in pins)
+				{
+					string path = p?["path"]?.Value;
+					string display = p?["display"]?.Value?.Trim();
+
+					if (string.IsNullOrEmpty(path))
+					{
+						AlternateUI.Instance.Log.Error("bad pin");
+						continue;
+					}
+
+					if (display == "")
+						display = null;
+
+					root_.PinnedRoot.Pin(path, display);
+				}
+			}
+		}
+
+		public void SaveOptions()
+		{
+			var j = new JSONClass();
+
+			j["usePackageTime"] = new JSONData(UsePackageTime);
+
+			Instrumentation.Start(I.PinSave);
+			{
+				var pins = new JSONArray();
+
+				foreach (var p in root_.PinnedRoot.Pinned)
+				{
+					var po = new JSONClass();
+
+					po.Add("path", p.VirtualPath);
+
+					if (p.HasCustomDisplayName)
+						po.Add("display", p.DisplayName);
+
+					pins.Add(po);
+				}
+
+				j["pins"] = pins;
+			}
+			Instrumentation.End();
+
+			SuperController.singleton.SaveJSON(j, GetConfigFile());
 		}
 
 		public static Filesystem Instance
@@ -96,8 +175,19 @@ namespace AUI.FS
 
 		public bool UsePackageTime
 		{
-			get { return usePackageTime_; }
-			set { usePackageTime_ = value; }
+			get
+			{
+				return usePackageTime_;
+			}
+
+			set
+			{
+				if (usePackageTime_ != value)
+				{
+					usePackageTime_ = value;
+					SaveOptions();
+				}
+			}
 		}
 
 		public int CacheToken
@@ -232,8 +322,6 @@ namespace AUI.FS
 		private readonly FSDirectory custom_;
 		private readonly PinnedRoot pinned_;
 
-		private List<IFilesystemContainer> dirs_ = null;
-
 		public RootDirectory(Filesystem fs)
 			: base(fs, null, "VaM")
 		{
@@ -245,20 +333,9 @@ namespace AUI.FS
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return "RootDirectory";
-		}
-
-		public override void ClearCache()
-		{
-			base.ClearCache();
-			ClearImmediateChildrenCache();
-		}
-
-		public void ClearImmediateChildrenCache()
-		{
-			dirs_ = null;
 		}
 
 		public AllFlatDirectory AllFlat
@@ -380,31 +457,29 @@ namespace AUI.FS
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)
 		{
-			if (dirs_ == null)
-			{
-				if (cx.PackagesSearch.Empty)
-				{
-					dirs_ = new List<IFilesystemContainer>()
-					{
-						new VirtualDirectory(fs_, this, allFlat_),
-						new VirtualDirectory(fs_, this, packagesFlat_),
-						pinnedFlat_,
-						pinned_,
-						new VirtualDirectory(fs_, this, saves_),
-						new VirtualDirectory(fs_, this, custom_),
-						fs_.GetPackagesRoot()
-					};
-				}
-				else
-				{
-					dirs_ = new List<IFilesystemContainer>()
-					{
-						fs_.GetPackagesRoot()
-					};
-				}
-			}
+			// the virtual directories need to be recreated every time or
+			// they'll cache the old packages
 
-			return dirs_;
+			if (cx.PackagesSearch.Empty)
+			{
+				return new List<IFilesystemContainer>()
+				{
+					new VirtualDirectory(fs_, this, allFlat_),
+					new VirtualDirectory(fs_, this, packagesFlat_),
+					pinnedFlat_,
+					pinned_,
+					new VirtualDirectory(fs_, this, saves_),
+					new VirtualDirectory(fs_, this, custom_),
+					fs_.GetPackagesRoot()
+				};
+			}
+			else
+			{
+				return new List<IFilesystemContainer>()
+				{
+					fs_.GetPackagesRoot()
+				};
+			}
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
@@ -461,7 +536,7 @@ namespace AUI.FS
 		public bool UnderlyingCanChange { get { return false; } }
 		public bool IsInternal { get { return true; } }
 
-		public override string ToString()
+		public string DebugInfo()
 		{
 			return $"NullDirectory";
 		}

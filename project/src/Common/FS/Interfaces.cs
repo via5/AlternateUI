@@ -131,6 +131,8 @@ namespace AUI.FS
 				raw_ = new List<EntriesType>();
 
 			raw_.AddRange(list);
+			filtered_ = null;
+
 			SetAllStale();
 		}
 
@@ -271,6 +273,7 @@ namespace AUI.FS
 		string DeVirtualize();
 		bool IsSameObject(IFilesystemObject o);
 		void ClearCache();
+		string DebugInfo();
 	}
 
 

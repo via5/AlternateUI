@@ -14,14 +14,9 @@ namespace AUI.FS
 		{
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"PinnedRoot";
-		}
-
-		private string GetConfigFile()
-		{
-			return AlternateUI.Instance.GetConfigFilePath("aui.fs.pinned.json");
 		}
 
 		public List<IFilesystemContainer> Pinned
@@ -32,63 +27,6 @@ namespace AUI.FS
 		public override bool AlreadySorted
 		{
 			get { return true; }
-		}
-
-
-		public void Load()
-		{
-			if (Sys.FileExists(this, GetConfigFile()))
-			{
-				var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
-				var pins = j?["pins"]?.AsArray;
-
-				if (pins != null)
-				{
-					foreach (JSONNode p in pins)
-					{
-						string path = p?["path"]?.Value;
-						string display = p?["display"]?.Value?.Trim();
-
-						if (string.IsNullOrEmpty(path))
-						{
-							AlternateUI.Instance.Log.Error("bad pin");
-							continue;
-						}
-
-						if (display == "")
-							display = null;
-
-						Pin(path, display);
-					}
-				}
-			}
-		}
-
-		public void Save()
-		{
-			Instrumentation.Start(I.PinSave);
-			{
-				var j = new JSONClass();
-
-				var pins = new JSONArray();
-
-				foreach (var p in pinned_)
-				{
-					var po = new JSONClass();
-
-					po.Add("path", p.VirtualPath);
-
-					if (p.HasCustomDisplayName)
-						po.Add("display", p.DisplayName);
-
-					pins.Add(po);
-				}
-
-				j["pins"] = pins;
-
-				SuperController.singleton.SaveJSON(j, GetConfigFile());
-			}
-			Instrumentation.End();
 		}
 
 		public void Pin(string s, string display = null)
@@ -170,7 +108,7 @@ namespace AUI.FS
 
 		private void Changed()
 		{
-			Save();
+			fs_.SaveOptions();
 			ClearCache();
 			fs_.FirePinsChanged();
 			fs_.FireObjectChanged(this);
@@ -238,7 +176,7 @@ namespace AUI.FS
 			c_ = c;
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"PinnedObject({c_})";
 		}
@@ -339,7 +277,7 @@ namespace AUI.FS
 
 		protected override void DisplayNameChanged()
 		{
-			(Parent as PinnedRoot).Save();
+			fs_.SaveOptions();
 		}
 	}
 }

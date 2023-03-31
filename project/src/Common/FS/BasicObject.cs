@@ -214,10 +214,17 @@ namespace AUI.FS
 		}
 
 		public abstract string MakeRealPath();
+		public abstract string DebugInfo();
 
 		public virtual string DeVirtualize()
 		{
 			return MakeRealPath();
+		}
+
+
+		public override string ToString()
+		{
+			return DebugInfo();
 		}
 
 

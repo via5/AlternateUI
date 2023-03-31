@@ -209,7 +209,7 @@ namespace AUI.FS
 
 		public static string NormalizePath(string path)
 		{
-			return Sys.NormalizePath(path);
+			return FMS.NormalizePath(path);
 		}
 	}
 }

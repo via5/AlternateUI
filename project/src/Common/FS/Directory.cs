@@ -29,7 +29,7 @@ namespace AUI.FS
 			lastContext_ = lastContext;
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"VirtualDirectory({VirtualPath})";
 		}
@@ -422,13 +422,14 @@ namespace AUI.FS
 					IFilesystemContainer c;
 					if (map.TryGetValue(d.Name, out c))
 					{
-						if (c is VirtualDirectory)
+						if (c is VirtualDirectory && !(c is VirtualPackageDirectory))
 						{
 							(c as VirtualDirectory).Add(d);
 						}
 						else
 						{
 							var vd = new VirtualDirectory(fs_, this, d.Name);
+
 							vd.Add(d);
 							vd.Add(c);
 
@@ -556,7 +557,7 @@ namespace AUI.FS
 		{
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"FSDirectory({VirtualPath})";
 		}

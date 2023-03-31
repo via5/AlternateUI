@@ -77,17 +77,6 @@ namespace AUI.FileDialog
 			}
 		}
 
-		public void LoadOptions(JSONClass o)
-		{
-			if (o.HasKey("usePackageTime"))
-				FS.Filesystem.Instance.UsePackageTime = o["usePackageTime"].AsBool;
-		}
-
-		public void SaveOptions(JSONClass o)
-		{
-			o["usePackageTime"] = new JSONData(FS.Filesystem.Instance.UsePackageTime);
-		}
-
 		public void Update(float s)
 		{
 			root_?.Update();
@@ -413,20 +402,20 @@ namespace AUI.FileDialog
 				Log.Error($"bad initial directory (cwd) {cwd}");
 			}
 
-			if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
-			{
-				if (SelectDirectoryInPinned(
-						opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
-						flags, scrollTo))
-				{
-					return;
-				}
-
-				Log.Error($"bad initial directory (opts current in pinned) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
-			}
-
 			if (!string.IsNullOrEmpty(opts.CurrentDirectory))
 			{
+				if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
+				{
+					if (SelectDirectoryInPinned(
+							opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
+							flags, scrollTo))
+					{
+						return;
+					}
+
+					Log.Error($"bad initial directory (opts current in pinned) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
+				}
+
 				if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
 					return;
 

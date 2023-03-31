@@ -18,7 +18,7 @@ namespace AUI.FS
 			Icons.ClearFileCache(MakeRealPath());
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"File({VirtualPath})";
 		}

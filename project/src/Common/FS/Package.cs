@@ -113,7 +113,7 @@ namespace AUI.FS
 				if (cx.PackagesSearch.Empty || packages_ == null)
 					return packages_;
 
-				if (search_ != cx.PackagesSearch.String)
+				if (search_ != cx.PackagesSearch.String || searchedPackages_ == null)
 				{
 					search_ = cx.PackagesSearch.String;
 
@@ -135,6 +135,7 @@ namespace AUI.FS
 			public void Refresh(Context cx, ShortCutsCache scs)
 			{
 				cacheToken_ = pr_.fs_.CacheToken;
+				searchedPackages_ = null;
 
 				Instrumentation.Start(I.RefreshPackages);
 				{
@@ -176,7 +177,7 @@ namespace AUI.FS
 			packages_.Clear();
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"PackageRootDirectory";
 		}
@@ -299,7 +300,7 @@ namespace AUI.FS
 			return s;
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"VirtualPackageDirectory({p_?.ShortCut?.package}:{Name})";
 		}
@@ -334,9 +335,14 @@ namespace AUI.FS
 			p_ = p;
 		}
 
-		public override string ToString()
+		public string ShortCutPath
 		{
-			return $"RealPackageDirectory({p_?.ShortCut?.path})";
+			get { return p_?.ShortCut?.path; }
+		}
+
+		public override string DebugInfo()
+		{
+			return $"RealPackageDirectory({ShortCutPath}, p={p_})";
 		}
 	}
 
@@ -362,7 +368,7 @@ namespace AUI.FS
 			modified_ = DateTime.MaxValue;
 		}
 
-		public override string ToString()
+		public override string DebugInfo()
 		{
 			return $"Package({ShortCut.package})";
 		}
