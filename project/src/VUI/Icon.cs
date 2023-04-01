@@ -60,12 +60,8 @@ namespace VUI
 
 		public void GetTexture(Action<Texture> f)
 		{
-			Glue.LogInfo($"{this}: getting texture");
-
 			if (cacheToken_ != currentCacheToken_)
 			{
-				Glue.LogInfo($"{this}: purging");
-
 				cacheToken_ = currentCacheToken_;
 				SetTexture(f, null);
 				Purge();
@@ -73,13 +69,10 @@ namespace VUI
 
 			if (texture_ == null)
 			{
-				Glue.LogInfo($"{this}: trying cache");
 				SetTexture(f, GetFromCache());
 
 				if (texture_ == null)
 				{
-					Glue.LogInfo($"{this}: cache failed, loading");
-
 					callbacks_.Add(f);
 
 					if (!loading_)
@@ -90,13 +83,11 @@ namespace VUI
 				}
 				else
 				{
-					Glue.LogInfo($"{this}: got from cache {texture_}");
 					SetTexture(f, texture_);
 				}
 			}
 			else
 			{
-				Glue.LogInfo($"{this}: already loaded");
 				SetTexture(f, texture_);
 			}
 		}
@@ -107,7 +98,6 @@ namespace VUI
 
 		protected void LoadFinished(Texture t)
 		{
-			Glue.LogInfo($"{this} load finished t={t}");
 			loading_ = false;
 
 			SetTexture(null, t);
@@ -129,14 +119,11 @@ namespace VUI
 				}
 			}
 
-			Glue.LogInfo($"{this} texture set {texture_}, invoking {f}");
 			f?.Invoke(texture_);
 		}
 
 		protected void LoadFromImageLoader(string path, Texture def)
 		{
-			Glue.LogInfo($"{this} loading from loader {path}");
-
 			ImageLoaderThreaded.QueuedImage q = new ImageLoaderThreaded.QueuedImage();
 			q.imgPath = path;
 
@@ -318,15 +305,9 @@ namespace VUI
 		protected override void Load()
 		{
 			if (thumbPath_ == null)
-			{
-				Glue.LogInfo($"{this}: loading file icon");
 				LoadFinished(GetFileIcon());
-			}
 			else
-			{
-				Glue.LogInfo($"{this}: forwarding to loader {thumbPath_}");
 				LoadFromImageLoader(thumbPath_, SuperController.singleton.fileBrowserUI.defaultIcon.texture);
-			}
 		}
 
 
