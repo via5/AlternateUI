@@ -1208,9 +1208,7 @@ namespace VUI
 			box_.TextMargins = new Insets(0, 0, 44, 0);
 			box_.Changed += (s) => Changed?.Invoke(s);
 
-			var clearPanel = new Panel(new HorizontalFlow(
-				0, FlowLayout.AlignRight | FlowLayout.AlignVCenter));
-
+			var clearPanel = new Panel(new HorizontalFlow(0, Align.VCenterRight));
 			clear_ = new ToolButton("X");
 			clear_.Margins = new Insets(0, 2, 3, 1);
 			clear_.MaximumSize = new Size(35, 35);

@@ -53,12 +53,12 @@ namespace AUI.DynamicItemsUI
 
 			author_.FontSize = parent.FontSize;
 			author_.WrapMode = VUI.Label.ClipEllipsis;
-			author_.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignTop;
+			author_.Alignment = VUI.Align.TopLeft;
 			author_.AutoTooltip = true;
 
 			name_.FontSize = parent.FontSize;
 			name_.WrapMode = VUI.Label.ClipEllipsis;
-			name_.Alignment = VUI.Label.AlignLeft | VUI.Label.AlignTop;
+			name_.Alignment = VUI.Align.TopLeft;
 			name_.AutoTooltip = true;
 
 			name_.MinimumSize = new VUI.Size(DontCare, 60);

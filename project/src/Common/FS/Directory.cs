@@ -244,15 +244,12 @@ namespace AUI.FS
 				return c.DateModified;
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get
-			{
-				if (HasRealDir())
-					return Icons.GetIcon(Icons.Directory);
-				else
-					return Icons.GetIcon(Icons.Package);
-			}
+			if (HasRealDir())
+				return Icons.GetIcon(Icons.Directory);
+			else
+				return Icons.GetIcon(Icons.PackageDark);
 		}
 
 		public override bool CanPin
@@ -597,9 +594,9 @@ namespace AUI.FS
 			return Sys.DirectoryLastWriteTime(this, MakeRealPath());
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Directory); }
+			return Icons.GetIcon(Icons.Directory);
 		}
 
 		public override bool CanPin

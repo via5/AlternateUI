@@ -16,6 +16,7 @@ namespace AUI.FileDialog
 		private readonly VUI.CheckBoxMenuItem latestPackagesOnly_;
 		private readonly VUI.CheckBoxMenuItem usePackageTime_;
 		private readonly VUI.MenuButton sortPanel_;
+		private readonly VUI.Label stats_;
 
 		private readonly Dictionary<int, VUI.RadioMenuItem> sortItems_ =
 			new Dictionary<int, VUI.RadioMenuItem>();
@@ -86,9 +87,20 @@ namespace AUI.FileDialog
 				optionsPanel_ = new VUI.MenuButton("Options", m);
 			}
 
-			Layout = new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter);
-			Add(optionsPanel_.Button);
-			Add(sortPanel_.Button);
+			stats_ = new VUI.Label("");
+
+
+			var leftPanel = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
+			leftPanel.Add(optionsPanel_.Button);
+			leftPanel.Add(sortPanel_.Button);
+
+			var rightPanel = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
+			rightPanel.Add(stats_);
+
+
+			Layout = new VUI.BorderLayout();
+			Add(leftPanel, VUI.BorderLayout.Left);
+			Add(rightPanel, VUI.BorderLayout.Right);
 		}
 
 		private void AddSortItem(VUI.Menu menu, VUI.RadioButton.Group g, int sort)
@@ -103,7 +115,7 @@ namespace AUI.FileDialog
 			sortDirItems_.Add(dir, item);
 		}
 
-		public void Set(IFileDialogMode mode)
+		public void SetMode(IFileDialogMode mode)
 		{
 			try
 			{
@@ -138,6 +150,16 @@ namespace AUI.FileDialog
 			{
 				ignore_ = false;
 			}
+		}
+
+		public void SetFiles(List<FS.IFilesystemObject> files)
+		{
+			if (files.Count == 0)
+				stats_.Text = $"0 files";
+			else if (files.Count == 1)
+				stats_.Text = $"1 file";
+			else
+				stats_.Text = $"{files.Count} files";
 		}
 
 		private VUI.RadioMenuItem MakeSortItem(string text, int sort, VUI.RadioButton.Group g)

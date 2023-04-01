@@ -459,6 +459,24 @@ namespace VUI
 						dirtyChild.DebugLine);
 				}
 			}
+
+			if (!render_ || !visible_ || (GetRoot() == null))
+				OnHiddenInternal();
+		}
+
+		public void OnHiddenInternal()
+		{
+			if (hovered_)
+			{
+				hovered_ = false;
+				ClearCursor();
+			}
+
+			if (children_ != null)
+			{
+				foreach (var c in children_)
+					c.OnHiddenInternal();
+			}
 		}
 
 		private Widget AnyDirtyChild()
@@ -1220,6 +1238,9 @@ namespace VUI
 				foreach (var c in children_)
 					c.SetRender(b && c.render_);
 			}
+
+			if (!b)
+				OnHiddenInternal();
 		}
 
 		protected virtual void DoSetRender(bool b)

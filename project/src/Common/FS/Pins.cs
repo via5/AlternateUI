@@ -144,9 +144,9 @@ namespace AUI.FS
 			get { return true; }
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.UnpinnedDark); }
+			return Icons.GetIcon(Icons.UnpinnedDark);
 		}
 
 		public override string MakeRealPath()
@@ -207,7 +207,6 @@ namespace AUI.FS
 
 		public override string Name { get { return c_.Name; } }
 		public override string VirtualPath { get { return c_.VirtualPath; } }
-		public override VUI.Icon Icon { get { return c_.Icon; } }
 		public override bool CanPin { get { return true; } }
 		public override bool Virtual { get { return c_.Virtual; } }
 		public override bool ChildrenVirtual { get { return c_.ChildrenVirtual; } }
@@ -216,6 +215,11 @@ namespace AUI.FS
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 		public override bool IsInternal { get { return c_.IsInternal; } }
 		public override bool IsFile { get { return c_.IsFile; } }
+
+		protected override VUI.Icon GetIcon()
+		{
+			return c_.Icon;
+		}
 
 		protected override DateTime GetDateCreated()
 		{

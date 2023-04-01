@@ -12,6 +12,7 @@ namespace AUI.FileDialog
 
 		private readonly VUI.Panel panel_;
 		private readonly VUI.Image thumbnail_;
+		private readonly VUI.Image packageIndicator_;
 		private readonly VUI.Label name_;
 		private VUI.Timer thumbnailTimer_ = null;
 		private bool hovered_ = false;
@@ -23,12 +24,16 @@ namespace AUI.FileDialog
 
 			panel_ = new VUI.Panel(new VUI.BorderLayout());
 			thumbnail_ = new VUI.Image();
+			packageIndicator_ = new VUI.Image();
 			name_ = new VUI.Label();
 
 			name_.FontSize = fontSize;
 			name_.WrapMode = VUI.Label.ClipEllipsis;
-			name_.Alignment = VUI.Label.AlignCenter | VUI.Label.AlignTop;
+			name_.Alignment = VUI.Align.TopCenter;
 			name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 60);
+
+			packageIndicator_.Alignment = VUI.Align.BottomLeft;
+			packageIndicator_.Margins = new VUI.Insets(10, 0, 0, 5);
 
 			panel_.Borders = new VUI.Insets(1);
 			panel_.BorderColor = new Color(0, 0, 0, 0);
@@ -36,6 +41,7 @@ namespace AUI.FileDialog
 
 			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
 			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
+			thumbnailPanel.Add(packageIndicator_, VUI.BorderLayout.Center);
 
 			panel_.Add(thumbnailPanel, VUI.BorderLayout.Center);
 			panel_.Add(name_, VUI.BorderLayout.Bottom);
@@ -150,6 +156,20 @@ namespace AUI.FileDialog
 						if (o_ == forObject)
 							SetTexture(t);
 					});
+				});
+			}
+
+			if (o_.ParentPackage == null)
+			{
+				packageIndicator_.Render = false;
+			}
+			else
+			{
+				packageIndicator_.Render = true;
+
+				Icons.GetIcon(Icons.Package).GetTexture((t) =>
+				{
+					packageIndicator_.Texture = t;
 				});
 			}
 		}

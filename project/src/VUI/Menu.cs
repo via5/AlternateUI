@@ -31,7 +31,7 @@ namespace VUI
 			button_ = new Button(text);
 			button_.BackgroundColor = new Color(0, 0, 0, 0);
 			button_.Padding = new Insets(10, 5, 5, 5);
-			button_.Alignment = Label.AlignLeft | Label.AlignVCenter;
+			button_.Alignment = Align.VCenterLeft;
 			button_.Clicked += () => Parent?.ItemActivatedInternal(this);
 
 			if (tooltip != null)

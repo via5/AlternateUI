@@ -27,7 +27,7 @@ namespace AUI.FileDialog
 			drop_.AboutToOpen += UpdateHistoryMenu;
 			drop_.CloseOnMenuActivated = true;
 
-			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter, true));
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft, true));
 			back_ = buttons.Add(new VUI.ToolButton("\x2190", () => fd_.Back(), "Back"));
 			next_ = buttons.Add(new VUI.ToolButton("\x2192", () => fd_.Next(), "Next"));
 			buttons.Add(drop_.Button);

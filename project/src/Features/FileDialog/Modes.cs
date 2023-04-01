@@ -711,8 +711,8 @@ namespace AUI.FileDialog
 					"scene", caption,
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
-					true, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					false, true, true, false, false,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
 			else
@@ -732,7 +732,7 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetSceneExtensions(false),
 					"Saves/scene", "VaM/Saves/scene",
 					false, false, false, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
 
@@ -748,7 +748,7 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetCUAExtensions(true),
 					"Custom/Assets", "VaM/Custom/Assets",
 					true, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Custom/Assets" }));
 			}
 
@@ -764,7 +764,7 @@ namespace AUI.FileDialog
 					FileDialogFeature.GetPluginExtensions(true),
 					"Custom/Scripts", "VaM/Custom/Scripts",
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Custom/Scripts" }));
 			}
 
@@ -783,7 +783,7 @@ namespace AUI.FileDialog
 					info.type, info.loadCaption, info.extensions,
 					MakePackageRoot(path), MakeDefaultPath(path),
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
 				openPreset_.Add(path, m);
@@ -804,7 +804,7 @@ namespace AUI.FileDialog
 					info.type, info.saveCaption, info.extensions,
 					MakePackageRoot(path), MakeDefaultPath(path),
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
 				savePreset_.Add(path, m);
@@ -825,7 +825,7 @@ namespace AUI.FileDialog
 					info.type, info.loadCaption, info.extensions,
 					MakePackageRoot(path), MakeDefaultPath(path),
 					false, true, true, false, false,
-					FS.Context.SortDateCreated, FS.Context.SortDescending,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
 				openTexture_.Add(path, m);

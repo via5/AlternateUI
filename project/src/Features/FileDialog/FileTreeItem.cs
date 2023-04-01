@@ -184,8 +184,35 @@ namespace AUI.FileDialog
 
 				for (int i = 0; i < dirs.Count; ++i)
 				{
-					if (i >= count || !((cs[i] as FileTreeItem).GetFSObject()?.IsSameObject(dirs[i]) ?? false))
+					bool insert = false;
+
+					if (i >= count)
+					{
+						insert = true;
+					}
+					else
+					{
+						var fi = cs[i] as FileTreeItem;
+						var fio = fi?.GetFSObject();
+
+						if (fio == null)
+						{
+							insert = true;
+						}
+						else if (!fio.IsSameObject(dirs[i]))
+						{
+							insert = true;
+						}
+					}
+
+					if (insert)
+					{
 						Insert(i, CreateItem(dirs[i]));
+
+						// need to update count manually because `cs` will
+						// change in the Insert() call above
+						++count;
+					}
 				}
 			}
 		}

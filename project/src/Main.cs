@@ -70,8 +70,16 @@ namespace AUI
 				{
 					if (Input.GetKeyUp(KeyCode.F5))
 					{
-						SuperController.singleton.ClearMessages();
-						ReloadPlugin();
+						if (Input.GetKey(KeyCode.LeftShift))
+						{
+							SuperController.singleton.HardReset();
+						}
+						else
+						{
+							SuperController.singleton.ClearMessages();
+							ReloadPlugin();
+						}
+
 						return;
 					}
 				}

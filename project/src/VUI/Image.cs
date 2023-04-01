@@ -1,79 +1,86 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace VUI
 {
-	public class Icon
+	public abstract class Icon
 	{
+		private static int currentCacheToken_ = 0;
+
 		private Texture texture_ = null;
-		private readonly string path_ = null;
-		private readonly int w_ = 0, h_ = 0;
-		private readonly bool forceResize_ = false;
-		private readonly Texture def_ = null;
 		private readonly List<Action<Texture>> callbacks_ = new List<Action<Texture>>();
+		private readonly bool rerender_;
 		private bool loading_ = false;
+		private int cacheToken_ = currentCacheToken_;
 
-		public Icon(Texture t)
+
+		public static Icon FromTexture(Texture t)
 		{
-			texture_ = t;
+			return TextureIcon.FromCache(t);
 		}
 
-		public Icon(string path, Texture def = null)
-			: this(path, 0, 0, def)
+		public static Icon FromFile(string path, Texture def = null)
 		{
+			return FileIcon.FromCache(path, def);
 		}
 
-		public Icon(string path, int w, int h, Texture def = null)
+		public static Icon FromThumbnail(string path)
 		{
-			path_ = path;
-			w_ = w;
-			h_ = h;
-			def_ = def;
+			return ThumbnailIcon.FromCache(path);
 		}
 
-		public Icon(string path, int w, int h, bool forceResize, Texture def = null)
+
+		protected Icon(bool rerender)
 		{
-			path_ = path;
-			w_ = w;
-			h_ = h;
-			forceResize_ = forceResize;
-			def_ = def;
+			rerender_ = rerender;
 		}
 
-		public override string ToString()
+		public static void ClearAllCache()
 		{
-			return $"Icon({path_}, tex={texture_})";
+			++currentCacheToken_;
 		}
 
 		public Texture CachedTexture
 		{
-			get { return texture_; }
+			get
+			{
+				if (cacheToken_ != currentCacheToken_)
+					return null;
+
+				return texture_;
+			}
 		}
 
 		public void ClearCache()
 		{
-			if (path_ != null)
-				ImageLoaderThreaded.singleton.ClearCacheThumbnail(path_);
-
-			texture_ = null;
+			cacheToken_ = -1;
 		}
 
 		public void GetTexture(Action<Texture> f)
 		{
-			if (texture_ != null)
+			Glue.LogInfo($"{this}: getting texture");
+
+			if (cacheToken_ != currentCacheToken_)
 			{
-				f(texture_);
+				Glue.LogInfo($"{this}: purging");
+
+				cacheToken_ = currentCacheToken_;
+				SetTexture(f, null);
+				Purge();
 			}
-			else
+
+			if (texture_ == null)
 			{
-				if (GetFromCache())
+				Glue.LogInfo($"{this}: trying cache");
+				SetTexture(f, GetFromCache());
+
+				if (texture_ == null)
 				{
-					f(texture_);
-				}
-				else
-				{
+					Glue.LogInfo($"{this}: cache failed, loading");
+
 					callbacks_.Add(f);
 
 					if (!loading_)
@@ -82,73 +89,64 @@ namespace VUI
 						Load();
 					}
 				}
-			}
-		}
-
-		private bool GetFromCache()
-		{
-			if (path_ == null)
-			{
-				texture_ = def_;
-				return true;
+				else
+				{
+					Glue.LogInfo($"{this}: got from cache {texture_}");
+					SetTexture(f, texture_);
+				}
 			}
 			else
 			{
-				//ImageLoaderThreaded.singleton.ClearCacheThumbnail(path_);
+				Glue.LogInfo($"{this}: already loaded");
+				SetTexture(f, texture_);
+			}
+		}
 
-				var tex = ImageLoaderThreaded.singleton.GetCachedThumbnail(path_);
-				if (tex != null)
+		protected abstract void Purge();
+		protected abstract Texture GetFromCache();
+		protected abstract void Load();
+
+		protected void LoadFinished(Texture t)
+		{
+			Glue.LogInfo($"{this} load finished t={t}");
+			loading_ = false;
+
+			SetTexture(null, t);
+			RunCallbacks();
+		}
+
+		private void SetTexture(Action<Texture> f, Texture t)
+		{
+			texture_ = t;
+
+			if (texture_ != null)
+			{
+				texture_.wrapMode = TextureWrapMode.Clamp;
+
+				if (rerender_)
 				{
-					texture_ = tex;
-
-					if (forceResize_ || w_ != 0 || h_ != 0)
-					{
-						int w = (w_ == 0 ? texture_.width : w_);
-						int h = (h_ == 0 ? texture_.height : h_);
-
-						texture_ = ScaleTexture(texture_, w, h);
-					}
-
-					texture_.wrapMode = TextureWrapMode.Clamp;
-
-					return true;
+					texture_ = ScaleTexture(
+						texture_, texture_.width, texture_.height);
 				}
 			}
 
-			return false;
+			Glue.LogInfo($"{this} texture set {texture_}, invoking {f}");
+			f?.Invoke(texture_);
 		}
 
-		private void Load()
+		protected void LoadFromImageLoader(string path, Texture def)
 		{
+			Glue.LogInfo($"{this} loading from loader {path}");
+
 			ImageLoaderThreaded.QueuedImage q = new ImageLoaderThreaded.QueuedImage();
-			q.imgPath = path_;
+			q.imgPath = path;
 
 			q.callback = (tt) =>
 			{
-				Texture tex = tt.tex;
-				if (tex == null)
-				{
-					texture_ = def_;
-				}
-				else
-				{
-					texture_ = tex;
-
-					if (forceResize_ || w_ != 0 || h_ != 0)
-					{
-						int w = (w_ == 0 ? texture_.width : w_);
-						int h = (h_ == 0 ? texture_.height : h_);
-
-						texture_ = ScaleTexture(texture_, w, h);
-					}
-
-					texture_.wrapMode = TextureWrapMode.Clamp;
-				}
-
-				RunCallbacks();
+				Texture tex = tt.tex ?? def;
+				LoadFinished(tex);
 			};
 
-			//ImageLoaderThreaded.singleton.ClearCacheThumbnail(q.imgPath);
 			ImageLoaderThreaded.singleton.QueueThumbnail(q);
 		}
 
@@ -179,23 +177,196 @@ namespace VUI
 		}
 	}
 
+
+	public class TextureIcon : Icon
+	{
+		private readonly Texture t_;
+
+		public TextureIcon(Texture t)
+			: base(false)
+		{
+			t_ = t;
+		}
+
+		public static TextureIcon FromCache(Texture t)
+		{
+			return new TextureIcon(t);
+		}
+
+		protected override void Purge()
+		{
+			// no-op
+		}
+
+		protected override Texture GetFromCache()
+		{
+			return t_;
+		}
+
+		protected override void Load()
+		{
+			LoadFinished(t_);
+		}
+
+		public override string ToString()
+		{
+			return $"TextureIcon({t_})";
+		}
+	}
+
+
+	public class FileIcon : Icon
+	{
+		private readonly string path_ = null;
+		private readonly Texture def_ = null;
+
+		public FileIcon(string path, Texture def = null)
+			: this(path, def, false)
+		{
+		}
+
+		protected FileIcon(string path, Texture def, bool rerender)
+			: base(rerender)
+		{
+			path_ = path;
+			def_ = def;
+		}
+
+		public static FileIcon FromCache(string path, Texture def = null)
+		{
+			return new FileIcon(path, def);
+		}
+
+		protected override void Purge()
+		{
+			ImageLoaderThreaded.singleton.ClearCacheThumbnail(path_);
+		}
+
+		protected override Texture GetFromCache()
+		{
+			return ImageLoaderThreaded.singleton.GetCachedThumbnail(path_);
+		}
+
+		protected override void Load()
+		{
+			LoadFromImageLoader(path_, def_);
+		}
+
+		public override string ToString()
+		{
+			return $"FileIcon({path_})";
+		}
+	}
+
+
+	public class ThumbnailIcon : Icon
+	{
+		private readonly string path_;
+		private string thumbPath_;
+
+		private static Dictionary<string, ThumbnailIcon> exts_ = new Dictionary<string, ThumbnailIcon>();
+		private static Dictionary<string, ThumbnailIcon> thumbs_ = new Dictionary<string, ThumbnailIcon>();
+
+		public ThumbnailIcon(string path)
+			: base(false)
+		{
+			path_ = path;
+			thumbPath_ = GetThumbnailPath(path);
+		}
+
+		public static ThumbnailIcon FromCache(string path)
+		{
+			ThumbnailIcon icon;
+			var thumbPath = GetThumbnailPath(path);
+
+			if (thumbPath == null)
+			{
+				string ext = Path.Extension(path);
+
+				if (!exts_.TryGetValue(ext, out icon))
+				{
+					icon = new ThumbnailIcon(path);
+					exts_.Add(ext, icon);
+				}
+			}
+			else
+			{
+				if (!thumbs_.TryGetValue(thumbPath, out icon))
+				{
+					icon = new ThumbnailIcon(path);
+					thumbs_.Add(thumbPath, icon);
+				}
+			}
+
+			return icon;
+		}
+
+		protected override void Purge()
+		{
+			thumbPath_ = GetThumbnailPath(path_);
+			if (thumbPath_ != null)
+				ImageLoaderThreaded.singleton.ClearCacheThumbnail(thumbPath_);
+		}
+
+		protected override Texture GetFromCache()
+		{
+			if (thumbPath_ == null)
+				return GetFileIcon();
+			else
+				return ImageLoaderThreaded.singleton.GetCachedThumbnail(thumbPath_);
+		}
+
+		protected override void Load()
+		{
+			if (thumbPath_ == null)
+			{
+				Glue.LogInfo($"{this}: loading file icon");
+				LoadFinished(GetFileIcon());
+			}
+			else
+			{
+				Glue.LogInfo($"{this}: forwarding to loader {thumbPath_}");
+				LoadFromImageLoader(thumbPath_, SuperController.singleton.fileBrowserUI.defaultIcon.texture);
+			}
+		}
+
+
+		public override string ToString()
+		{
+			return $"ThumbnailIcon({thumbPath_ ?? path_})";
+		}
+
+		private static string GetThumbnailPath(string file)
+		{
+			var exts = new string[] { ".jpg", ".JPG" };
+
+			foreach (var e in exts)
+			{
+				var relImgPath = Path.Parent(file) + "/" + Path.Stem(file) + e;
+				var imgPath = FileManagerSecure.GetFullPath(relImgPath);
+
+				if (FileManagerSecure.FileExists(imgPath))
+					return imgPath;
+			}
+
+			return null;
+		}
+
+		private Texture GetFileIcon()
+		{
+			string ext = Path.Extension(path_);
+			return SuperController.singleton.fileBrowserUI.GetFileIcon(path_)?.texture;
+		}
+	}
+
+
 	// for whatever reason, cursor textures are corrupted unless ScaleTexture()
 	// is called, even if the size is the same
 	//
-	public class Cursor : Icon
+	public class Cursor : FileIcon
 	{
-		public Cursor(Texture t)
-			: base(t)
-		{
-		}
-
 		public Cursor(string path, Texture def = null)
-			: this(path, 0, 0, def)
-		{
-		}
-
-		public Cursor(string path, int w, int h, Texture def = null)
-			: base(path, w, h, true, def)
+			: base(path, def, true)
 		{
 		}
 	}
@@ -206,22 +377,25 @@ namespace VUI
 		private static Material emptyMat_ = null;
 
 		private readonly Widget parent_;
+		private readonly GameObject o_;
 		private readonly RectTransform rt_ = null;
 		private readonly RawImage raw_ = null;
 		private Texture tex_ = null;
 		private Texture grey_ = null;
 		private Size size_ = new Size(Widget.DontCare, Widget.DontCare);
+		private int align_ = Image.AlignDefault;
 		private bool enabled_ = true;
 
-		public ImageObject(Widget parent)
+		public ImageObject(Widget parent, int align = Image.AlignDefault)
 		{
 			parent_ = parent;
+			align_ = align;
 
-			var rawObject = new GameObject();
-			rawObject.transform.SetParent(parent.WidgetObject.transform, false);
+			o_ = new GameObject();
+			o_.transform.SetParent(parent.WidgetObject.transform, false);
 
-			raw_ = rawObject.AddComponent<RawImage>();
-			rt_ = rawObject.GetComponent<RectTransform>();
+			raw_ = o_.AddComponent<RawImage>();
+			rt_ = o_.GetComponent<RectTransform>();
 
 			rt_.anchorMin = new Vector2(0, 0);
 			rt_.anchorMax = new Vector2(1, 1);
@@ -236,6 +410,11 @@ namespace VUI
 
 			raw_.material = emptyMat_;
 			UpdateTexture();
+		}
+
+		public GameObject GameObject
+		{
+			get { return o_; }
 		}
 
 		public Texture Texture
@@ -262,6 +441,12 @@ namespace VUI
 		{
 			get { return size_; }
 			set { size_ = value; UpdateAspect(); }
+		}
+
+		public int Alignment
+		{
+			get { return align_; }
+			set { align_ = value; UpdateAspect(); }
 		}
 
 		public void SetRender(bool b)
@@ -333,8 +518,61 @@ namespace VUI
 					maxSize.Width, maxSize.Height);
 			}
 
-			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, scaled.Width);
-			rt_.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, scaled.Height);
+			Vector2 anchorMin;
+			Vector2 anchorMax;
+			Vector2 offsetMin;
+			Vector2 offsetMax;
+
+			if (Bits.IsSet(align_, Align.Right))
+			{
+				anchorMin.x = 1;
+				anchorMax.x = 1;
+				offsetMin.x = -scaled.Width;
+				offsetMax.x = 0;
+			}
+			else if (Bits.IsSet(align_, Align.Center))
+			{
+				anchorMin.x = 0.5f;
+				anchorMax.x = 0.5f;
+				offsetMin.x = -scaled.Width / 2;
+				offsetMax.x = scaled.Width / 2;
+			}
+			else  // left
+			{
+				anchorMin.x = 0;
+				anchorMax.x = 0;
+				offsetMin.x = 0;
+				offsetMax.x = scaled.Width;
+			}
+
+
+			if (Bits.IsSet(align_, Align.Bottom))
+			{
+				anchorMin.y = 0;
+				anchorMax.y = 0;
+				offsetMin.y = 0;
+				offsetMax.y = scaled.Height;
+			}
+			else if (Bits.IsSet(align_, Align.VCenter))
+			{
+				anchorMin.y = 0.5f;
+				anchorMax.y = 0.5f;
+				offsetMin.y = -scaled.Height / 2;
+				offsetMax.y = scaled.Height / 2;
+			}
+			else  // top
+			{
+				anchorMin.y = 1;
+				anchorMax.y = 1;
+				offsetMin.y = -scaled.Height;
+				offsetMax.y = 0;
+			}
+
+
+			rt_.anchorMin = anchorMin;
+			rt_.anchorMax = anchorMax;
+			rt_.offsetMin = offsetMin;
+			rt_.offsetMax = offsetMax;
 		}
 
 		private void UpdateTexture()
@@ -402,27 +640,61 @@ namespace VUI
 	}
 
 
-	class Image : Widget
+	class Image : Panel
 	{
+		public const int AlignDefault = Align.VCenterCenter;
+
 		public override string TypeName { get { return "Image"; } }
 
 		private ImageObject image_ = null;
 		private Texture tex_ = null;
+		private int align_ = AlignDefault;
+
+
+		public Image(int align = AlignDefault)
+			: this(null, align)
+		{
+		}
+
+		public Image(Texture t, int align = AlignDefault)
+		{
+			tex_ = t;
+			align_ = align;
+		}
 
 		public Texture Texture
 		{
 			get { return tex_; }
-			set { tex_ = value; UpdateTexture();  }
+			set { tex_ = value; TextureChanged();  }
+		}
+
+		public int Alignment
+		{
+			get
+			{
+				return align_;
+			}
+
+			set
+			{
+				if (align_ != value)
+				{
+					align_ = value;
+
+					if (image_ != null)
+						image_.Alignment = align_;
+				}
+			}
 		}
 
 		protected override void AfterUpdateBounds()
 		{
-			if (image_ == null)
-				image_ = new ImageObject(this);
+			base.AfterUpdateBounds();
 
-			image_.Texture = tex_;
-			image_.SetEnabled(Enabled);
-			image_.UpdateAspect();
+			if (image_ == null)
+				image_ = new ImageObject(this, align_);
+
+			TextureChanged();
 		}
 
 		protected override void DoSetRender(bool b)
@@ -443,10 +715,22 @@ namespace VUI
 			return ImageObject.SGetPreferredSize(tex_, maxWidth, maxHeight);
 		}
 
-		private void UpdateTexture()
+		private void CheckBounds()
 		{
 			if (image_ != null)
+			{
+				image_.SetEnabled(Enabled);
+				image_.UpdateAspect();
+			}
+		}
+
+		private void TextureChanged()
+		{
+			if (image_ != null)
+			{
 				image_.Texture = tex_;
+				CheckBounds();
+			}
 		}
 	}
 }

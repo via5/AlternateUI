@@ -182,9 +182,9 @@ namespace AUI.FS
 			return $"PackageRootDirectory";
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Package); }
+			return Icons.GetIcon(Icons.PackageDark);
 		}
 
 		public override bool CanPin
@@ -433,9 +433,9 @@ namespace AUI.FS
 				return o.VirtualPath;
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Package); }
+			return Icons.GetIcon(Icons.PackageDark);
 		}
 
 		public override bool CanPin

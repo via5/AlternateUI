@@ -41,7 +41,7 @@ namespace AUI.DynamicItemsUI
 			search_ = new VUI.SearchBox(searchPlaceholder);
 			search_.Changed += OnTagsSearch;
 
-			var top = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignLeftVCenter));
+			var top = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
 			top.Padding = new VUI.Insets(5);
 			top.Add(new VUI.CheckBox("Only one", OnOneChanged, one_));
 
@@ -495,16 +495,14 @@ namespace AUI.DynamicItemsUI
 			{
 				c_ = c;
 
-				var left = new VUI.Panel(new VUI.HorizontalFlow(
-					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
+				var left = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
 
 				active_ = left.Add(new VUI.CheckBox("", (b) => ToggleActive(), false, "Active"));
 				thumbnail_ = left.Add(new VUI.Image());
 				thumbnail_.Tooltip.TextFunc = () => c_.AtomUI.MakeTooltip(item_);
 				thumbnail_.Tooltip.FontSize = c.AtomUI.FontSize;
 
-				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(
-					10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
+				buttons_ = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
 
 				customize_ = AddWidget(new VUI.ToolButton("...", OpenCustomize, "Customize"));
 
@@ -743,14 +741,13 @@ namespace AUI.DynamicItemsUI
 			Borders = new VUI.Insets(1);
 			Layout = new VUI.VerticalFlow(10);
 
-			var pages = new VUI.Panel(new VUI.HorizontalFlow(
-				5, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
+			var pages = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.Align.VCenterLeft));
 
 			pages.Add(new VUI.Label("Pages"));
 			pages_ = pages.Add(new VUI.IntTextSlider(OnPageChanged));
 			pages.Add(new VUI.ToolButton("<", () => parent_.PreviousPage()));
 			pages.Add(new VUI.ToolButton(">", () => parent_.NextPage()));
-			pageCount_ = pages.Add(new VUI.Label("", VUI.Label.AlignLeft | VUI.Label.AlignVCenter));
+			pageCount_ = pages.Add(new VUI.Label("", VUI.Align.VCenterLeft));
 			pageCount_.MinimumSize = new VUI.Size(80, DontCare);
 
 			search_ = new VUI.SearchBox("Search");
@@ -760,15 +757,10 @@ namespace AUI.DynamicItemsUI
 			top.Add(search_, VUI.BorderLayout.Center);
 
 
-			var left = new VUI.Panel(new VUI.HorizontalFlow(
-				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
-
+			var left = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
 			left.Add(new VUI.CheckBox("Active", (b) => ToggleActive()));
 
-
-			var right = new VUI.Panel(new VUI.HorizontalFlow(
-				10, VUI.FlowLayout.AlignLeft | VUI.FlowLayout.AlignVCenter));
-
+			var right = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterLeft));
 			right.Add(sorter_.Widget);
 			right.Add(cc_.Widget);
 			right.Add(authors_.Button);

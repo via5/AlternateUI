@@ -146,9 +146,7 @@
 
 			Layout = new VUI.VerticalFlow(5);
 
-			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(
-				5, VUI.FlowLayout.AlignLeft|VUI.FlowLayout.AlignVCenter, true));
-
+			var pagePanel = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.Align.VCenterLeft, true));
 			pagePanel.Add(new VUI.Label("Page: "));
 			pagePanel.Add(page_);
 			pagePanel.Add(new VUI.ToolButton("<", () => ui_.PreviousPage()));
@@ -170,8 +168,7 @@
 
 			var secondRow = new VUI.Panel(new VUI.BorderLayout(5));
 
-			var center = new VUI.Panel(new VUI.HorizontalFlow(
-				5, VUI.FlowLayout.AlignLeft|VUI.FlowLayout.AlignVCenter, true));
+			var center = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.Align.VCenterLeft, true));
 
 			center.Add(new VUI.CheckBox(
 				"Favorites",

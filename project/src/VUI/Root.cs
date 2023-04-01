@@ -452,6 +452,8 @@ namespace VUI
 					else
 					{
 						tooltips_.Hide();
+						content_.OnHiddenInternal();
+						floating_.OnHiddenInternal();
 					}
 				}
 			}

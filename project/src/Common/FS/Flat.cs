@@ -15,9 +15,9 @@ namespace AUI.FS
 			return "AllFlatDirectory";
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Directory); }
+			return Icons.GetIcon(Icons.Directory);
 		}
 
 		public override bool CanPin
@@ -79,9 +79,9 @@ namespace AUI.FS
 			return "PackagesFlatDirectory";
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Package); }
+			return Icons.GetIcon(Icons.PackageDark);
 		}
 
 		public override bool CanPin
@@ -139,9 +139,9 @@ namespace AUI.FS
 			return "PinnedFlatDirectory";
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.UnpinnedDark); }
+			return Icons.GetIcon(Icons.UnpinnedDark);
 		}
 
 		public override bool CanPin

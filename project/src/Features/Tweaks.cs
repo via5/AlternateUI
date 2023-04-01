@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using uFileBrowser;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace AUI.Tweaks
 {
@@ -656,7 +657,7 @@ namespace AUI.Tweaks
 		private UnityEngine.UI.Text text_ = null;
 
 		public DoubleClickFocus()
-			: base("doubleClickFocus", "Double-click focus", true)
+			: base("doubleClickFocus", "Double-click focus", false)
 		{
 		}
 
@@ -693,23 +694,11 @@ namespace AUI.Tweaks
 			SuperController.singleton.FocusOnController(fc);
 		}
 
-		protected override void DoInit()
-		{
-		}
-
-		protected override void DoEnable()
-		{
-		}
-
-		protected override void DoDisable()
-		{
-		}
-
 		protected override void DoUpdate(float s)
 		{
-			if (!EventSystem.current.IsPointerOverGameObject())
+			if (Input.GetMouseButtonDown(2))
 			{
-				if (Input.GetMouseButtonDown(2))
+				if (!EventSystem.current.IsPointerOverGameObject())
 				{
 					var now = Time.unscaledTime;
 					if (now - lastDown_ < 0.3f)
@@ -720,6 +709,161 @@ namespace AUI.Tweaks
 					lastDown_ = now;
 				}
 			}
+		}
+	}
+
+
+	class LoadingIndicator : TweakFeature
+	{
+		class Icon
+		{
+			public GameObject o;
+			public Transform icon;
+		}
+
+		private Icon left_ = null;
+		private Icon right_ = null;
+		private bool wasLoading_ = false;
+		private Transform imageLoading_ = null;
+
+
+		public LoadingIndicator()
+			: base("loadingIndicator", "Scene loading indicator", true)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Adds a spinning icon in the top left while a scene is " +
+					"loading.";
+			}
+		}
+
+
+		protected override void DoEnable()
+		{
+			if (imageLoading_ == null)
+			{
+				imageLoading_ = VUI.Utilities.FindChildRecursive(
+					SuperController.singleton,
+					"ImageLoadingHUD")?.transform;
+			}
+		}
+
+		private Icon CreateIcon(bool left)
+		{
+			var o = new GameObject("aui.LoadingIcon");
+			o.transform.SetParent(SuperController.singleton.transform.root);
+
+			var canvas = o.AddComponent<Canvas>();
+			o.AddComponent<CanvasRenderer>();
+			o.AddComponent<CanvasScaler>();
+
+			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+			canvas.gameObject.AddComponent<GraphicRaycaster>();
+			canvas.scaleFactor = 0.5f;
+			canvas.pixelPerfect = true;
+
+			var icon = new GameObject("OverlayRootSupportUI");
+			icon.transform.SetParent(o.transform, false);
+			var rt = icon.AddComponent<RectTransform>();
+
+			var bg = icon.AddComponent<UnityEngine.UI.Image>();
+			bg.color = new Color(1, 0, 0, 1);
+			bg.raycastTarget = true;
+
+			if (left)
+			{
+				VUI.Utilities.SetRectTransform(rt, VUI.Rectangle.FromPoints(
+					20, 20, 100, 100));
+			}
+			else
+			{
+				var r = VUI.Rectangle.FromPoints(20, 20, 100, 100);
+
+				var center = new VUI.Point(
+					Mathf.Round(r.Left) + Mathf.Round((r.Right - r.Left)) / 2,
+					Mathf.Round(r.Top) + Mathf.Round((r.Bottom - r.Top)) / 2);
+
+				rt.offsetMin = new Vector2(Mathf.Round(-r.Right), Mathf.Round(-r.Bottom));
+				rt.offsetMax = new Vector2(Mathf.Round(-r.Left), Mathf.Round(-r.Top));
+				rt.anchorMin = new Vector2(1, 1);
+				rt.anchorMax = new Vector2(1, 1);
+				rt.anchoredPosition = new Vector2(-center.X, -center.Y);
+			}
+
+			var i = new Icon();
+			i.o = o;
+			i.icon = icon.transform;
+
+			return i;
+		}
+
+		protected override void DoDisable()
+		{
+			if (left_ != null)
+			{
+				UnityEngine.Object.Destroy(left_.o);
+				left_ = null;
+			}
+
+			if (right_ != null)
+			{
+				UnityEngine.Object.Destroy(right_.o);
+				right_ = null;
+			}
+		}
+
+		float a = 0;
+
+		protected override void DoUpdate(float s)
+		{
+			var sc = SuperController.singleton;
+			var isLoading = IsLoading();
+
+			if (isLoading != wasLoading_)
+			{
+				if (left_ == null)
+					left_ = CreateIcon(true);
+
+				if (right_ == null)
+					right_ = CreateIcon(false);
+
+				left_.o.SetActive(isLoading);
+				right_.o.SetActive(isLoading);
+
+				wasLoading_ = isLoading;
+			}
+
+			if (isLoading)
+			{
+				if (left_ != null)
+					left_.icon.transform.localRotation = Quaternion.Euler(0, 0, a);
+
+				if (right_ != null)
+					right_.icon.transform.localRotation = Quaternion.Euler(0, 0, a);
+
+				a += 1;
+				if (a >= 360)
+					a = 0;
+			}
+		}
+
+		private bool IsLoading()
+		{
+			var sc = SuperController.singleton;
+
+			return
+				(sc.isLoading) ||
+				(sc.loadingUI?.gameObject?.activeInHierarchy ?? false) ||
+				(sc.loadingGeometry?.gameObject?.activeInHierarchy ?? false) ||
+				(sc.loadingIcon?.gameObject?.activeInHierarchy ?? false) ||
+				(sc.loadingProgressSlider?.gameObject?.activeInHierarchy ?? false) ||
+				(sc.loadingTextStatus?.gameObject?.activeInHierarchy ?? false) ||
+				(imageLoading_.gameObject?.activeInHierarchy ?? false);
 		}
 	}
 }

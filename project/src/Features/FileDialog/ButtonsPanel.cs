@@ -34,7 +34,7 @@
 			extensions_.PopupWidth = 600;
 			extensions_.SelectionChanged += OnExtensionChanged;
 
-			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.FlowLayout.AlignRight | VUI.FlowLayout.AlignVCenter));
+			var buttons = new VUI.Panel(new VUI.HorizontalFlow(10, VUI.Align.VCenterRight));
 			action_ = buttons.Add(new VUI.Button("", () => fd_.ExecuteAction()));
 			buttons.Add(new VUI.Button("Cancel", () => fd_.Cancel()));
 

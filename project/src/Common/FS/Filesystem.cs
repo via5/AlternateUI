@@ -615,9 +615,9 @@ namespace AUI.FS
 			get { return true; }
 		}
 
-		public override VUI.Icon Icon
+		protected override VUI.Icon GetIcon()
 		{
-			get { return Icons.GetIcon(Icons.Directory); }
+			return Icons.GetIcon(Icons.Directory);
 		}
 
 		public override bool CanPin

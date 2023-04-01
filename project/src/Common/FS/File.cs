@@ -15,7 +15,7 @@ namespace AUI.FS
 		public override void ClearCache()
 		{
 			base.ClearCache();
-			Icons.ClearFileCache(MakeRealPath());
+			Icon?.ClearCache();
 		}
 
 		public override string DebugInfo()
@@ -36,6 +36,11 @@ namespace AUI.FS
 		protected override DateTime GetDateModified()
 		{
 			return Sys.FileLastWriteTime(this, MakeRealPath());
+		}
+
+		protected override VUI.Icon GetIcon()
+		{
+			return VUI.Icon.FromThumbnail(MakeRealPath());
 		}
 
 		public override bool CanPin
@@ -66,11 +71,6 @@ namespace AUI.FS
 		public override bool IsFile
 		{
 			get { return true; }
-		}
-
-		public override VUI.Icon Icon
-		{
-			get { return Icons.File(MakeRealPath()); }
 		}
 
 		public override string MakeRealPath()

@@ -194,7 +194,7 @@ namespace AUI.FileDialog
 
 			dir_ = null;
 			filesPanel_.Clear();
-			optionsPanel_.Set(mode_);
+			optionsPanel_.SetMode(mode_);
 			buttonsPanel_.Set(mode_);
 
 			tree_.Enable();
@@ -629,6 +629,8 @@ namespace AUI.FileDialog
 				filesPanel_.SetFiles(files_);
 			}
 			FS.Instrumentation.End();
+
+			optionsPanel_.SetFiles(files_);
 
 			SetPath();
 			UpdateActionButton();

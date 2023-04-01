@@ -90,6 +90,7 @@ namespace AUI
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
 				new Tweaks.MoveNewLight(),
+				new Tweaks.LoadingIndicator()
 			};
 		}
 

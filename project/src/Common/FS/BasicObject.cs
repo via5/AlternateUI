@@ -8,6 +8,7 @@ namespace AUI.FS
 		protected readonly Filesystem fs_;
 		private readonly IFilesystemContainer parent_;
 		private string displayName_ = null;
+		private VUI.Icon icon_ = null;
 		private DateTime dateCreated_ = DateTime.MaxValue;
 		private DateTime dateModified_ = DateTime.MaxValue;
 
@@ -88,13 +89,23 @@ namespace AUI.FS
 		}
 
 		public abstract string Name { get; }
-		public abstract VUI.Icon Icon { get; }
 		public abstract bool CanPin { get; }
 		public abstract bool Virtual { get; }
 		public abstract bool ChildrenVirtual { get; }
 		public abstract bool IsFlattened { get; }
 		public abstract bool IsInternal { get; }
 		public abstract bool IsFile { get; }
+
+		public VUI.Icon Icon
+		{
+			get
+			{
+				if (icon_ == null)
+					icon_ = GetIcon();
+
+				return icon_;
+			}
+		}
 
 		public DateTime DateCreated
 		{
@@ -231,6 +242,7 @@ namespace AUI.FS
 
 		public virtual void ClearCache()
 		{
+			icon_?.ClearCache();
 			dateCreated_ = DateTime.MaxValue;
 			dateModified_ = DateTime.MaxValue;
 		}
@@ -254,5 +266,7 @@ namespace AUI.FS
 		{
 			return DateTime.MaxValue;
 		}
+
+		protected abstract VUI.Icon GetIcon();
 	}
 }
