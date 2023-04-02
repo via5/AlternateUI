@@ -54,6 +54,13 @@ namespace AUI.FileDialog
 			new FS.Extension("TIF files", new string[]{ ".tif", ".tiff" })
 		};
 
+		public static FS.Extension[] SoundExtensions = new FS.Extension[]
+		{
+			new FS.Extension("MP3 files", ".mp3"),
+			new FS.Extension("OGG files", ".ogg"),
+			new FS.Extension("WAV files", ".wav")
+		};
+
 
 		public FileDialogFeature()
 			: base("fileDialog", "File dialog", false)
@@ -88,6 +95,11 @@ namespace AUI.FileDialog
 		public static ExtensionItem[] GetTextureExtensions(bool includeAll)
 		{
 			return GetExtensions(TextureExtensions, "All texture files", includeAll);
+		}
+
+		public static ExtensionItem[] GetSoundExtensions(bool includeAll)
+		{
+			return GetExtensions(SoundExtensions, "All sound files", includeAll);
 		}
 
 
@@ -140,7 +152,7 @@ namespace AUI.FileDialog
 
 			fd_.Enable();
 
-			//fd_.Show(Modes.OpenScene(), null, "VaM/Packages");
+			//fd_.Show(Modes.OpenPreset("Custom/Atom/Person/Plugins"), null, "VaM/Custom/Atom/Person/Plugins");
 
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>
@@ -206,10 +218,10 @@ namespace AUI.FileDialog
 				$"title={fb.titleText?.text} ff={fb.fileFormat} " +
 				$"path={fb.defaultPath} normPath={path}");
 
+			var t = fb.titleText?.text ?? "";
+
 			if (fb == SuperController.singleton.fileBrowserUI)
 			{
-				var t = fb.titleText?.text ?? "";
-
 				if (t == "Select Scene For Merge")
 				{
 					Show(Modes.OpenScene("Merge scene"), cb);
@@ -243,6 +255,17 @@ namespace AUI.FileDialog
 					if (fb.fileFormat == "json|vac|zip")
 					{
 						Show(Modes.SavePreset(path), cb, null);
+						return true;
+					}
+				}
+			}
+			else if (fb == SuperController.singleton.mediaFileBrowserUI)
+			{
+				if (t == "Select File")
+				{
+					if (fb.fileFormat == "mp3|ogg|wav")
+					{
+						Show(Modes.OpenSound(), cb, null);
 						return true;
 					}
 				}

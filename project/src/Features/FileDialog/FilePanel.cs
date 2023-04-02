@@ -280,6 +280,7 @@ namespace AUI.FileDialog
 		public void ScrollToTop()
 		{
 			SetPanels(0);
+			SetScrollPanel();
 		}
 
 		public void Clear()

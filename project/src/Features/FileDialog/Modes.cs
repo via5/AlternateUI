@@ -701,6 +701,7 @@ namespace AUI.FileDialog
 		static IFileDialogMode saveScene_ = null;
 		static IFileDialogMode openCUA_ = null;
 		static IFileDialogMode openPlugin_ = null;
+		static IFileDialogMode openSound_ = null;
 
 		static readonly Dictionary<string, IFileDialogMode> openPreset_ =
 			new Dictionary<string, IFileDialogMode>();
@@ -844,6 +845,22 @@ namespace AUI.FileDialog
 			}
 
 			return m;
+		}
+
+		public static IFileDialogMode OpenSound()
+		{
+			if (openSound_ == null)
+			{
+				openSound_ = new OpenMode(
+					"sound", "Open sound",
+					FileDialogFeature.GetSoundExtensions(true),
+					"Custom/Sounds", "VaM/Custom/Sounds",
+					false, true, true, false, false,
+					FS.Context.SortDateModified, FS.Context.SortDescending,
+					new FS.Whitelist(new string[] { "VaM/Custom/Sounds" }));
+			}
+
+			return openSound_;
 		}
 
 
