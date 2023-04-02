@@ -213,7 +213,7 @@ namespace AUI.FileDialog
 		{
 			string path = FS.Filesystem.Instance.NormalizePath(fb.defaultPath);
 
-			Log.Info(
+			Log.Verbose(
 				$"show filebrowser request fb={fb} " +
 				$"title={fb.titleText?.text} ff={fb.fileFormat} " +
 				$"path={fb.defaultPath} normPath={path}");
@@ -278,7 +278,7 @@ namespace AUI.FileDialog
 		{
 			string path = FS.Filesystem.Instance.NormalizePath(fb.defaultPath);
 
-			Log.Info(
+			Log.Verbose(
 				$"show filebrowser request (full) fb={fb} " +
 				$"title={fb.titleText?.text} ff={fb.fileFormat} " +
 				$"path={fb.defaultPath} normPath={path}");

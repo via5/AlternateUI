@@ -96,7 +96,6 @@ namespace AUI.FileDialog
 		public string Path
 		{
 			get { return path_.Text; }
-			set { path_.Text = value; }
 		}
 
 		public void SetDirectory(FS.IFilesystemContainer dir)
@@ -105,6 +104,7 @@ namespace AUI.FileDialog
 			{
 				ignore_ = true;
 
+				path_.Text = dir?.VirtualPath ?? "";
 				back_.Enabled = fd_.CanGoBack();
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
@@ -118,6 +118,8 @@ namespace AUI.FileDialog
 			{
 				ignore_ = false;
 			}
+
+			ClearSearch();
 		}
 
 		public void ClearSearch()

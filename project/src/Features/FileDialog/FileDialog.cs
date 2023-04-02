@@ -216,18 +216,25 @@ namespace AUI.FileDialog
 				FS.Instrumentation.End();
 			}
 
-			SelectInitialDirectory(cwd);
+			try
+			{
+				ignoreDirSelection_ = true;
+				SelectInitialDirectory(cwd);
+			}
+			finally
+			{
+				ignoreDirSelection_ = false;
+			}
 
 			if (dir_ == null)
 			{
 				// SelectInitialDirectory() won't fire the selected event if the
 				// node was already selected, so call it manually to make sure
-				OnTreeSelection(tree_.TreeView.Selected as FileTreeItem);
+				SetCurrentDirectory(tree_.Selected as FS.IFilesystemContainer, false);
 			}
 
 			if (!SelectInitialFile(mode_.Options.CurrentFile))
 				filesPanel_.ScrollToTop();
-
 
 			addressBar_.Search = mode_.Options.Search;
 
@@ -236,6 +243,9 @@ namespace AUI.FileDialog
 
 		public void Hide()
 		{
+			if (!Visible)
+				return;
+
 			tree_.Disable();
 			root_.Visible = false;
 		}
@@ -267,13 +277,7 @@ namespace AUI.FileDialog
 			}
 			FS.Instrumentation.End();
 
-			if (!b)
-			{
-				SetPath();
-				return false;
-			}
-
-			return true;
+			return b;
 		}
 
 		public bool SelectDirectoryInPinned(
@@ -287,13 +291,7 @@ namespace AUI.FileDialog
 			}
 			FS.Instrumentation.End();
 
-			if (!b)
-			{
-				SetPath();
-				return false;
-			}
-
-			return true;
+			return b;
 		}
 
 		public bool CanGoBack()
@@ -528,14 +526,17 @@ namespace AUI.FileDialog
 			return f;
 		}
 
-		private void SetCurrentDirectory(FS.IFilesystemContainer o)
+		private void SetCurrentDirectory(FS.IFilesystemContainer o, bool scroll=true)
 		{
 			if (!ignoreHistory_)
 				History.Push(o.VirtualPath);
 
 			dir_ = o;
-			addressBar_.ClearSearch();
+			addressBar_.SetDirectory(dir_);
 			RefreshFiles();
+
+			if (scroll)
+				filesPanel_.ScrollToTop();
 		}
 
 		private int MakeContextFlags(bool recursive, Options opts)
@@ -628,7 +629,6 @@ namespace AUI.FileDialog
 
 			optionsPanel_.SetFiles(files_);
 
-			SetPath();
 			UpdateActionButton();
 		}
 
@@ -817,15 +817,6 @@ namespace AUI.FileDialog
 			FS.Instrumentation.End();
 		}
 
-		private void SetPath()
-		{
-			FS.Instrumentation.Start(FS.I.FDSetPath);
-			{
-				addressBar_.Path = dir_?.VirtualPath ?? "";
-			}
-			FS.Instrumentation.End();
-		}
-
 		private void SelectFromFilename()
 		{
 			if (SelectedFile == null || SelectedFile.Name != buttonsPanel_.Filename)
@@ -858,7 +849,6 @@ namespace AUI.FileDialog
 			}
 
 			SetCurrentDirectory(c);
-			addressBar_.SetDirectory(c);
 		}
 	}
 }
