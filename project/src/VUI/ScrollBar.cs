@@ -292,6 +292,11 @@ namespace VUI
 			get { return sb_; }
 		}
 
+		public int Top
+		{
+			get { return top_; }
+		}
+
 		public void Set(int rows, float rowSize, float scrollPos = 0)
 		{
 			top_ = 0;

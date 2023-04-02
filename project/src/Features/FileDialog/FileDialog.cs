@@ -36,6 +36,7 @@ namespace AUI.FileDialog
 		private FS.IFilesystemObject selected_ = null;
 		private Action<string> callback_ = null;
 		private bool ignoreHistory_ = false;
+		private bool ignoreDirSelection_ = false;
 
 
 		public FileDialog()
@@ -168,11 +169,6 @@ namespace AUI.FileDialog
 			get { return addressBar_.Search; }
 		}
 
-		public float Scroll
-		{
-			get { return filesPanel_.Scroll; }
-		}
-
 		public History History
 		{
 			get { return mode_.Options.History; }
@@ -201,7 +197,15 @@ namespace AUI.FileDialog
 
 			if (refreshDirs)
 			{
-				RefreshDirectories();
+				try
+				{
+					ignoreDirSelection_ = true;
+					RefreshDirectories(false);
+				}
+				finally
+				{
+					ignoreDirSelection_ = false;
+				}
 			}
 			else
 			{
@@ -224,7 +228,6 @@ namespace AUI.FileDialog
 			SelectInitialFile(mode_.Options.CurrentFile);
 
 			addressBar_.Search = mode_.Options.Search;
-			filesPanel_.Scroll = mode_.Options.Scroll;
 
 			buttonsPanel_.FocusFilename();
 		}
@@ -237,24 +240,16 @@ namespace AUI.FileDialog
 
 		public void SelectFile(FS.IFilesystemObject o, int flags = SelectFileNoFlags)
 		{
-			if (selected_ == o)
-			{
-				if (!Bits.IsSet(flags, SelectFileKeepFilename))
-					UpdateFilename();
-			}
-			else
-			{
-				if (selected_ != null)
-					filesPanel_.SetSelected(selected_, false, false);
+			if (selected_ != null)
+				filesPanel_.SetSelected(selected_, false, false);
 
-				selected_ = o;
+			selected_ = o;
 
-				if (!Bits.IsSet(flags, SelectFileKeepFilename))
-					UpdateFilename();
+			if (!Bits.IsSet(flags, SelectFileKeepFilename))
+				UpdateFilename();
 
-				if (selected_ != null)
-					filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
-			}
+			if (selected_ != null)
+				filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
 
 			UpdateActionButton();
 		}
@@ -472,11 +467,9 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			var name = FS.Path.Filename(path);
-
 			foreach (var f in GetFiles())
 			{
-				if (f.Name == name)
+				if (f.VirtualPath == path)
 				{
 					SelectFile(f, SelectFileScrollTo);
 					return;
@@ -636,7 +629,7 @@ namespace AUI.FileDialog
 			UpdateActionButton();
 		}
 
-		public void RefreshDirectories()
+		public void RefreshDirectories(bool select = true)
 		{
 			FS.Instrumentation.Start(FS.I.FDTreeSetFlags);
 			{
@@ -650,9 +643,12 @@ namespace AUI.FileDialog
 			}
 			FS.Instrumentation.End();
 
-			var s = tree_.Selected as FS.IFilesystemContainer;
-			if (s != null)
-				SetCurrentDirectory(s);
+			if (select)
+			{
+				var s = tree_.Selected as FS.IFilesystemContainer;
+				if (s != null)
+					SetCurrentDirectory(s);
+			}
 		}
 
 		private IEnumerator CoRefresh()
@@ -849,6 +845,8 @@ namespace AUI.FileDialog
 
 		private void OnTreeSelection(IFileTreeItem item)
 		{
+			if (ignoreDirSelection_) return;
+
 			var c = (item as FileTreeItem)?.GetFSObject();
 			if (c == null)
 			{

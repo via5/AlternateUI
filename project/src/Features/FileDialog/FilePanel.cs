@@ -210,8 +210,8 @@ namespace AUI.FileDialog
 		private readonly VUI.FixedScrolledPanel scroll_;
 		private readonly FilePanel[] panels_;
 		private List<FS.IFilesystemObject> files_ = null;
-		private float setScroll_ = -1;
 		private int setTop_ = -1;
+		private bool ignoreScroll_ = false;
 
 		public FilesPanel(FileDialog fd, int cols, int rows)
 		{
@@ -247,8 +247,6 @@ namespace AUI.FileDialog
 		public void SetFiles(List<FS.IFilesystemObject> files)
 		{
 			files_ = files;
-			SetPanels(0);
-			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
 		}
 
 		public void SetSelected(FS.IFilesystemObject o, bool b, bool scroll)
@@ -257,6 +255,10 @@ namespace AUI.FileDialog
 			if (p != null)
 			{
 				p.SetSelectedInternal(b);
+
+				if (b)
+					SetPanels(scroll_.Top * cols_);
+
 				return;
 			}
 
@@ -268,7 +270,7 @@ namespace AUI.FileDialog
 					{
 						setTop_ = i / cols_;
 						SetSelected(o, true, false);
-						AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+						SetScrollPanel();
 						break;
 					}
 				}
@@ -278,20 +280,6 @@ namespace AUI.FileDialog
 		public void ScrollToTop()
 		{
 			SetPanels(0);
-		}
-
-		public float Scroll
-		{
-			get
-			{
-				return scroll_.VerticalScrollbar.Value;
-			}
-
-			set
-			{
-				scroll_.VerticalScrollbar.Value = value;
-				setScroll_ = value;
-			}
 		}
 
 		public void Clear()
@@ -336,8 +324,14 @@ namespace AUI.FileDialog
 			return null;
 		}
 
+		private void SetScrollPanel()
+		{
+			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+		}
+
 		private IEnumerator CoSetScrollPanel()
 		{
+			yield return new WaitForEndOfFrame();
 			yield return new WaitForEndOfFrame();
 
 			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
@@ -346,22 +340,29 @@ namespace AUI.FileDialog
 
 			float pos = 0;
 
-			if (setScroll_ >= 0)
-			{
-				pos = (setScroll_ >= 0 ? setScroll_ : 0);
-				setScroll_ = -1;
-			}
-			else if (setTop_ >= 0)
+			if (setTop_ >= 0)
 			{
 				pos = setTop_ * scrollbarSize;
 				setTop_ = -1;
 			}
 
-			scroll_.Set(offscreenRows, scrollbarSize, pos);
+			try
+			{
+				scroll_.Set(offscreenRows, scrollbarSize, pos);
+				ignoreScroll_ = true;
+			}
+			finally
+			{
+				ignoreScroll_ = false;
+			}
+
+			OnScroll(scroll_.Top);
 		}
 
 		private void OnScroll(int top)
 		{
+			if (ignoreScroll_) return;
+
 			SetPanels(top * cols_);
 		}
 

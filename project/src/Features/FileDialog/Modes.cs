@@ -121,7 +121,6 @@ namespace AUI.FileDialog
 		private bool showHiddenFiles_;
 		private bool latestPackagesOnly_;
 		private int sort_, sortDir_;
-		private float scroll_ = 0;
 		private string search_ = "";
 		private readonly History history_ = new History();
 
@@ -219,12 +218,6 @@ namespace AUI.FileDialog
 		{
 			get { return search_; }
 			set { search_ = value; }
-		}
-
-		public float Scroll
-		{
-			get { return scroll_; }
-			set { scroll_ = value; }
 		}
 
 		public string CurrentDirectory
@@ -416,6 +409,11 @@ namespace AUI.FileDialog
 			get { return opts_; }
 		}
 
+		public string Name
+		{
+			get { return name_; }
+		}
+
 		public string Title
 		{
 			get { return title_; }
@@ -456,7 +454,6 @@ namespace AUI.FileDialog
 			opts_.CurrentDirectory = fd.SelectedDirectory?.VirtualPath;
 			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
 			opts_.Search = fd.Search;
-			opts_.Scroll = fd.Scroll;
 
 			DoExecute(fd, h);
 		}
@@ -502,6 +499,11 @@ namespace AUI.FileDialog
 		{
 			return "";
 		}
+
+		public override string ToString()
+		{
+			return "nomode";
+		}
 	}
 
 
@@ -519,6 +521,11 @@ namespace AUI.FileDialog
 					  showHiddenFolders, showHiddenFiles, sort, sortDir,
 					  whitelist)
 		{
+		}
+
+		public override string ToString()
+		{
+			return $"OpenMode({Name})";
 		}
 
 		public override string ActionText
@@ -590,6 +597,11 @@ namespace AUI.FileDialog
 					  showHiddenFolders, showHiddenFiles, sort, sortDir,
 					  whitelist)
 		{
+		}
+
+		public override string ToString()
+		{
+			return $"SaveMode({Name})";
 		}
 
 		public override string ActionText
