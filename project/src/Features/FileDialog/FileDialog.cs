@@ -178,6 +178,7 @@ namespace AUI.FileDialog
 				try
 				{
 					ignoreDirSelection_ = true;
+					dir_ = null;
 					RefreshDirectories(false);
 					SelectInitialDirectory(initialDir);
 				}
@@ -444,26 +445,31 @@ namespace AUI.FileDialog
 
 			optionsPanel_.SetFiles(files_);
 
+
+			bool filesRefreshed = false;
+
 			if (selected_ != null)
 			{
-				bool found = false;
-
 				foreach (var f in files_)
 				{
 					if (f.IsSameObject(selected_))
 					{
+						selected_ = null;
 						SelectFile(f, SelectFileScrollTo);
-						found = true;
+						filesRefreshed = true;
 						break;
 					}
 				}
 
-				if (!found)
+				if (!filesRefreshed)
 				{
 					Log.Info($"selected file {selected_} is gone");
 					SelectFile(null);
 				}
 			}
+
+			if (!filesRefreshed)
+				filesPanel_.ScrollToTop();
 
 			UpdateActionButton();
 		}

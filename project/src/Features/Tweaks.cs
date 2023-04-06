@@ -478,11 +478,20 @@ namespace AUI.Tweaks
 			}
 		}
 
+
+		private GameObject selectedObject_ = null;
+		private InputField inputField_ = null;
+		private bool inputFieldWasFocused_ = false;
+
 		protected override void DoUpdate(float s)
 		{
-			if (Input.GetKey(KeyCode.Escape))
+			if (Input.GetKeyDown(KeyCode.Escape))
 			{
 				var sc = SuperController.singleton;
+
+				// ignore escape if the focus is on a textfield, it resets it
+				if (CancelledTextField())
+					return;
 
 				TryClose(sc.fileBrowserUI);
 				TryClose(sc.fileBrowserWorldUI);
@@ -498,6 +507,42 @@ namespace AUI.Tweaks
 
 				TryCloseOverwrite();
 			}
+
+			CheckSelectedObject();
+		}
+
+		private void CheckSelectedObject()
+		{
+			var s = EventSystem.current.currentSelectedGameObject;
+
+			if (s != selectedObject_)
+			{
+				selectedObject_ = s;
+				inputField_ = s?.GetComponent<InputField>();
+			}
+
+			if (inputField_ != null)
+			{
+				if (inputFieldWasFocused_ != inputField_.isFocused)
+					inputFieldWasFocused_ = inputField_.isFocused;
+			}
+		}
+
+		private bool CancelledTextField()
+		{
+			if (inputField_ != null)
+			{
+				if (inputFieldWasFocused_ && !inputField_.isFocused)
+				{
+					inputFieldWasFocused_ = false;
+					if (inputField_.wasCanceled)
+						return true;
+				}
+
+				inputFieldWasFocused_ = inputField_.isFocused;
+			}
+
+			return false;
 		}
 
 		private void TryClose(FileBrowser b)

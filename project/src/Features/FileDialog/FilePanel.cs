@@ -211,7 +211,6 @@ namespace AUI.FileDialog
 		private readonly VUI.FixedScrolledPanel scroll_;
 		private readonly FilePanel[] panels_;
 		private List<FS.IFilesystemObject> files_ = null;
-		private int setTop_ = -1;
 		private bool ignoreScroll_ = false;
 
 		public FilesPanel(FileDialog fd, int cols, int rows)
@@ -281,10 +280,10 @@ namespace AUI.FileDialog
 				{
 					if (files_[i] == o)
 					{
-						setTop_ = MakeTop(i);
+						int newTop = MakeTop(i);
 
-						Log.Info($"  - scrolling, i={i} newtop={setTop_} currenttop={scroll_.Top}");
-						SetScrollPanel();
+						Log.Info($"  - scrolling, i={i} newtop={newTop} currenttop={scroll_.Top}");
+						SetScrollPanel("selection", newTop);
 
 						break;
 					}
@@ -309,8 +308,10 @@ namespace AUI.FileDialog
 
 		public void ScrollToTop()
 		{
+			Log.Info("scroll to top");
+
 			SetPanels(0);
-			SetScrollPanel();
+			SetScrollPanel("scroll to top", -1);
 		}
 
 		public void Clear()
@@ -359,28 +360,25 @@ namespace AUI.FileDialog
 			return null;
 		}
 
-		private void SetScrollPanel()
+		private void SetScrollPanel(string why, int setTop)
 		{
-			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel());
+			AlternateUI.Instance.StartCoroutine(CoSetScrollPanel(why, setTop));
 		}
 
-		private IEnumerator CoSetScrollPanel()
+		private IEnumerator CoSetScrollPanel(string why, int setTop)
 		{
 			yield return new WaitForEndOfFrame();
 			yield return new WaitForEndOfFrame();
+
+			Log.Info($"CoSetScrollPanel why={why}");
 
 			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
 			int offscreenRows = totalRows - rows_;
 			float scrollbarSize = scroll_.ContentPanel.ClientBounds.Height / rows_ / 3;
 			float pos = 0;
 
-			int oldSetTop = setTop_;
-
-			if (setTop_ >= 0)
-			{
-				pos = setTop_ * scrollbarSize;
-				setTop_ = -1;
-			}
+			if (setTop >= 0)
+				pos = setTop * scrollbarSize;
 
 			try
 			{
@@ -394,7 +392,7 @@ namespace AUI.FileDialog
 				ignoreScroll_ = false;
 			}
 
-			Log.Info($"CoSetScrollPanel, calling OnScroll() with oldSetTop={oldSetTop} top={scroll_.Top}");
+			Log.Info($"CoSetScrollPanel, calling OnScroll() with setTop={setTop} top={scroll_.Top}");
 			OnScroll(scroll_.Top);
 		}
 
