@@ -721,6 +721,7 @@ namespace AUI.Tweaks
 			public Transform icon;
 		}
 
+		private GameObject root_ = null;
 		private Icon left_ = null;
 		private Icon right_ = null;
 		private bool wasLoading_ = false;
@@ -755,8 +756,14 @@ namespace AUI.Tweaks
 
 		private Icon CreateIcon(bool left)
 		{
-			var o = new GameObject("aui.LoadingIcon");
-			o.transform.SetParent(SuperController.singleton.transform.root);
+			if (root_ == null)
+			{
+				root_ = new GameObject("aui.LoadingIcon");
+				root_.transform.SetParent(SuperController.singleton.transform.root, false);
+			}
+
+			var o = new GameObject($"aui.LoadingIcon.{(left ? "Left" : "Right")}");
+			o.transform.SetParent(root_.transform);
 
 			var canvas = o.AddComponent<Canvas>();
 			o.AddComponent<CanvasRenderer>();
@@ -821,6 +828,12 @@ namespace AUI.Tweaks
 
 		protected override void DoUpdate(float s)
 		{
+			if (!IsVR())
+			{
+				root_?.SetActive(false);
+				return;
+			}
+
 			var sc = SuperController.singleton;
 			var isLoading = IsLoading();
 
@@ -864,6 +877,13 @@ namespace AUI.Tweaks
 				(sc.loadingProgressSlider?.gameObject?.activeInHierarchy ?? false) ||
 				(sc.loadingTextStatus?.gameObject?.activeInHierarchy ?? false) ||
 				(imageLoading_.gameObject?.activeInHierarchy ?? false);
+		}
+
+		public bool IsVR()
+		{
+			return
+				!SuperController.singleton.MonitorCenterCamera.isActiveAndEnabled &&
+				!SuperController.singleton.IsMonitorRigActive;
 		}
 	}
 }

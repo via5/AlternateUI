@@ -423,6 +423,26 @@ namespace AUI.FS
 			tickers_[i].End();
 		}
 
+		public void Dump(Logger log)
+		{
+			log.Info("times:");
+			int longestLabel = 0;
+
+			foreach (var i in InstrumentationType.Values)
+			{
+				string label = new string(' ', Depth(i)) + Name(i) + " ";
+				longestLabel = Math.Max(longestLabel, label.Length);
+			}
+
+			foreach (var i in InstrumentationType.Values)
+			{
+				string label = new string(' ', Depth(i)) + Name(i) + " ";
+				label = label.PadRight(longestLabel, ' ');
+
+				log.Info($"{label}{Get(i)}");
+			}
+		}
+
 		private void DoReset()
 		{
 			current_ = 0;

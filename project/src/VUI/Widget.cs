@@ -470,6 +470,7 @@ namespace VUI
 			{
 				hovered_ = false;
 				ClearCursor();
+				OnPointerExitInternalSynth(true);
 			}
 
 			if (children_ != null)
@@ -1506,14 +1507,14 @@ namespace VUI
 			OnPointerEnterInternal(d, true);
 		}
 
-		public void OnPointerExitInternal(PointerEventData d)
+		public void OnPointerExitInternal(PointerEventData d, bool force = false)
 		{
 			CheckDestroyed();
 
 			hovered_ = false;
 			ClearCursor();
 
-			if (IsVisibleOnScreen())
+			if (force || IsVisibleOnScreen())
 			{
 				var r = GetRoot();
 
@@ -1525,12 +1526,12 @@ namespace VUI
 			}
 		}
 
-		public void OnPointerExitInternalSynth()
+		public void OnPointerExitInternalSynth(bool force = false)
 		{
 			CheckDestroyed();
 
 			var d = new PointerEventData(EventSystem.current);
-			OnPointerExitInternal(d);
+			OnPointerExitInternal(d, force);
 		}
 
 		public virtual void OnPointerDownInternal(PointerEventData d, bool setFocus=true)

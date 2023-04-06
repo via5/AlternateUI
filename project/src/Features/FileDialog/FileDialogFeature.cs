@@ -153,6 +153,7 @@ namespace AUI.FileDialog
 			fd_.Enable();
 
 			//fd_.Show(Modes.OpenPreset("Custom/Atom/Person/Plugins"), null, "VaM/Custom/Atom/Person/Plugins");
+			fd_.Show(Modes.OpenScene(), null);
 
 			Vamos.API.Instance.EnableAPI("uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool");
 			Vamos.API.Instance.uFileBrowser_FileBrowser_Show__FileBrowser_FileBrowserCallback_bool += (fb, cb, cd) =>
@@ -211,7 +212,7 @@ namespace AUI.FileDialog
 
 		private bool ShowHandler(FileBrowser fb, FileBrowserCallback cb, bool cd)
 		{
-			string path = FS.Filesystem.Instance.NormalizePath(fb.defaultPath);
+			string path = FS.Path.Normalize(fb.defaultPath);
 
 			Log.Verbose(
 				$"show filebrowser request fb={fb} " +
@@ -276,7 +277,7 @@ namespace AUI.FileDialog
 
 		private bool ShowHandler(FileBrowser fb, FileBrowserFullCallback cb, bool cd)
 		{
-			string path = FS.Filesystem.Instance.NormalizePath(fb.defaultPath);
+			string path = FS.Path.Normalize(fb.defaultPath);
 
 			Log.Verbose(
 				$"show filebrowser request (full) fb={fb} " +
@@ -322,7 +323,7 @@ namespace AUI.FileDialog
 			if (!fd_.Visible)
 				return false;
 
-			string path = FS.Filesystem.Instance.MakeFSPath(originalPath);
+			string path = FS.Path.MakeFSPath(originalPath);
 
 			Log.Info(
 				$"show filebrowser request (full) fb={fb} " +
@@ -339,12 +340,49 @@ namespace AUI.FileDialog
 
 		private void Show(IFileDialogMode mode, FileBrowserCallback cb, string cwd = null)
 		{
-			fd_.Show(mode, (path) => cb?.Invoke(path), cwd);
+			var f = GetFilename();
+
+			if (f != null)
+				cwd = FS.Path.Parent(f);
+
+			fd_.Show(mode, (path) => cb?.Invoke(path), cwd, f);
 		}
 
 		private void Show(IFileDialogMode mode, FileBrowserFullCallback cb, string cwd = null)
 		{
-			fd_.Show(mode, (path) => cb?.Invoke(path, true), cwd);
+			var f = GetFilename();
+
+			if (f != null)
+				cwd = FS.Path.Parent(f);
+
+			fd_.Show(mode, (path) => cb?.Invoke(path, true), cwd, f);
+		}
+
+		private string GetFilename()
+		{
+			var button = UnityEngine.EventSystems.EventSystem
+				.current.currentSelectedGameObject;
+
+			if (button == null || button.GetComponent<UnityEngine.UI.Button>() == null)
+				return null;
+
+			var panel = button.transform.parent;
+			if (panel == null)
+				return null;
+
+			foreach (UnityEngine.Transform child in panel)
+			{
+				if (!child.name.Contains("Url"))
+					continue;
+
+				var s = child.GetComponent<UnityEngine.UI.Text>()?.text;
+				if (string.IsNullOrEmpty(s))
+					continue;
+
+				return FS.Path.MakeFSPathFromShort(s);
+			}
+
+			return null;
 		}
 
 		protected override void DoDisable()

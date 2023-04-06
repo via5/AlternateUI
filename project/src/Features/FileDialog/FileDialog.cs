@@ -41,7 +41,7 @@ namespace AUI.FileDialog
 
 		public FileDialog()
 		{
-			log_ = new Logger("filedialog");
+			log_ = new Logger("fd");
 			//FS.Instrumentation.Instance.Enabled = true;
 		}
 
@@ -95,29 +95,7 @@ namespace AUI.FileDialog
 
 			if (FS.Instrumentation.Instance.Updated)
 			{
-				Log.Info("times:");
-				int longestLabel = 0;
-
-				foreach (var i in FS.InstrumentationType.Values)
-				{
-					string label =
-						new string(' ', FS.Instrumentation.Instance.Depth(i)) +
-						FS.Instrumentation.Instance.Name(i) + " ";
-
-					longestLabel = Math.Max(longestLabel, label.Length);
-				}
-
-				foreach (var i in FS.InstrumentationType.Values)
-				{
-					string label =
-						new string(' ', FS.Instrumentation.Instance.Depth(i)) +
-						FS.Instrumentation.Instance.Name(i) + " ";
-
-					label = label.PadRight(longestLabel, ' ');
-
-					Log.Info($"{label}{FS.Instrumentation.Instance.Get(i)}");
-				}
-
+				FS.Instrumentation.Instance.Dump(Log);
 				FS.Instrumentation.Reset();
 			}
 		}
@@ -175,7 +153,9 @@ namespace AUI.FileDialog
 		}
 
 
-		public void Show(IFileDialogMode mode, Action<string> callback, string cwd = null)
+		public void Show(
+			IFileDialogMode mode, Action<string> callback,
+			string initialDir = null, string initialFile = null)
 		{
 			bool refreshDirs = (mode_ != mode);
 			mode_ = mode;
@@ -188,8 +168,6 @@ namespace AUI.FileDialog
 			root_.Visible = true;
 			window_.Title = mode_.Title;
 
-			dir_ = null;
-			filesPanel_.Clear();
 			optionsPanel_.SetMode(mode_);
 			buttonsPanel_.Set(mode_);
 
@@ -201,6 +179,7 @@ namespace AUI.FileDialog
 				{
 					ignoreDirSelection_ = true;
 					RefreshDirectories(false);
+					SelectInitialDirectory(initialDir);
 				}
 				finally
 				{
@@ -219,7 +198,6 @@ namespace AUI.FileDialog
 			try
 			{
 				ignoreDirSelection_ = true;
-				SelectInitialDirectory(cwd);
 			}
 			finally
 			{
@@ -233,7 +211,7 @@ namespace AUI.FileDialog
 				SetCurrentDirectory(tree_.Selected as FS.IFilesystemContainer, false);
 			}
 
-			if (!SelectInitialFile(mode_.Options.CurrentFile))
+			if (!SelectInitialFile(mode_.Options.CurrentFile, initialFile))
 				filesPanel_.ScrollToTop();
 
 			addressBar_.Search = mode_.Options.Search;
@@ -243,15 +221,20 @@ namespace AUI.FileDialog
 
 		public void Hide()
 		{
-			if (!Visible)
-				return;
-
-			tree_.Disable();
-			root_.Visible = false;
+			if (Visible)
+			{
+				tree_.Disable();
+				root_.Visible = false;
+			}
 		}
 
 		public void SelectFile(FS.IFilesystemObject o, int flags = SelectFileNoFlags)
 		{
+			if (selected_ == o)
+				return;
+
+			Log.Info($"SelectFile {o}");
+
 			if (selected_ != null)
 				filesPanel_.SetSelected(selected_, false, false);
 
@@ -270,6 +253,8 @@ namespace AUI.FileDialog
 			string vpath, int flags = SelectDirectoryNoFlags,
 			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
+			Log.Info($"SelectDirectory '{vpath}'");
+
 			bool b;
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
 			{
@@ -284,6 +269,8 @@ namespace AUI.FileDialog
 			string vpath, string pinnedRoot, int flags = SelectDirectoryNoFlags,
 			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
+			Log.Info($"SelectDirectoryInPinned '{vpath}', pinnedRoot='{pinnedRoot}'");
+
 			bool b;
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
 			{
@@ -354,6 +341,7 @@ namespace AUI.FileDialog
 			tree_.Up();
 		}
 
+
 		public void Activate(FilePanel p)
 		{
 			SelectFile(p.Object);
@@ -376,6 +364,176 @@ namespace AUI.FileDialog
 					Hide();
 				});
 			}
+		}
+
+		public void Cancel()
+		{
+			callback_?.Invoke("");
+			callback_ = null;
+			Hide();
+		}
+
+
+		public void Refresh()
+		{
+			Log.Info("refresh");
+
+			FS.Filesystem.Instance.ClearCaches();
+			Icons.ClearCache();
+
+			// give some time for the panels to clear so there's a visual
+			// feedback that a refresh has occurred
+			filesPanel_.Clear();
+			AlternateUI.Instance.StartCoroutine(CoRefresh());
+		}
+
+		private IEnumerator CoRefresh()
+		{
+			yield return new WaitForEndOfFrame();
+			RefreshBoth();
+		}
+
+		public void RefreshBoth()
+		{
+			Log.Info("RefreshBoth");
+
+			RefreshDirectories(false);
+			RefreshFiles();
+		}
+
+		public void RefreshDirectories(bool select = true)
+		{
+			Log.Info($"RefreshDirectories select={select}");
+
+			FS.Instrumentation.Start(FS.I.FDTreeSetFlags);
+			{
+				tree_.SetFlags(GetTreeFlags());
+			}
+			FS.Instrumentation.End();
+
+			FS.Instrumentation.Start(FS.I.FDTreeRefresh);
+			{
+				Log.Info("refreshing tree");
+				tree_.Refresh();
+			}
+			FS.Instrumentation.End();
+
+			if (select)
+			{
+				var s = tree_.Selected as FS.IFilesystemContainer;
+				if (s != null)
+					SetCurrentDirectory(s, false);
+			}
+		}
+
+		public void RefreshFiles()
+		{
+			Log.Info($"RefreshFiles");
+
+			FS.Instrumentation.Start(FS.I.FDGetFiles);
+			{
+				files_ = GetFiles();
+			}
+			FS.Instrumentation.End();
+
+			FS.Instrumentation.Start(FS.I.FDSetFiles);
+			{
+				filesPanel_.SetFiles(files_);
+			}
+			FS.Instrumentation.End();
+
+			optionsPanel_.SetFiles(files_);
+
+			if (selected_ != null)
+			{
+				bool found = false;
+
+				foreach (var f in files_)
+				{
+					if (f.IsSameObject(selected_))
+					{
+						SelectFile(f, SelectFileScrollTo);
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+				{
+					Log.Info($"selected file {selected_} is gone");
+					SelectFile(null);
+				}
+			}
+
+			UpdateActionButton();
+		}
+
+
+		public string GetDefaultExtension()
+		{
+			var e = buttonsPanel_.SelectedExtension?.Extensions[0];
+			if (!string.IsNullOrEmpty(e))
+				return e;
+
+			var exts = mode_.Extensions;
+			if (exts != null && exts.Length > 0 && exts[0].Extensions.Length > 0)
+				return exts[0].Extensions[0];
+
+			return ".json";
+		}
+
+		public FS.Context CreateFileContext(bool recursive)
+		{
+			int flags = MakeContextFlags(recursive, mode_.Options);
+
+			if (dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().AllFlat.VirtualPath ||
+				dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().VirtualPath)
+			{
+				// hack: the root and AllFlatDirectory objects already includes
+				// the packages root in its directory list and so the merge flag
+				// is not necessary
+				//
+				// in fact, it's _really_ slow because it iterates and resolves
+				// every package for every directory, so the flag _must_ be
+				// removed
+				flags = flags & ~FS.Context.MergePackagesFlag;
+			}
+
+			return new FS.Context(
+				addressBar_.Search,
+				buttonsPanel_.SelectedExtension?.Extensions,
+				mode_.PackageRoot,
+				mode_.Options.Sort, mode_.Options.SortDirection,
+				flags, "", null);
+		}
+
+		public FS.Context CreateTreeContext(bool recursive)
+		{
+			return new FS.Context(
+				"", buttonsPanel_.SelectedExtension?.Extensions,
+				mode_.PackageRoot,
+				FS.Context.SortFilename, FS.Context.SortAscending,
+				MakeContextFlags(recursive, mode_.Options),
+				packagesSearch_.Text, mode_.Whitelist);
+		}
+
+
+		private void SetCurrentDirectory(FS.IFilesystemContainer o, bool scroll = true)
+		{
+			if (dir_ == o)
+				return;
+
+			Log.Info($"SetCurrentDirectory {o}");
+
+			if (!ignoreHistory_)
+				History.Push(o.VirtualPath);
+
+			dir_ = o;
+			addressBar_.SetDirectory(dir_);
+			RefreshFiles();
+
+			if (scroll)
+				filesPanel_.ScrollToTop();
 		}
 
 		private void SelectInitialDirectory(string cwd)
@@ -456,27 +614,39 @@ namespace AUI.FileDialog
 			Log.Error($"can't select any initial directory");
 		}
 
-		private bool SelectInitialFile(string path)
+		private bool SelectInitialFile(string path, string initialFile = null)
 		{
 			if (dir_ == null)
 				return false;
 
-			if (string.IsNullOrEmpty(path))
+			if (!string.IsNullOrEmpty(initialFile))
 			{
-				buttonsPanel_.Filename = mode_.MakeNewFilename(this);
-				return false;
-			}
-
-			foreach (var f in GetFiles())
-			{
-				if (f.VirtualPath == path)
+				foreach (var f in GetFiles())
 				{
-					SelectFile(f, SelectFileScrollTo);
-					return true;
+					if (f.VirtualPath == initialFile)
+					{
+						SelectFile(f, SelectFileScrollTo);
+						return true;
+					}
 				}
+
+				Log.Error($"bad initial file '{initialFile}'");
+			}
+			else if (!string.IsNullOrEmpty(path))
+			{
+				foreach (var f in GetFiles())
+				{
+					if (f.VirtualPath == path)
+					{
+						SelectFile(f, SelectFileScrollTo);
+						return true;
+					}
+				}
+
+				Log.Error($"bad last file path={path}");
 			}
 
-			Log.Error($"bad last file {path}");
+			buttonsPanel_.Filename = mode_.MakeNewFilename(this);
 			return false;
 		}
 
@@ -493,26 +663,6 @@ namespace AUI.FileDialog
 			f?.Invoke(path);
 		}
 
-		public string GetDefaultExtension()
-		{
-			var e = buttonsPanel_.SelectedExtension?.Extensions[0];
-			if (!string.IsNullOrEmpty(e))
-				return e;
-
-			var exts = mode_.Extensions;
-			if (exts != null && exts.Length > 0 && exts[0].Extensions.Length > 0)
-				return exts[0].Extensions[0];
-
-			return ".json";
-		}
-
-		public void Cancel()
-		{
-			callback_?.Invoke("");
-			callback_ = null;
-			Hide();
-		}
-
 		private int GetTreeFlags()
 		{
 			int f = FileTree.NoFlags;
@@ -524,19 +674,6 @@ namespace AUI.FileDialog
 				f |= FileTree.Writeable;
 
 			return f;
-		}
-
-		private void SetCurrentDirectory(FS.IFilesystemContainer o, bool scroll=true)
-		{
-			if (!ignoreHistory_)
-				History.Push(o.VirtualPath);
-
-			dir_ = o;
-			addressBar_.SetDirectory(dir_);
-			RefreshFiles();
-
-			if (scroll)
-				filesPanel_.ScrollToTop();
 		}
 
 		private int MakeContextFlags(bool recursive, Options opts)
@@ -559,105 +696,6 @@ namespace AUI.FileDialog
 				f |= FS.Context.LatestPackagesOnlyFlag;
 
 			return f;
-		}
-
-		public FS.Context CreateFileContext(bool recursive)
-		{
-			int flags = MakeContextFlags(recursive, mode_.Options);
-
-			if (dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().AllFlat.VirtualPath ||
-				dir_?.VirtualPath == FS.Filesystem.Instance.GetRoot().VirtualPath)
-			{
-				// hack: the root and AllFlatDirectory objects already includes
-				// the packages root in its directory list and so the merge flag
-				// is not necessary
-				//
-				// in fact, it's _really_ slow because it iterates and resolves
-				// every package for every directory, so the flag _must_ be
-				// removed
-				flags = flags & ~FS.Context.MergePackagesFlag;
-			}
-
-			return new FS.Context(
-				addressBar_.Search,
-				buttonsPanel_.SelectedExtension?.Extensions,
-				mode_.PackageRoot,
-				mode_.Options.Sort, mode_.Options.SortDirection,
-				flags, "", null);
-		}
-
-		public FS.Context CreateTreeContext(bool recursive)
-		{
-			return new FS.Context(
-				"", buttonsPanel_.SelectedExtension?.Extensions,
-				mode_.PackageRoot,
-				FS.Context.SortFilename, FS.Context.SortAscending,
-				MakeContextFlags(recursive, mode_.Options),
-				packagesSearch_.Text, mode_.Whitelist);
-		}
-
-		public void Refresh()
-		{
-			FS.Filesystem.Instance.ClearCaches();
-			Icons.ClearCache();
-
-			// give some time for the panels to clear so there's a visual
-			// feedback that a refresh has occured
-			filesPanel_.Clear();
-			AlternateUI.Instance.StartCoroutine(CoRefresh());
-		}
-
-		public void RefreshBoth()
-		{
-			RefreshDirectories();
-			RefreshFiles();
-		}
-
-		public void RefreshFiles()
-		{
-			FS.Instrumentation.Start(FS.I.FDGetFiles);
-			{
-				files_ = GetFiles();
-			}
-			FS.Instrumentation.End();
-
-			FS.Instrumentation.Start(FS.I.FDSetFiles);
-			{
-				filesPanel_.SetFiles(files_);
-			}
-			FS.Instrumentation.End();
-
-			optionsPanel_.SetFiles(files_);
-
-			UpdateActionButton();
-		}
-
-		public void RefreshDirectories(bool select = true)
-		{
-			FS.Instrumentation.Start(FS.I.FDTreeSetFlags);
-			{
-				tree_.SetFlags(GetTreeFlags());
-			}
-			FS.Instrumentation.End();
-
-			FS.Instrumentation.Start(FS.I.FDTreeRefresh);
-			{
-				tree_.Refresh();
-			}
-			FS.Instrumentation.End();
-
-			if (select)
-			{
-				var s = tree_.Selected as FS.IFilesystemContainer;
-				if (s != null)
-					SetCurrentDirectory(s);
-			}
-		}
-
-		private IEnumerator CoRefresh()
-		{
-			yield return new WaitForEndOfFrame();
-			RefreshBoth();
 		}
 
 		private bool IsInPackage()
@@ -722,10 +760,12 @@ namespace AUI.FileDialog
 			return files;
 		}
 
+
 		private void CreateUI()
 		{
 			root_ = new VUI.Root(new VUI.TransformUIRootSupport(
-				SuperController.singleton.fileBrowserUI.transform.parent));
+				SuperController.singleton.fileBrowserUI.transform.parent),
+				"filedialog");
 
 			root_.ContentPanel.Margins = new VUI.Insets(6, 0, 0, 0);
 			root_.ContentPanel.Layout = new VUI.BorderLayout();
@@ -840,6 +880,8 @@ namespace AUI.FileDialog
 		private void OnTreeSelection(IFileTreeItem item)
 		{
 			if (ignoreDirSelection_) return;
+
+			Log.Info($"OnTreeSelection {item}");
 
 			var c = (item as FileTreeItem)?.GetFSObject();
 			if (c == null)

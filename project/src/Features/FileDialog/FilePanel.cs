@@ -206,6 +206,7 @@ namespace AUI.FileDialog
 	class FilesPanel : VUI.Panel
 	{
 		private readonly FileDialog fd_;
+		private readonly Logger log_;
 		private readonly int cols_, rows_;
 		private readonly VUI.FixedScrolledPanel scroll_;
 		private readonly FilePanel[] panels_;
@@ -216,6 +217,7 @@ namespace AUI.FileDialog
 		public FilesPanel(FileDialog fd, int cols, int rows)
 		{
 			fd_ = fd;
+			log_ = new Logger("fd.filesPanel");
 			cols_ = cols;
 			rows_ = rows;
 
@@ -244,16 +246,27 @@ namespace AUI.FileDialog
 			Add(scroll_, VUI.BorderLayout.Center);
 		}
 
+		public new Logger Log
+		{
+			get { return log_; }
+		}
+
 		public void SetFiles(List<FS.IFilesystemObject> files)
 		{
+			Log.Info($"SetFiles count={files.Count}");
 			files_ = files;
 		}
 
 		public void SetSelected(FS.IFilesystemObject o, bool b, bool scroll)
 		{
+			Log.Info($"SetSelected {b} {o} scroll={scroll}");
+
 			var p = FindPanel(o);
+
 			if (p != null)
 			{
+				Log.Info($"  - found in visible panels, sel={b}");
+
 				p.SetSelectedInternal(b);
 
 				if (b)
@@ -268,13 +281,30 @@ namespace AUI.FileDialog
 				{
 					if (files_[i] == o)
 					{
-						setTop_ = i / cols_;
-						SetSelected(o, true, false);
+						setTop_ = MakeTop(i);
+
+						Log.Info($"  - scrolling, i={i} newtop={setTop_} currenttop={scroll_.Top}");
 						SetScrollPanel();
+
 						break;
 					}
 				}
 			}
+			else
+			{
+				Log.Info($"  - can't select {b} {o}, scroll is false and panel is not visible");
+			}
+		}
+
+		private int MakeTop(int fileIndex)
+		{
+			int top = fileIndex / cols_;
+			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
+
+			if (top + rows_ > totalRows)
+				top = Math.Max(totalRows - rows_, 0);
+
+			return top;
 		}
 
 		public void ScrollToTop()
@@ -285,12 +315,16 @@ namespace AUI.FileDialog
 
 		public void Clear()
 		{
+			Log.Info("clearing panels");
+
 			for (int i = 0; i < panels_.Length; ++i)
 				panels_[i]?.Clear();
 		}
 
 		private void SetPanels(int from)
 		{
+			Log.Info($"SetPanels from {from}");
+
 			int count = files_?.Count ?? 0;
 
 			int panelIndex = 0;
@@ -300,7 +334,7 @@ namespace AUI.FileDialog
 				var fp = panels_[panelIndex];
 
 				fp.Set(f);
-				fp.SetSelectedInternal(fd_.SelectedFile == f);
+				fp.SetSelectedInternal(fd_.SelectedFile?.IsSameObject(f) ?? false);
 
 				++panelIndex;
 				if (panelIndex >= (cols_ * rows_))
@@ -338,8 +372,9 @@ namespace AUI.FileDialog
 			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
 			int offscreenRows = totalRows - rows_;
 			float scrollbarSize = scroll_.ContentPanel.ClientBounds.Height / rows_ / 3;
-
 			float pos = 0;
+
+			int oldSetTop = setTop_;
 
 			if (setTop_ >= 0)
 			{
@@ -349,14 +384,17 @@ namespace AUI.FileDialog
 
 			try
 			{
-				scroll_.Set(offscreenRows, scrollbarSize, pos);
+				Log.Info($"CoSetScrollPanel scroll_.Set offscreenRows={offscreenRows} pos={pos}");
+
 				ignoreScroll_ = true;
+				scroll_.Set(offscreenRows, scrollbarSize, pos);
 			}
 			finally
 			{
 				ignoreScroll_ = false;
 			}
 
+			Log.Info($"CoSetScrollPanel, calling OnScroll() with oldSetTop={oldSetTop} top={scroll_.Top}");
 			OnScroll(scroll_.Top);
 		}
 
@@ -364,6 +402,7 @@ namespace AUI.FileDialog
 		{
 			if (ignoreScroll_) return;
 
+			Log.Info($"OnScroll top={top}");
 			SetPanels(top * cols_);
 		}
 

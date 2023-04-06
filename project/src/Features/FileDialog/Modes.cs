@@ -884,7 +884,7 @@ namespace AUI.FileDialog
 
 		private static string MakeDefaultPath(string path)
 		{
-			return FS.Filesystem.Instance.MakeFSPath(path);
+			return FS.Path.MakeFSPath(path);
 		}
 
 		private static ModeInfo GetPresetInfo(string path)

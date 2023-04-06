@@ -227,17 +227,87 @@ namespace AUI.FS
 			return new StringView(f, dot);
 		}
 
+		public static string Normalize(string originalPath)
+		{
+			string path = Sys.NormalizePath(originalPath);
+
+			path = path.Replace("\\", "/");
+
+			return path;
+		}
+
+		public static string MakeFSPath(string originalPath)
+		{
+			string path = Normalize(originalPath);
+
+			path = Join("VaM", path);
+
+			path = path.Replace("/AddonPackages/", "/Packages/");
+			path = path.Replace(".var:", "");
+			path = path.Replace(".var", "");
+
+			return path;
+		}
+
+		// a short path is displayed in labels next to the Select buttons; for
+		// vars, it's "author.package.1:/path/to/file"
+		//
+		// this restores the missing parts and calls MakeFSPath() with it
+		//
+		public static string MakeFSPathFromShort(string shortPath)
+		{
+			int pos = shortPath.IndexOf(":/");
+			if (pos == -1)
+				return shortPath;
+
+			string path =
+				"/AddonPackages/" +
+				shortPath.Substring(0, pos) +
+				".var:/" +
+				shortPath.Substring(pos + 2);
+
+			return MakeFSPath(path);
+		}
+
+		public static string Join(string a)
+		{
+			return a;
+		}
+
 		public static string Join(string a, string b)
 		{
-			a = a.Replace('\\', '/');
-			b = b.Replace('\\', '/');
+			return Join(new string[] { a, b });
+		}
 
-			if (a.EndsWith("/") && b.StartsWith("/"))
-				return a + b.Substring(1);
-			else if (a.EndsWith("/") || b.StartsWith("/"))
-				return a + b;
-			else
-				return a + "/" + b;
+		public static string Join(string a, string b, string c)
+		{
+			return Join(new string[] { a, b, c });
+		}
+
+		public static string Join(string a, string b, string c, string d)
+		{
+			return Join(new string[] { a, b, c, d });
+		}
+
+		public static string Join(string[] cs)
+		{
+			string path = "";
+
+			foreach (var c in cs)
+			{
+				string s = c.Replace('\\', '/');
+
+				if (path.EndsWith("/") && s.StartsWith("/"))
+					path += s.Substring(1);
+				else if (path.EndsWith("/") || c.StartsWith("/"))
+					path += c;
+				else if (path != "")
+					path += "/" + c;
+				else
+					path = c;
+			}
+
+			return path;
 		}
 	}
 
@@ -530,27 +600,6 @@ namespace AUI.FS
 			Instrumentation.End();
 
 			return t;
-		}
-
-		public string NormalizePath(string originalPath)
-		{
-			string path = Sys.NormalizePath(originalPath);
-
-			path = path.Replace("\\", "/");
-
-			return path;
-		}
-
-		public string MakeFSPath(string originalPath)
-		{
-			string path = NormalizePath(originalPath);
-
-			path = "VaM/" + path;
-			path = path.Replace("/AddonPackages/", "/Packages/");
-			path = path.Replace(".var:", "");
-			path = path.Replace(".var", "");
-
-			return path;
 		}
 	}
 
