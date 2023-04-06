@@ -873,7 +873,7 @@ namespace AUI.Tweaks
 
 		protected override void DoUpdate(float s)
 		{
-			if (!IsVR())
+			if (IsVR())
 			{
 				root_?.SetActive(false);
 				return;
