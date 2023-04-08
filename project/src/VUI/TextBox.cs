@@ -490,6 +490,7 @@ namespace VUI
 
 			Add(s);
 			tb_.Text = s;
+			tb_.Submit();
 			tb_.Blur();
 
 			Hide();
@@ -616,24 +617,7 @@ namespace VUI
 
 			set
 			{
-				if (text_ != value)
-				{
-					try
-					{
-						ignoreAcForAdd_ = true;
-						text_ = value;
-
-						if (input_ != null)
-						{
-							input_.text = value;
-							OnEdited(text_);
-						}
-					}
-					finally
-					{
-						ignoreAcForAdd_ = false;
-					}
-				}
+				SetText(value);
 			}
 		}
 
@@ -771,9 +755,38 @@ namespace VUI
 			}
 		}
 
+		public void SetText(string value, bool addToAutocomplete = false)
+		{
+			if (text_ != value)
+			{
+				try
+				{
+					if (!addToAutocomplete)
+						ignoreAcForAdd_ = true;
+
+					text_ = value;
+
+					if (input_ != null)
+					{
+						input_.text = value;
+						OnEdited(text_);
+					}
+				}
+				finally
+				{
+					ignoreAcForAdd_ = false;
+				}
+			}
+		}
+
 		public void Blur()
 		{
 			input_.DeactivateInputField();
+		}
+
+		public void Submit()
+		{
+			Submitted?.Invoke(text_);
 		}
 
 		protected override void DoFocus()
@@ -1103,7 +1116,7 @@ namespace VUI
 
 				if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
 				{
-					Submitted?.Invoke(text_);
+					Submit();
 					ac_.Add(text_);
 					ac_.Hide();
 				}

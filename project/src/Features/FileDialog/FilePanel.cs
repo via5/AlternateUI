@@ -51,6 +51,15 @@ namespace AUI.FileDialog
 			panel_.Events.PointerDoubleClick += OnDoubleClick;
 			panel_.Events.PointerEnter += OnPointerEnter;
 			panel_.Events.PointerExit += OnPointerExit;
+
+			// useless for now
+			//panel_.ContextMenuMode = VUI.Widget.ContextMenuCallback;
+			//panel_.CreateContextMenu += () => { return fd_.GetContextMenu(this); };
+		}
+
+		public Logger Log
+		{
+			get { return fd_.Log; }
 		}
 
 		public FS.IFilesystemObject Object
@@ -60,18 +69,20 @@ namespace AUI.FileDialog
 
 		private void OnClick(VUI.PointerEvent e)
 		{
-			if (e.Button == VUI.PointerEvent.LeftButton)
+			if (e.Button == VUI.PointerEvent.LeftButton || e.Button == VUI.PointerEvent.RightButton)
+			{
 				fd_.SelectFile(Object);
-
-			e.Bubble = false;
+				e.Bubble = false;
+			}
 		}
 
 		private void OnDoubleClick(VUI.PointerEvent e)
 		{
 			if (e.Button == VUI.PointerEvent.LeftButton)
+			{
 				fd_.Activate(this);
-
-			e.Bubble = false;
+				e.Bubble = false;
+			}
 		}
 
 		private void OnPointerEnter(VUI.PointerEvent e)

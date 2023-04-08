@@ -5,6 +5,23 @@ using UnityEngine;
 
 namespace AUI.FileDialog
 {
+	class FileContextMenu : VUI.ContextMenu
+	{
+		private readonly FileDialog fd_;
+		private FS.IFilesystemObject o_ = null;
+
+		public FileContextMenu(FileDialog fd)
+		{
+			fd_ = fd;
+		}
+
+		public void Set(FS.IFilesystemObject o)
+		{
+			o_ = o;
+		}
+	}
+
+
 	class FileDialog
 	{
 		public const int FontSize = 24;
@@ -29,6 +46,7 @@ namespace AUI.FileDialog
 		private FilesPanel filesPanel_ = null;
 		private ButtonsPanel buttonsPanel_ = null;
 		private VUI.SearchBox packagesSearch_ = null;
+		private FileContextMenu fileMenu_ = null;
 
 		private IFileDialogMode mode_ = new NoMode();
 		private FS.IFilesystemContainer dir_ = null;
@@ -180,7 +198,6 @@ namespace AUI.FileDialog
 					ignoreDirSelection_ = true;
 					dir_ = null;
 					RefreshDirectories(false);
-					SelectInitialDirectory(initialDir);
 				}
 				finally
 				{
@@ -196,14 +213,8 @@ namespace AUI.FileDialog
 				FS.Instrumentation.End();
 			}
 
-			try
-			{
-				ignoreDirSelection_ = true;
-			}
-			finally
-			{
-				ignoreDirSelection_ = false;
-			}
+			if (initialDir != null && dir_?.VirtualPath != initialDir)
+				SelectInitialDirectory(initialDir);
 
 			if (dir_ == null)
 			{
@@ -231,21 +242,21 @@ namespace AUI.FileDialog
 
 		public void SelectFile(FS.IFilesystemObject o, int flags = SelectFileNoFlags)
 		{
-			if (selected_ == o)
-				return;
-
 			Log.Info($"SelectFile {o}");
 
-			if (selected_ != null)
-				filesPanel_.SetSelected(selected_, false, false);
+			if (selected_ != o)
+			{
+				if (selected_ != null)
+					filesPanel_.SetSelected(selected_, false, false);
 
-			selected_ = o;
+				selected_ = o;
+
+				if (selected_ != null)
+					filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
+			}
 
 			if (!Bits.IsSet(flags, SelectFileKeepFilename))
 				UpdateFilename();
-
-			if (selected_ != null)
-				filesPanel_.SetSelected(selected_, true, Bits.IsSet(flags, SelectFileScrollTo));
 
 			UpdateActionButton();
 		}
@@ -347,6 +358,29 @@ namespace AUI.FileDialog
 		{
 			SelectFile(p.Object);
 			ExecuteAction();
+		}
+
+		public VUI.ContextMenu GetContextMenu(FilePanel p)
+		{
+			if (fileMenu_ == null)
+				fileMenu_ = new FileContextMenu(this);
+
+			fileMenu_.Set(p.Object);
+
+			return fileMenu_;
+		}
+
+		public void OpenInExplorer(FS.IFilesystemObject o)
+		{
+			if (o != null)
+			{
+				if (o.IsFile)
+					o = o.Parent;
+
+				var rp = o.DeVirtualize();
+				if (rp != "")
+					SuperController.singleton.OpenFolderInExplorer(rp);
+			}
 		}
 
 		public void ExecuteAction()

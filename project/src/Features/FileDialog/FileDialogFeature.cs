@@ -2,6 +2,7 @@
 using SimpleJSON;
 using System.Collections.Generic;
 using uFileBrowser;
+using UnityEngine;
 
 namespace AUI.FileDialog
 {
@@ -343,7 +344,10 @@ namespace AUI.FileDialog
 			var f = GetFilename();
 
 			if (f != null)
+			{
 				cwd = FS.Path.Parent(f);
+				Log.Verbose($"show: using filename '{f}', cwd={cwd}");
+			}
 
 			fd_.Show(mode, (path) => cb?.Invoke(path), cwd, f);
 		}
@@ -353,7 +357,10 @@ namespace AUI.FileDialog
 			var f = GetFilename();
 
 			if (f != null)
+			{
 				cwd = FS.Path.Parent(f);
+				Log.Verbose($"show: using filename '{f}', cwd={cwd}");
+			}
 
 			fd_.Show(mode, (path) => cb?.Invoke(path, true), cwd, f);
 		}
@@ -363,14 +370,29 @@ namespace AUI.FileDialog
 			var button = UnityEngine.EventSystems.EventSystem
 				.current.currentSelectedGameObject;
 
+			Log.Verbose($"sel={button}");
+
 			if (button == null || button.GetComponent<UnityEngine.UI.Button>() == null)
 				return null;
 
-			var panel = button.transform.parent;
-			if (panel == null)
+			string f = GetFilenameFromSelect(button);
+			if (f != null)
+				return f;
+
+			f = GetFilenameForPlugin(button);
+			if (f != null)
+				return f;
+
+			return null;
+		}
+
+		private string GetFilenameFromSelect(GameObject button)
+		{
+			var parent = button.transform.parent;
+			if (parent == null)
 				return null;
 
-			foreach (UnityEngine.Transform child in panel)
+			foreach (Transform child in parent)
 			{
 				if (!child.name.Contains("Url"))
 					continue;
@@ -383,6 +405,39 @@ namespace AUI.FileDialog
 			}
 
 			return null;
+		}
+
+		private string GetFilenameForPlugin(GameObject button)
+		{
+			var parent = button.transform.parent;
+			if (parent == null)
+			{
+				Log.Verbose($"button {button} has no parent");
+				return null;
+			}
+
+			var panel = parent.Find("Panel");
+			if (panel == null)
+			{
+				Log.Verbose($"button {button} parent {parent} has no Panel child");
+				return null;
+			}
+
+			var url = panel.Find("URL");
+			if (url == null)
+			{
+				Log.Verbose($"panel {panel} has no URL child");
+				return null;
+			}
+
+			var text = url?.GetComponent<UnityEngine.UI.Text>()?.text;
+			if (text == null)
+			{
+				Log.Verbose($"url {url} has text");
+				return null;
+			}
+
+			return FS.Path.MakeFSPathFromShort(text);
 		}
 
 		protected override void DoDisable()

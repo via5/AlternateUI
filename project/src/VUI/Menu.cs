@@ -26,16 +26,13 @@ namespace VUI
 	{
 		private readonly Button button_;
 
-		public ButtonMenuItem(string text, string tooltip = null)
+		public ButtonMenuItem(string text, Widget.Callback cb = null, string tooltip = null)
 		{
-			button_ = new Button(text);
+			button_ = new Button(text, cb, tooltip);
 			button_.BackgroundColor = new Color(0, 0, 0, 0);
 			button_.Padding = new Insets(10, 5, 5, 5);
 			button_.Alignment = Align.VCenterLeft;
 			button_.Clicked += () => Parent?.ItemActivatedInternal(this);
-
-			if (tooltip != null)
-				button_.Tooltip.Text = tooltip;
 		}
 
 		public Button Button
@@ -122,7 +119,12 @@ namespace VUI
 
 		public ButtonMenuItem AddMenuItem(string text)
 		{
-			return AddMenuItem(new ButtonMenuItem(text));
+			return AddMenuItem(text, null);
+		}
+
+		public ButtonMenuItem AddMenuItem(string text, Callback cb = null)
+		{
+			return AddMenuItem(new ButtonMenuItem(text, cb));
 		}
 
 		public T AddMenuItem<T>(T item) where T : IMenuItem

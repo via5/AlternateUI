@@ -318,16 +318,26 @@ namespace VUI
 
 		private static string GetThumbnailPath(string file)
 		{
-			var exts = new string[] { ".jpg", ".JPG" };
-
-			foreach (var e in exts)
+			var imageExts = new string[] { ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".gif", ".tga", ".ico" };
+			var ext = Path.Extension(file).ToLower();
+			foreach (var e in imageExts)
 			{
-				var relImgPath = Path.Parent(file) + "/" + Path.Stem(file) + e;
+				if (ext == e)
+					return file;
+			}
+
+
+			var fileNoExt = Path.Parent(file) + "/" + Path.Stem(file);
+			var thumbExts = new string[] { ".jpg", ".JPG" };
+			foreach (var e in thumbExts)
+			{
+				var relImgPath = fileNoExt + e;
 				var imgPath = FileManagerSecure.GetFullPath(relImgPath);
 
 				if (FileManagerSecure.FileExists(imgPath))
 					return imgPath;
 			}
+
 
 			return null;
 		}

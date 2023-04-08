@@ -256,15 +256,17 @@ namespace AUI.FS
 		//
 		public static string MakeFSPathFromShort(string shortPath)
 		{
-			int pos = shortPath.IndexOf(":/");
-			if (pos == -1)
-				return shortPath;
+			string path = shortPath;
 
-			string path =
-				"/AddonPackages/" +
-				shortPath.Substring(0, pos) +
-				".var:/" +
-				shortPath.Substring(pos + 2);
+			int pos = path.IndexOf(":/");
+			if (pos != -1)
+			{
+				path =
+					"/AddonPackages/" +
+					path.Substring(0, pos) +
+					".var:/" +
+					path.Substring(pos + 2);
+			}
 
 			return MakeFSPath(path);
 		}
@@ -293,18 +295,18 @@ namespace AUI.FS
 		{
 			string path = "";
 
-			foreach (var c in cs)
+			foreach (var sec in cs)
 			{
-				string s = c.Replace('\\', '/');
+				string s = sec.Replace('\\', '/');
 
 				if (path.EndsWith("/") && s.StartsWith("/"))
 					path += s.Substring(1);
-				else if (path.EndsWith("/") || c.StartsWith("/"))
-					path += c;
+				else if (path.EndsWith("/") || s.StartsWith("/"))
+					path += s;
 				else if (path != "")
-					path += "/" + c;
+					path += "/" + s;
 				else
-					path = c;
+					path = s;
 			}
 
 			return path;

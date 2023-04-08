@@ -184,14 +184,7 @@ namespace AUI.FileDialog
 
 		public void OpenInExplorer()
 		{
-			var dir = fd_.SelectedDirectory;
-
-			if (dir != null)
-			{
-				var rp = dir.DeVirtualize();
-				if (rp != "")
-					SuperController.singleton.OpenFolderInExplorer(rp);
-			}
+			fd_.OpenInExplorer(fd_.SelectedDirectory);
 		}
 
 		private bool CanOpenInExplorer(FS.IFilesystemContainer dir)
