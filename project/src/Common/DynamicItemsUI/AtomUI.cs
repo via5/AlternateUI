@@ -355,6 +355,22 @@ namespace AUI.DynamicItemsUI
 						}
 					}
 				}
+
+				if (char_ != null)
+				{
+					if (!char_.gameObject.activeInHierarchy || !char_.enabled)
+					{
+						char_ = null;
+						cs_ = null;
+						ui_ = null;
+
+						if (GetInfo())
+						{
+							Log.Verbose("sex changed, rebuilding");
+							Rebuild();
+						}
+					}
+				}
 			}
 		}
 
@@ -426,6 +442,9 @@ namespace AUI.DynamicItemsUI
 
 		private bool GetInfo()
 		{
+			if (!Atom.on)
+				return false;
+
 			if (char_ == null)
 			{
 				char_ = Atom.GetComponentInChildren<DAZCharacter>();

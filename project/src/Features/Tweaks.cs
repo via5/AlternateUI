@@ -125,6 +125,62 @@ namespace AUI.Tweaks
 	}
 
 
+	class SelectAtomOnAdd : TweakFeature
+	{
+		public SelectAtomOnAdd()
+			: base("selectAtomOnAdd", "Always select atom on Add", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Activates the 'Select Atom On Add' checkbox on startup.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			if (SuperController.singleton?.selectAtomOnAddToggle != null)
+				SuperController.singleton.selectAtomOnAddToggle.isOn = true;
+		}
+
+		protected override void DoDisable()
+		{
+		}
+	}
+
+
+	class FocusAtomOnAdd : TweakFeature
+	{
+		public FocusAtomOnAdd()
+			: base("focusAtomOnAdd", "Always focus atom on Add", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Activates the 'Focus Atom On Add' checkbox on startup.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			if (SuperController.singleton?.focusAtomOnAddToggle != null)
+				SuperController.singleton.focusAtomOnAddToggle.isOn = true;
+		}
+
+		protected override void DoDisable()
+		{
+		}
+	}
+
+
 	class SpaceBarFreeze : TweakFeature
 	{
 		public SpaceBarFreeze()
