@@ -205,7 +205,7 @@ namespace AUI.DynamicItemsUI
 				if (active_ && !ci.active)
 					continue;
 
-				if (!ci.isLatestVersion)
+				if (!ci.isLatestVersion && !ci.active)
 					continue;
 
 				if (re == null)

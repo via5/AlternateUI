@@ -145,9 +145,20 @@ namespace AUI.Tweaks
 		{
 			if (Input.GetKeyUp(KeyCode.Space))
 			{
-				SuperController.singleton.SetFreezeAnimation(
-					!SuperController.singleton.freezeAnimation);
+				if (!InInputField())
+				{
+					SuperController.singleton.SetFreezeAnimation(
+						!SuperController.singleton.freezeAnimation);
+				}
 			}
+		}
+
+		private bool InInputField()
+		{
+			var s = EventSystem.current.currentSelectedGameObject
+				?.GetComponent<InputField>();
+
+			return s?.isFocused ?? false;
 		}
 	}
 
@@ -736,6 +747,8 @@ namespace AUI.Tweaks
 		private IEnumerator CoFocus(FreeControllerV3 fc)
 		{
 			yield return new WaitForEndOfFrame();
+
+			Log.Verbose($"focusing on {fc}");
 			SuperController.singleton.FocusOnController(fc);
 		}
 

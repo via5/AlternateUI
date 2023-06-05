@@ -213,7 +213,7 @@ namespace AUI.FileDialog
 				FS.Instrumentation.End();
 			}
 
-			if (initialDir != null && dir_?.VirtualPath != initialDir)
+			if (dir_ == null || dir_?.VirtualPath != initialDir)
 				SelectInitialDirectory(initialDir);
 
 			if (dir_ == null)

@@ -319,6 +319,12 @@ namespace AUI.FileDialog
 
 		public void ScrollToTop()
 		{
+			if (files_ == null)
+			{
+				Log.ErrorST("ScrollToTop() called with no files");
+				return;
+			}
+
 			Log.Info("scroll to top");
 
 			SetPanels(0);

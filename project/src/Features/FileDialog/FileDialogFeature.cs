@@ -431,7 +431,7 @@ namespace AUI.FileDialog
 			}
 
 			var text = url?.GetComponent<UnityEngine.UI.Text>()?.text;
-			if (text == null)
+			if (string.IsNullOrEmpty(text))
 			{
 				Log.Verbose($"url {url} has text");
 				return null;
