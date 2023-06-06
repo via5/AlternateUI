@@ -778,7 +778,7 @@ namespace AUI.FileDialog
 					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
 
-			openScene_.Options.UpdateCurrent = true;
+			saveScene_.Options.UpdateCurrent = true;
 
 			return saveScene_;
 		}

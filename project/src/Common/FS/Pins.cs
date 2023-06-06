@@ -247,6 +247,11 @@ namespace AUI.FS
 			return c_.MakeRealPath();
 		}
 
+		public override string DeVirtualize()
+		{
+			return c_.DeVirtualize();
+		}
+
 		public override bool IsSameObject(IFilesystemObject o)
 		{
 			return c_.IsSameObject(o);
@@ -262,6 +267,12 @@ namespace AUI.FS
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
 			return c_.ResolveInternal(cx, cs, flags, debug);
+		}
+
+		public override void ClearCache()
+		{
+			base.ClearCache();
+			c_.ClearCache();
 		}
 
 
