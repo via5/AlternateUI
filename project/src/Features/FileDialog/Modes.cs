@@ -122,6 +122,7 @@ namespace AUI.FileDialog
 		private bool latestPackagesOnly_;
 		private int sort_, sortDir_;
 		private string search_ = "";
+		private bool updateCurrent_ = true;
 		private readonly History history_ = new History();
 
 		private static readonly Dictionary<string, Options> map_ =
@@ -218,6 +219,12 @@ namespace AUI.FileDialog
 		{
 			get { return search_; }
 			set { search_ = value; }
+		}
+
+		public bool UpdateCurrent
+		{
+			get { return updateCurrent_; }
+			set { updateCurrent_ = value; }
 		}
 
 		public string CurrentDirectory
@@ -461,9 +468,13 @@ namespace AUI.FileDialog
 
 		public void Execute(FileDialog fd, ExecuteHandler h)
 		{
-			opts_.CurrentFile = fd.SelectedFile?.VirtualPath;
-			opts_.CurrentDirectory = fd.SelectedDirectory?.VirtualPath;
-			opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
+			if (opts_.UpdateCurrent)
+			{
+				opts_.CurrentFile = fd.SelectedFile?.VirtualPath;
+				opts_.CurrentDirectory = fd.SelectedDirectory?.VirtualPath;
+				opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
+			}
+
 			opts_.Search = fd.Search;
 
 			DoExecute(fd, h);
@@ -724,7 +735,7 @@ namespace AUI.FileDialog
 			new Dictionary<string, IFileDialogMode>();
 
 
-		public static IFileDialogMode OpenScene(string caption = null)
+		public static IFileDialogMode OpenScene(string caption = null, bool updateCwd = true)
 		{
 			if (caption == null)
 				caption = "Open scene";
@@ -744,6 +755,8 @@ namespace AUI.FileDialog
 				openScene_.Title = caption;
 			}
 
+			openScene_.Options.UpdateCurrent = updateCwd;
+
 			return openScene_;
 		}
 
@@ -759,6 +772,8 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { "VaM/Saves/scene", "VaM/Saves/Downloads" }));
 			}
+
+			openScene_.Options.UpdateCurrent = true;
 
 			return saveScene_;
 		}

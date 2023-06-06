@@ -451,7 +451,7 @@ namespace AUI.FileDialog
 				{
 					if (t == "Select Scene For Merge")
 					{
-						return Modes.OpenScene("Merge scene");
+						return Modes.OpenScene("Merge scene", false);
 					}
 					else if (t == "Select Scene For Edit")
 					{
