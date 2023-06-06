@@ -36,10 +36,10 @@ namespace AUI.FileDialog
 				var sortGroup = new VUI.RadioButton.Group("sort");
 				var sortOrderGroup = new VUI.RadioButton.Group("sortOrder");
 
-				AddSortItem(sortMenu, sortGroup, FS.Context.SortFilename);
-				AddSortItem(sortMenu, sortGroup, FS.Context.SortType);
-				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateModified);
-				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateCreated);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortFilename, FS.Context.SortAscending);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortType, FS.Context.SortAscending);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateModified, FS.Context.SortDescending);
+				AddSortItem(sortMenu, sortGroup, FS.Context.SortDateCreated, FS.Context.SortDescending);
 				sortMenu.AddSeparator();
 				AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortAscending);
 				AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortDescending);
@@ -103,9 +103,9 @@ namespace AUI.FileDialog
 			Add(rightPanel, VUI.BorderLayout.Right);
 		}
 
-		private void AddSortItem(VUI.Menu menu, VUI.RadioButton.Group g, int sort)
+		private void AddSortItem(VUI.Menu menu, VUI.RadioButton.Group g, int sort, int defaultDir)
 		{
-			var item = menu.AddMenuItem(MakeSortItem(FS.Context.SortToString(sort), sort, g));
+			var item = menu.AddMenuItem(MakeSortItem(FS.Context.SortToString(sort), sort, defaultDir, g));
 			sortItems_.Add(sort, item);
 		}
 
@@ -135,21 +135,13 @@ namespace AUI.FileDialog
 				showHiddenFiles_.CheckBox.Checked = mode_.Options.ShowHiddenFiles;
 				latestPackagesOnly_.CheckBox.Checked = mode_.Options.LatestPackagesOnly;
 				usePackageTime_.CheckBox.Checked = fd_.UsePackageTime;
-
-				VUI.RadioMenuItem item;
-
-				if (sortItems_.TryGetValue(mode_.Options.Sort, out item))
-					item.RadioButton.Checked = true;
-
-				if (sortDirItems_.TryGetValue(mode_.Options.SortDirection, out item))
-					item.RadioButton.Checked = true;
-
-				UpdateSortButton();
 			}
 			finally
 			{
 				ignore_ = false;
 			}
+
+			UpdateSortButton();
 		}
 
 		public void SetFiles(List<FS.IFilesystemObject> files)
@@ -162,12 +154,12 @@ namespace AUI.FileDialog
 				stats_.Text = $"{files.Count} files";
 		}
 
-		private VUI.RadioMenuItem MakeSortItem(string text, int sort, VUI.RadioButton.Group g)
+		private VUI.RadioMenuItem MakeSortItem(string text, int sort, int defaultDir, VUI.RadioButton.Group g)
 		{
 			VUI.RadioButton.ChangedCallback cb = (bool b) =>
 			{
 				if (b)
-					SetSort(sort);
+					SetSort(sort, defaultDir);
 			};
 
 			return new VUI.RadioMenuItem(text, cb, false, g);
@@ -235,11 +227,13 @@ namespace AUI.FileDialog
 			fd_.RefreshBoth();
 		}
 
-		private void SetSort(int s)
+		private void SetSort(int s, int d)
 		{
 			if (ignore_) return;
 
 			mode_.Options.Sort = s;
+			mode_.Options.SortDirection = d;
+
 			fd_.RefreshFiles();
 			UpdateSortButton();
 		}
@@ -261,11 +255,30 @@ namespace AUI.FileDialog
 
 		private void UpdateSortButton()
 		{
-			string sort =
-				FS.Context.SortToString(mode_.Options.Sort) + " " +
-				FS.Context.SortDirectionToShortString(mode_.Options.SortDirection);
+			AlternateUI.Assert(!ignore_);
 
-			sortPanel_.Button.Text = sort;
+			try
+			{
+				ignore_ = true;
+
+				VUI.RadioMenuItem item;
+
+				if (sortItems_.TryGetValue(mode_.Options.Sort, out item))
+					item.RadioButton.Checked = true;
+
+				if (sortDirItems_.TryGetValue(mode_.Options.SortDirection, out item))
+					item.RadioButton.Checked = true;
+
+				string sort =
+					FS.Context.SortToString(mode_.Options.Sort) + " " +
+					FS.Context.SortDirectionToShortString(mode_.Options.SortDirection);
+
+				sortPanel_.Button.Text = sort;
+			}
+			finally
+			{
+				ignore_ = false;
+			}
 		}
 	}
 }
