@@ -186,12 +186,14 @@ namespace AUI.FS
 		}
 
 		public void SetLocalFilesCache(
-			Filesystem fs, Context cx, List<IFilesystemObject> list)
+			Filesystem fs, Context cx,
+			List<IFilesystemObject> allFiles,
+			List<IFilesystemObject> filteredFiles)
 		{
 			if (localFiles_ == null)
 				localFiles_ = new CachedListing<IFilesystemObject>();
 
-			localFiles_.SetRaw(fs, cx, list, null);
+			localFiles_.SetRaw(fs, cx, allFiles, filteredFiles);
 			resolved_?.Clear();
 		}
 

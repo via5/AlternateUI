@@ -144,6 +144,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		protected override VUI.Icon GetIcon()
 		{
 			return Icons.GetIcon(Icons.UnpinnedDark);
@@ -195,14 +200,14 @@ namespace AUI.FS
 			}
 		}
 
-		protected override string GetDisplayName()
+		protected override string DoGetDisplayName(Context cx)
 		{
 			var p = c_.ParentPackage;
 
 			if (p == null || (p == c_))
-				return base.GetDisplayName();
+				return base.DoGetDisplayName(cx);
 			else
-				return p.DisplayName + ":" + base.GetDisplayName();
+				return p.GetDisplayName(cx) + ":" + base.DoGetDisplayName(cx);
 		}
 
 		public override string Name { get { return c_.Name; } }
@@ -215,6 +220,7 @@ namespace AUI.FS
 		public bool AlreadySorted { get { return c_.AlreadySorted; } }
 		public override bool IsInternal { get { return c_.IsInternal; } }
 		public override bool IsFile { get { return c_.IsFile; } }
+		public override bool IsWritable { get { return c_.IsWritable; } }
 
 		protected override VUI.Icon GetIcon()
 		{

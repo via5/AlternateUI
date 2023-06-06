@@ -44,9 +44,9 @@ namespace AUI.FS
 			}
 		}
 
-		public bool Matches(IFilesystemObject o)
+		public bool Matches(Context cx, IFilesystemObject o)
 		{
-			return DoMatches(o.Name) || DoMatches(o.DisplayName);
+			return DoMatches(o.Name) || DoMatches(o.GetDisplayName(cx));
 		}
 
 		private bool DoMatches(string s)
@@ -174,13 +174,14 @@ namespace AUI.FS
 		private readonly int sortDir_;
 		private readonly SearchString search_;
 		private readonly SearchString packagesSearch_;
+		private readonly string removePrefix_;
 		private int flags_;
 		private readonly Whitelist whitelist_;
 
 		public Context(
 			string search, string[] extensions, string packagesRoot,
 			int sort, int sortDir, int flags, string packagesSearch,
-			Whitelist whitelist)
+			string removePrefix, Whitelist whitelist)
 		{
 			search_ = new SearchString(search);
 			exts_ = extensions;
@@ -189,6 +190,7 @@ namespace AUI.FS
 			sortDir_ = sortDir;
 			flags_ = flags;
 			packagesSearch_ = new SearchString(packagesSearch);
+			removePrefix_ = removePrefix;
 			whitelist_ = whitelist;
 		}
 
@@ -258,7 +260,8 @@ namespace AUI.FS
 			get
 			{
 				return new Context(
-					"", null, "", NoSort, NoSortDirection, NoFlags, "", null);
+					"", null, "", NoSort, NoSortDirection, NoFlags,
+					"", "", null);
 			}
 		}
 
@@ -280,6 +283,11 @@ namespace AUI.FS
 		public SearchString PackagesSearch
 		{
 			get { return packagesSearch_; }
+		}
+
+		public string RemovePrefix
+		{
+			get { return removePrefix_; }
 		}
 
 		public string[] Extensions
@@ -382,7 +390,7 @@ namespace AUI.FS
 
 		public bool SearchMatches(IFilesystemObject o)
 		{
-			return search_.Matches(o);
+			return search_.Matches(this, o);
 		}
 
 		public bool WhitelistMatches(string path)
@@ -397,34 +405,38 @@ namespace AUI.FS
 		private class FilenameComparer<EntryType> : IComparer<EntryType>
 			where EntryType : IFilesystemObject
 		{
+			private readonly Context cx_;
 			private readonly int dir_;
 
-			public FilenameComparer(int dir)
+			public FilenameComparer(Context cx, int dir)
 			{
+				cx_ = cx;
 				dir_ = dir;
 			}
 
-			public static int SCompare(EntryType a, EntryType b, int dir)
+			public static int SCompare(Context cx, EntryType a, EntryType b, int dir)
 			{
 				if (dir == SortAscending)
-					return U.CompareNatural(a.DisplayName, b.DisplayName);
+					return U.CompareNatural(a.GetDisplayName(cx), b.GetDisplayName(cx));
 				else
-					return U.CompareNatural(b.DisplayName, a.DisplayName);
+					return U.CompareNatural(b.GetDisplayName(cx), a.GetDisplayName(cx));
 			}
 
 			public int Compare(EntryType a, EntryType b)
 			{
-				return SCompare(a, b, dir_);
+				return SCompare(cx_, a, b, dir_);
 			}
 		}
 
 		private class TypeComparer<EntryType> : IComparer<EntryType>
 			where EntryType : IFilesystemObject
 		{
+			private readonly Context cx_;
 			private readonly int dir_;
 
-			public TypeComparer(int dir)
+			public TypeComparer(Context cx, int dir)
 			{
+				cx_ = cx;
 				dir_ = dir;
 			}
 
@@ -438,7 +450,7 @@ namespace AUI.FS
 					c = U.CompareNatural(Path.Extension(b.Name), Path.Extension(a.Name));
 
 				if (c == 0)
-					c = FilenameComparer<EntryType>.SCompare(a, b, dir_);
+					c = FilenameComparer<EntryType>.SCompare(cx_, a, b, dir_);
 
 				return c;
 			}
@@ -447,10 +459,12 @@ namespace AUI.FS
 		private class DateModifiedComparer<EntryType> : IComparer<EntryType>
 			where EntryType : IFilesystemObject
 		{
+			private readonly Context cx_;
 			private readonly int dir_;
 
-			public DateModifiedComparer(int dir)
+			public DateModifiedComparer(Context cx, int dir)
 			{
+				cx_ = cx;
 				dir_ = dir;
 			}
 
@@ -464,7 +478,7 @@ namespace AUI.FS
 					c = DateTime.Compare(b.DateModified, a.DateModified);
 
 				if (c == 0)
-					c = FilenameComparer<EntryType>.SCompare(a, b, dir_);
+					c = FilenameComparer<EntryType>.SCompare(cx_, a, b, dir_);
 
 				return c;
 			}
@@ -473,10 +487,12 @@ namespace AUI.FS
 		private class DateCreatedComparer<EntryType> : IComparer<EntryType>
 			where EntryType : IFilesystemObject
 		{
+			private readonly Context cx_;
 			private readonly int dir_;
 
-			public DateCreatedComparer(int dir)
+			public DateCreatedComparer(Context cx, int dir)
 			{
+				cx_ = cx;
 				dir_ = dir;
 			}
 
@@ -490,7 +506,7 @@ namespace AUI.FS
 					c = DateTime.Compare(b.DateCreated, a.DateCreated);
 
 				if (c == 0)
-					c = FilenameComparer<EntryType>.SCompare(a, b, dir_);
+					c = FilenameComparer<EntryType>.SCompare(cx_, a, b, dir_);
 
 				return c;
 			}
@@ -503,25 +519,25 @@ namespace AUI.FS
 			{
 				case SortFilename:
 				{
-					list.Sort(new FilenameComparer<EntryType>(sortDir_));
+					list.Sort(new FilenameComparer<EntryType>(this, sortDir_));
 					break;
 				}
 
 				case SortType:
 				{
-					list.Sort(new TypeComparer<EntryType>(sortDir_));
+					list.Sort(new TypeComparer<EntryType>(this, sortDir_));
 					break;
 				}
 
 				case SortDateModified:
 				{
-					list.Sort(new DateModifiedComparer<EntryType>(sortDir_));
+					list.Sort(new DateModifiedComparer<EntryType>(this, sortDir_));
 					break;
 				}
 
 				case SortDateCreated:
 				{
-					list.Sort(new DateCreatedComparer<EntryType>(sortDir_));
+					list.Sort(new DateCreatedComparer<EntryType>(this, sortDir_));
 					break;
 				}
 

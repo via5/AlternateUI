@@ -352,6 +352,7 @@ namespace AUI.FileDialog
 		Options Options { get; }
 
 		string Title { get; set; }
+		string RemovePrefix { get; set; }
 		ExtensionItem[] Extensions { get; }
 		string PackageRoot { get; }
 		string DefaultDirectory { get; set; }
@@ -370,6 +371,7 @@ namespace AUI.FileDialog
 	{
 		private readonly string name_;
 		private string title_;
+		private string removePrefix_ = "";
 		private readonly ExtensionItem[] exts_;
 		private readonly string packageRoot_;
 		private string defaultPath_;
@@ -418,6 +420,12 @@ namespace AUI.FileDialog
 		{
 			get { return title_; }
 			set { title_ = value; }
+		}
+
+		public string RemovePrefix
+		{
+			get { return removePrefix_; }
+			set { removePrefix_ = value; }
 		}
 
 		public ExtensionItem[] Extensions
@@ -784,7 +792,7 @@ namespace AUI.FileDialog
 			return openPlugin_;
 		}
 
-		public static IFileDialogMode OpenPreset(string path)
+		public static IFileDialogMode OpenPreset(string path, string removePrefix)
 		{
 			var info = GetPresetInfo(path);
 
@@ -801,6 +809,8 @@ namespace AUI.FileDialog
 
 				openPreset_.Add(path, m);
 			}
+
+			m.RemovePrefix = removePrefix;
 
 			return m;
 		}

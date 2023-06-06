@@ -45,6 +45,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -109,6 +114,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -167,6 +177,11 @@ namespace AUI.FS
 		public override bool IsInternal
 		{
 			get { return true; }
+		}
+
+		public override bool IsWritable
+		{
+			get { return false; }
 		}
 
 		public override string MakeRealPath()

@@ -26,7 +26,7 @@ namespace AUI.FileDialog
 			tree_.LabelWrap = VUI.Label.Clip;
 			tree_.Borders = new VUI.Insets(0);
 
-			root_ = new FileTreeItem(this, FS.Filesystem.Instance.GetRoot());
+			root_ = new FileTreeItem(this, null, FS.Filesystem.Instance.GetRoot());
 			tree_.RootItem.Add(root_);
 			tree_.SelectionChanged += OnSelection;
 		}

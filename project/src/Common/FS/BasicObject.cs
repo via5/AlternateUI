@@ -31,20 +31,17 @@ namespace AUI.FS
 			get { return parent_; }
 		}
 
-		public string DisplayName
+		public string GetDisplayName(Context cx)
 		{
-			get
-			{
-				return displayName_ ?? GetDisplayName();
-			}
+			return displayName_ ?? DoGetDisplayName(cx);
+		}
 
-			set
+		public void SetDisplayName(string name)
+		{
+			if (displayName_ != name)
 			{
-				if (displayName_ != value)
-				{
-					displayName_ = value;
-					DisplayNameChanged();
-				}
+				displayName_ = name;
+				DisplayNameChanged();
 			}
 		}
 
@@ -95,6 +92,7 @@ namespace AUI.FS
 		public abstract bool IsFlattened { get; }
 		public abstract bool IsInternal { get; }
 		public abstract bool IsFile { get; }
+		public abstract bool IsWritable { get; }
 
 		public VUI.Icon Icon
 		{
@@ -176,7 +174,7 @@ namespace AUI.FS
 					var p = ParentPackage;
 
 					if (p != null)
-						tt += $"\nPackage: {p.DisplayName}";
+						tt += $"\nPackage: {p.GetDisplayName(null)}";
 
 					tt += $"\nCreated: {FormatDT(DateCreated)}";
 					tt += $"\nLast modified: {FormatDT(DateModified)}";
@@ -193,7 +191,7 @@ namespace AUI.FS
 
 					var p = ParentPackage;
 					if (p != null)
-						tt += $"\nPackage: {p.DisplayName}";
+						tt += $"\nPackage: {p.GetDisplayName(null)}";
 
 					tt += $"\nCreated: {FormatDT(DateCreated)}";
 					tt += $"\nLast modified: {FormatDT(DateModified)}";
@@ -247,7 +245,7 @@ namespace AUI.FS
 			dateModified_ = DateTime.MaxValue;
 		}
 
-		protected virtual string GetDisplayName()
+		protected virtual string DoGetDisplayName(Context cx)
 		{
 			return Name;
 		}

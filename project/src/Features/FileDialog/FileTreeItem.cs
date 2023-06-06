@@ -19,8 +19,8 @@ namespace AUI.FileDialog
 		private FS.IFilesystemContainer o_ = null;
 		private FS.IFilesystemContainer hardObject_ = null;
 
-		public FileTreeItem(FileTree tree, FS.IFilesystemContainer c)
-			: this(tree, c.VirtualPath, c.DisplayName, c.Icon)
+		public FileTreeItem(FileTree tree, FS.Context cx, FS.IFilesystemContainer c)
+			: this(tree, c.VirtualPath, c.GetDisplayName(cx), c.Icon)
 		{
 			hardObject_ = c;
 		}
@@ -109,7 +109,7 @@ namespace AUI.FileDialog
 				if (o == null)
 					Text = FS.Path.Filename(path_) + " (dead)";
 				else
-					Text = o.DisplayName;
+					Text = o.GetDisplayName(cx);
 			}
 
 			checkedHasChildren_ = false;
@@ -207,7 +207,7 @@ namespace AUI.FileDialog
 
 					if (insert)
 					{
-						Insert(i, CreateItem(dirs[i]));
+						Insert(i, CreateItem(cx, dirs[i]));
 
 						// need to update count manually because `cs` will
 						// change in the Insert() call above
@@ -237,12 +237,14 @@ namespace AUI.FileDialog
 
 			if (d != null && !d.IsFlattened)
 			{
-				foreach (var c in GetDirectories(CreateContext(), d))
-					Add(CreateItem(c));
+				var cx = CreateContext();
+
+				foreach (var c in GetDirectories(cx, d))
+					Add(CreateItem(cx, c));
 			}
 		}
 
-		private FileTreeItem CreateItem(FS.IFilesystemContainer o)
+		private FileTreeItem CreateItem(FS.Context cx, FS.IFilesystemContainer o)
 		{
 			FileTreeItem item;
 
@@ -251,11 +253,11 @@ namespace AUI.FileDialog
 				if (o.UnderlyingCanChange)
 				{
 					item = new FileTreeItem(
-						tree_, o.VirtualPath, o.DisplayName, o.Icon);
+						tree_, o.VirtualPath, o.GetDisplayName(cx), o.Icon);
 				}
 				else
 				{
-					item = new FileTreeItem(tree_, o);
+					item = new FileTreeItem(tree_, cx, o);
 				}
 			}
 			FS.Instrumentation.End();

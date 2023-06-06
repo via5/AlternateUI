@@ -124,7 +124,7 @@ namespace AUI.FS
 
 					foreach (var p in packages_)
 					{
-						if (cx.PackagesSearch.Matches(p))
+						if (cx.PackagesSearch.Matches(cx, p))
 							searchedPackages_.Add(p);
 					}
 				}
@@ -210,6 +210,11 @@ namespace AUI.FS
 		public override bool IsInternal
 		{
 			get { return true; }
+		}
+
+		public override bool IsWritable
+		{
+			get { return false; }
 		}
 
 		public override string MakeRealPath()
@@ -340,6 +345,11 @@ namespace AUI.FS
 			get { return p_?.ShortCut?.path; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		public override string DebugInfo()
 		{
 			return $"RealPackageDirectory({ShortCutPath}, p={p_})";
@@ -401,7 +411,7 @@ namespace AUI.FS
 			}
 		}
 
-		protected override string GetDisplayName()
+		protected override string DoGetDisplayName(Context cx)
 		{
 			return ShortCut.package;
 		}
@@ -459,6 +469,11 @@ namespace AUI.FS
 		}
 
 		public override bool IsInternal
+		{
+			get { return false; }
+		}
+
+		public override bool IsWritable
 		{
 			get { return false; }
 		}

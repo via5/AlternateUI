@@ -62,7 +62,7 @@ namespace AUI.FS
 			merged_ = false;
 		}
 
-		protected override string GetDisplayName()
+		protected override string DoGetDisplayName(Context cx)
 		{
 			return SingleContent?.Name ?? Name;
 		}
@@ -177,7 +177,7 @@ namespace AUI.FS
 						if (p == null)
 							s += d.VirtualPath;
 						else
-							s += p.DisplayName;
+							s += p.GetDisplayName(cx);
 					}
 
 					if (tooltip_.Count < max)
@@ -294,6 +294,11 @@ namespace AUI.FS
 			}
 		}
 
+		public override bool IsWritable
+		{
+			get { return HasRealDir(); }
+		}
+
 
 		public override string MakeRealPath()
 		{
@@ -338,7 +343,7 @@ namespace AUI.FS
 				// see DoGetFiles() below
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 					cx.Whitelist);
 
 				foreach (var d in dirs_)
@@ -385,7 +390,7 @@ namespace AUI.FS
 			// see DoGetFiles() below
 			var cx2 = new Context(
 				"", null, cx.PackagesRoot,
-				Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+				Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 				cx.Whitelist);
 
 			foreach (var d in dirs_)
@@ -410,7 +415,7 @@ namespace AUI.FS
 				// context with the same flags only
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 					cx.Whitelist);
 
 				foreach (var d in dirs_)
@@ -622,6 +627,11 @@ namespace AUI.FS
 		public override bool IsInternal
 		{
 			get { return false; }
+		}
+
+		public override bool IsWritable
+		{
+			get { return true; }
 		}
 
 		public override string MakeRealPath()

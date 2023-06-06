@@ -33,6 +33,7 @@ namespace AUI.FileDialog
 		public const int SelectDirectoryNoFlags = 0x00;
 		public const int SelectDirectoryExpand = 0x01;
 		public const int SelectDirectoryDebug = 0x02;
+		public const int SelectDirectoryWritableOnly = 0x04;
 
 
 		private readonly Logger log_;
@@ -267,6 +268,27 @@ namespace AUI.FileDialog
 		{
 			Log.Info($"SelectDirectory '{vpath}'");
 
+			if (Bits.IsSet(flags, SelectDirectoryWritableOnly))
+			{
+				var o = FS.Filesystem.Instance.Resolve(
+					CreateFileContext(false), vpath,
+					FS.Filesystem.ResolveDirsOnly);
+
+				if (o == null)
+				{
+					Log.Error($"SelectDirectory: needs writable dir, but can't resolve '{vpath}'");
+					return false;
+				}
+				else
+				{
+					if (!o.IsWritable)
+					{
+						Log.Error($"SelectDirectory: needs writable dir, but is not: '{vpath}'");
+						return false;
+					}
+				}
+			}
+
 			bool b;
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
 			{
@@ -282,6 +304,27 @@ namespace AUI.FileDialog
 			int scrollTo = VUI.TreeView.ScrollToNearest)
 		{
 			Log.Info($"SelectDirectoryInPinned '{vpath}', pinnedRoot='{pinnedRoot}'");
+
+			if (Bits.IsSet(flags, SelectDirectoryWritableOnly))
+			{
+				var o = FS.Filesystem.Instance.Resolve(
+					CreateFileContext(false), vpath,
+					FS.Filesystem.ResolveDirsOnly);
+
+				if (o == null)
+				{
+					Log.Error($"SelectDirectoryInPinned: needs writable dir, but can't resolve '{vpath}'");
+					return false;
+				}
+				else
+				{
+					if (o.IsWritable)
+					{
+						Log.Error($"SelectDirectoryInPinned: needs writable dir, but is virtual: '{vpath}'");
+						return false;
+					}
+				}
+			}
 
 			bool b;
 			FS.Instrumentation.Start(FS.I.FDTreeSelect);
@@ -539,12 +582,16 @@ namespace AUI.FileDialog
 				flags = flags & ~FS.Context.MergePackagesFlag;
 			}
 
+			string removePrefix = "";
+			if (!Bits.IsSet(flags, FS.Context.ShowHiddenFilesFlag))
+				removePrefix = mode_.RemovePrefix;
+
 			return new FS.Context(
 				addressBar_.Search,
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				mode_.Options.Sort, mode_.Options.SortDirection,
-				flags, "", null);
+				flags, "", removePrefix, null);
 		}
 
 		public FS.Context CreateTreeContext(bool recursive)
@@ -554,7 +601,7 @@ namespace AUI.FileDialog
 				mode_.PackageRoot,
 				FS.Context.SortFilename, FS.Context.SortAscending,
 				MakeContextFlags(recursive, mode_.Options),
-				packagesSearch_.Text, mode_.Whitelist);
+				packagesSearch_.Text, "", mode_.Whitelist);
 		}
 
 
@@ -582,6 +629,9 @@ namespace AUI.FileDialog
 			var flags = SelectDirectoryNoFlags;
 			var opts = mode_.Options;
 
+			if (mode_.IsWritable)
+				flags |= SelectDirectoryWritableOnly;
+
 			//Log.Info($"SelectInitialDirectory '{cwd}' '{opts.CurrentDirectory}' '{mode_.DefaultDirectory}' '{mode_.PackageRoot}'");
 
 			if (!string.IsNullOrEmpty(cwd))
@@ -595,29 +645,14 @@ namespace AUI.FileDialog
 				Log.Error($"bad initial directory (cwd) {cwd}");
 			}
 
-			if (mode_.IsWritable)
+			if (!string.IsNullOrEmpty(opts.CurrentFile))
 			{
-				if (!string.IsNullOrEmpty(opts.CurrentFile))
-				{
-					var dir = FS.Path.Parent(opts.CurrentFile);
+				var dir = FS.Path.Parent(opts.CurrentFile);
 
-					if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
-					{
-						if (SelectDirectoryInPinned(
-								dir, opts.CurrentDirectoryInPinned,
-								flags, scrollTo))
-						{
-							return;
-						}
+				if (SelectDirectory(dir, flags, scrollTo))
+					return;
 
-						Log.Error($"bad initial directory (opts current file in pinned for write) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
-					}
-
-					if (SelectDirectory(dir, flags, scrollTo))
-						return;
-
-					Log.Error($"bad initial directory (opts current file for write) {dir}");
-				}
+				Log.Error($"bad initial directory for current file parent '{dir}'");
 			}
 
 			if (!string.IsNullOrEmpty(opts.CurrentDirectory))

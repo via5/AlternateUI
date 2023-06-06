@@ -83,12 +83,15 @@ namespace AUI.FS
 			return (cache_?.StaleLocalFilesCache(fs_, cx) ?? true);
 		}
 
-		private void SetLocalFilesCache(Context cx, List<IFilesystemObject> list)
+		private void SetLocalFilesCache(
+			Context cx,
+			List<IFilesystemObject> allFiles,
+			List<IFilesystemObject> filteredFiles)
 		{
 			if (cache_ == null)
 				cache_ = new Cache();
 
-			cache_.SetLocalFilesCache(fs_, cx, list);
+			cache_.SetLocalFilesCache(fs_, cx, allFiles, filteredFiles);
 		}
 
 		private Listing<IFilesystemObject> GetLocalFilesCache()
@@ -159,8 +162,11 @@ namespace AUI.FS
 			{
 				if (StaleLocalFilesCache(cx))
 				{
-					var files = GetFilesInternal(cx);
-					SetLocalFilesCache(cx, files);
+					List<IFilesystemObject> allFiles;
+					List<IFilesystemObject> filteredFiles;
+
+					GetFilesInternal(cx, out allFiles, out filteredFiles);
+					SetLocalFilesCache(cx, allFiles, filteredFiles);
 				}
 
 				listing = GetLocalFilesCache();
@@ -176,9 +182,13 @@ namespace AUI.FS
 		{
 			if (StaleLocalFilesCache(cx))
 			{
-				var list = GetFilesInternal(cx);
-				SetLocalFilesCache(cx, list);
-				listing.AddRaw(list);
+				List<IFilesystemObject> allFiles;
+				List<IFilesystemObject> filteredFiles;
+
+				GetFilesInternal(cx, out allFiles, out filteredFiles);
+				SetLocalFilesCache(cx, allFiles, filteredFiles);
+
+				listing.AddRaw(allFiles);
 			}
 			else
 			{
@@ -191,7 +201,7 @@ namespace AUI.FS
 
 				var cx2 = new Context(
 					"", null, cx.PackagesRoot,
-					Context.NoSort, Context.NoSortDirection, cx.Flags, "",
+					Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 					cx.Whitelist);
 
 				List<IFilesystemContainer> allDirs = null;
@@ -513,6 +523,12 @@ namespace AUI.FS
 
 		private bool IncludeFile(Context cx, IFilesystemObject o)
 		{
+			if (!string.IsNullOrEmpty(cx.RemovePrefix))
+			{
+				if (!o.Name.StartsWith(cx.RemovePrefix))
+					return false;
+			}
+
 			return DoIncludeFile(cx, o);
 		}
 
@@ -578,54 +594,51 @@ namespace AUI.FS
 			Instrumentation.End();
 		}
 
-		private List<IFilesystemObject> GetFilesInternal(Context cx)
+		private void GetFilesInternal(
+			Context cx,
+			out List<IFilesystemObject> allFiles,
+			out List<IFilesystemObject> filteredFiles)
 		{
-			List<IFilesystemObject> files;
+			allFiles = null;
+			filteredFiles = null;
 
 			Instrumentation.Start(I.CallingDoGetFiles);
 			{
 				// unset recursive, this is just for this container
 				bool oldRecursive = cx.Recursive;
 				cx.Recursive = false;
-				files = DoGetFiles(cx);
+				allFiles = DoGetFiles(cx);
 				cx.Recursive = oldRecursive;
 			}
 			Instrumentation.End();
 
 			Instrumentation.Start(I.CheckFiles);
 			{
-				if (files != null)
+				if (allFiles != null)
 				{
-					List<IFilesystemObject> checkedFiles = null;
-
-					for (int i = 0; i < files.Count; ++i)
+					for (int i = 0; i < allFiles.Count; ++i)
 					{
-						var f = files[i];
+						var f = allFiles[i];
 
-						if (checkedFiles == null)
+						if (filteredFiles == null)
 						{
 							if (!IncludeFile(cx, f))
 							{
-								checkedFiles = new List<IFilesystemObject>();
+								filteredFiles = new List<IFilesystemObject>();
 
 								for (int j = 0; j < i; ++j)
-									checkedFiles.Add(files[j]);
+									filteredFiles.Add(allFiles[j]);
 							}
 						}
 						else
 						{
 							if (IncludeFile(cx, f))
-								checkedFiles.Add(f);
+								filteredFiles.Add(f);
 						}
 					}
-
-					if (checkedFiles != null)
-						files = checkedFiles;
 				}
 			}
 			Instrumentation.End();
-
-			return files;
 		}
 
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)

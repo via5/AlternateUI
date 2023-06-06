@@ -52,7 +52,7 @@ namespace AUI.FS
 				return false;
 
 			int r = string.CompareOrdinal(
-				s_, Length - with.Length,
+				s_, end_ - with.Length,
 				with, 0,
 				with.Length);
 
@@ -239,6 +239,10 @@ namespace AUI.FS
 		public static string MakeFSPath(string originalPath)
 		{
 			string path = Normalize(originalPath);
+
+			// GotoDirectory() for packages just have 'author.package.1:'
+			if (path.EndsWith(":"))
+				path = "/AddonPackages/" + path.Substring(0, path.Length - 1);
 
 			path = Join("VaM", path);
 
@@ -465,7 +469,7 @@ namespace AUI.FS
 					po.Add("path", p.VirtualPath);
 
 					if (p.HasCustomDisplayName)
-						po.Add("display", p.DisplayName);
+						po.Add("display", p.GetDisplayName(null));
 
 					pins.Add(po);
 				}
@@ -696,6 +700,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			return "";
@@ -814,7 +823,6 @@ namespace AUI.FS
 		public string Name { get { return ""; } }
 		public string VirtualPath { get { return ""; } }
 		public string RelativeVirtualPath { get { return VirtualPath; } }
-		public string DisplayName { get { return ""; } set { } }
 		public string Tooltip { get { return ""; } }
 		public bool HasCustomDisplayName { get { return false; } }
 		public DateTime DateCreated { get { return DateTime.MaxValue; } }
@@ -829,6 +837,7 @@ namespace AUI.FS
 		public bool UnderlyingCanChange { get { return false; } }
 		public bool IsInternal { get { return true; } }
 		public bool IsFile { get { return false; } }
+		public bool IsWritable { get { return false; } }
 
 		public string DebugInfo()
 		{
@@ -838,6 +847,16 @@ namespace AUI.FS
 		public IFilesystemContainer Parent
 		{
 			get { return null; }
+		}
+
+		public string GetDisplayName(Context cx)
+		{
+			return "";
+		}
+
+		public void SetDisplayName(string name)
+		{
+			// no-op
 		}
 
 		public bool HasDirectories(Context cx)

@@ -73,6 +73,11 @@ namespace AUI.FS
 			get { return true; }
 		}
 
+		public override bool IsWritable
+		{
+			get { return false; }
+		}
+
 		public override string MakeRealPath()
 		{
 			string s = Name;
@@ -83,20 +88,27 @@ namespace AUI.FS
 			return s;
 		}
 
-		protected override string GetDisplayName()
+		protected override string DoGetDisplayName(Context cx)
 		{
 			var name = new StringView(Name);
-			var ext = Path.Extension(name);
 
-			if (ext.Compare(".vap", true) == 0 && name.StartsWith("Preset_"))
+			if (cx != null && !string.IsNullOrEmpty(cx.RemovePrefix))
 			{
-				name = name.Substring(7);
-				name = name.Substring(0, name.Length - 4);
+				if (name.StartsWith(cx.RemovePrefix))
+				{
+					name = name.Substring(cx.RemovePrefix.Length);
 
-				return name;
+					Log.Info($"'{name}'");
+					if (name.EndsWith(".vap"))
+					{
+						Log.Info($"{name}, has vap");
+						name = name.Substring(0, name.Length - 4);
+						Log.Info($"after: {name}");
+					}
+				}
 			}
 
-			return base.GetDisplayName();
+			return name;
 		}
 	}
 }

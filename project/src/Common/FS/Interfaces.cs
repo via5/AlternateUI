@@ -258,10 +258,10 @@ namespace AUI.FS
 		string Name { get; }
 		string VirtualPath { get; }
 		string RelativeVirtualPath { get; }
-		string DisplayName { get; set; }
 		string Tooltip { get; }
 		bool HasCustomDisplayName { get; }
 		bool IsFile { get; }
+		bool IsWritable{ get; }
 		DateTime DateCreated { get; }
 		DateTime DateModified { get; }
 		VUI.Icon Icon { get; }
@@ -275,6 +275,8 @@ namespace AUI.FS
 		bool IsInternal { get; }
 		IPackage ParentPackage { get; }
 
+		string GetDisplayName(Context cx);
+		void SetDisplayName(string name);
 		string MakeRealPath();
 		string DeVirtualize();
 		bool IsSameObject(IFilesystemObject o);

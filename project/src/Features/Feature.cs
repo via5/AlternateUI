@@ -40,8 +40,8 @@ namespace AUI
 			log_ = new Logger("aui." + name_);
 			enabled_ = defaultEnabled;
 
-			if (U.DevMode)
-				enabled_ = true;
+			//if (U.DevMode)
+			//	enabled_ = true;
 
 			enabledParam_ = new JSONStorableBool($"{name_}.enabled", enabled_, (bool b) =>
 			{

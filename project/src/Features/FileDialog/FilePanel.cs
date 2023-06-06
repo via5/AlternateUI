@@ -130,11 +130,11 @@ namespace AUI.FileDialog
 			get { return panel_; }
 		}
 
-		public void Set(FS.IFilesystemObject o)
+		public void Set(FS.Context cx, FS.IFilesystemObject o)
 		{
 			o_ = o;
 
-			name_.Text = o_.DisplayName;
+			name_.Text = o_.GetDisplayName(cx);
 			panel_.Tooltip.Text = o_.Tooltip;
 			panel_.Tooltip.FontSize = name_.FontSize;
 			panel_.Render = true;
@@ -344,6 +344,7 @@ namespace AUI.FileDialog
 			Log.Info($"SetPanels from {from}");
 
 			int count = files_?.Count ?? 0;
+			var cx = fd_.CreateFileContext(false);
 
 			int panelIndex = 0;
 			for (int i = from; i < count; ++i)
@@ -351,7 +352,7 @@ namespace AUI.FileDialog
 				var f = files_[i];
 				var fp = panels_[panelIndex];
 
-				fp.Set(f);
+				fp.Set(cx, f);
 				fp.SetSelectedInternal(fd_.SelectedFile?.IsSameObject(f) ?? false);
 
 				++panelIndex;
