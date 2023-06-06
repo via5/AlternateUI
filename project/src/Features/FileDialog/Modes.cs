@@ -470,8 +470,13 @@ namespace AUI.FileDialog
 		{
 			if (opts_.UpdateCurrent)
 			{
-				opts_.CurrentFile = fd.SelectedFile?.VirtualPath;
 				opts_.CurrentDirectory = fd.SelectedDirectory?.VirtualPath;
+
+				if (opts_.CurrentDirectory == null || fd.SelectedFile == null)
+					opts_.CurrentFile = fd.SelectedFile?.VirtualPath;
+				else
+					opts_.CurrentFile = opts_.CurrentDirectory + "/" + fd.SelectedFile.Name;
+
 				opts_.CurrentDirectoryInPinned = fd.SelectedDirectoryRootInPinned?.VirtualPath ?? "";
 			}
 

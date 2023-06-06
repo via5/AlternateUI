@@ -636,6 +636,8 @@ namespace AUI.FileDialog
 
 			if (!string.IsNullOrEmpty(cwd))
 			{
+				Log.Info($"trying cwd initial directory '{cwd}'");
+
 				if (SelectDirectory(cwd, flags, scrollTo))
 				{
 					opts.CurrentDirectory = cwd;
@@ -649,6 +651,8 @@ namespace AUI.FileDialog
 			{
 				var dir = FS.Path.Parent(opts.CurrentFile);
 
+				Log.Info($"trying current file parent initial directory '{dir}'");
+
 				if (SelectDirectory(dir, flags, scrollTo))
 					return;
 
@@ -659,6 +663,8 @@ namespace AUI.FileDialog
 			{
 				if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
 				{
+					Log.Info($"trying dir in pinned initial directory '{opts.CurrentDirectory}'");
+
 					if (SelectDirectoryInPinned(
 							opts.CurrentDirectory, opts.CurrentDirectoryInPinned,
 							flags, scrollTo))
@@ -669,6 +675,8 @@ namespace AUI.FileDialog
 					Log.Error($"bad initial directory (opts current in pinned) '{opts.CurrentDirectory}' '{opts.CurrentDirectoryInPinned}'");
 				}
 
+				Log.Info($"trying current dir initial directory '{opts.CurrentDirectory}'");
+
 				if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
 					return;
 
@@ -677,16 +685,12 @@ namespace AUI.FileDialog
 
 			if (!string.IsNullOrEmpty(mode_.DefaultDirectory))
 			{
+				Log.Info($"trying default dir initial directory '{mode_.DefaultDirectory}'");
+
 				if (SelectDirectory(mode_.DefaultDirectory, flags, scrollTo))
 					return;
 
 				Log.Error($"bad initial directory (mode default dir) {mode_.DefaultDirectory}");
-			}
-
-			if (!string.IsNullOrEmpty(opts.CurrentDirectory))
-			{
-				if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
-					return;
 			}
 
 			Log.Error($"can't select any initial directory");

@@ -378,9 +378,6 @@ namespace AUI.FileDialog
 
 			fd_.Enable();
 			hook_.Enable();
-
-			//fd_.Show(Modes.OpenPreset("Custom/Atom/Person/Plugins"), null, "VaM/Custom/Atom/Person/Plugins");
-			//fd_.Show(Modes.OpenScene(), null);
 		}
 
 		protected override void DoDisable()
