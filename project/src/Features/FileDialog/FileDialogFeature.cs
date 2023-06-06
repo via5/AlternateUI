@@ -306,6 +306,32 @@ namespace AUI.FileDialog
 			return GetExtensions(SoundExtensions, "All sound files", includeAll);
 		}
 
+		public static ExtensionItem[] GetAnyExtensions(string fileFormat, bool includeAll)
+		{
+			var formats = fileFormat.Split('|');
+
+			var list = new List<ExtensionItem>();
+
+			foreach (var f in formats)
+			{
+				var tf = f?.Trim();
+				if (string.IsNullOrEmpty(tf))
+					continue;
+
+				list.Add(new ExtensionItem($"{tf} (*.{tf})", new string[] { $".{tf}" }));
+			}
+
+			if (list.Count == 0 || includeAll)
+				list.Add(GetAnyExtension());
+
+			return list.ToArray();
+		}
+
+
+		private static ExtensionItem GetAnyExtension()
+		{
+			return new ExtensionItem("All files (*.*)", new string[] { "*.*" });
+		}
 
 		public static ExtensionItem[] GetExtensions(
 			FS.Extension[] exts, string allText, bool includeAll)
@@ -336,9 +362,7 @@ namespace AUI.FileDialog
 				list.Add(new ExtensionItem(e.Name + " (" + e.ExtensionString + ")", e.Extensions));
 
 			if (includeAll)
-			{
-				list.Add(new ExtensionItem("All files (*.*)", new string[] { "*.*" }));
-			}
+				list.Add(GetAnyExtension());
 
 			return list.ToArray();
 		}
@@ -381,62 +405,16 @@ namespace AUI.FileDialog
 		{
 			string path = FS.Path.Normalize(fb.defaultPath);
 
-			Log.Verbose(
+			Log.Info(
 				$"show filebrowser request fb={fb} " +
 				$"title={fb.titleText?.text} ff={fb.fileFormat} " +
 				$"path={fb.defaultPath} normPath={path}");
 
-			var t = fb.titleText?.text ?? "";
-
-			if (fb == SuperController.singleton.fileBrowserUI)
+			var m = FindMode(fb, false);
+			if (m != null)
 			{
-				if (t == "Select Scene For Merge")
-				{
-					Show(Modes.OpenScene("Merge scene"), cb);
-					return true;
-				}
-				else if (t == "Select Scene For Edit")
-				{
-					Show(Modes.OpenScene("Open scene for edit"), cb);
-					return true;
-				}
-				else if (t == "Select Scene To Load")
-				{
-					Show(Modes.OpenScene(), cb);
-					return true;
-				}
-				else if (t == "Select Save File")
-				{
-					Show(Modes.SaveScene(), cb);
-					return true;
-				}
-				else if (t == "Select Preset File")
-				{
-					if (fb.fileFormat == "json|vac|zip")
-					{
-						Show(Modes.OpenPreset(path, fb.fileRemovePrefix), cb, null);
-						return true;
-					}
-				}
-				else if (t == "Select Save Preset File")
-				{
-					if (fb.fileFormat == "json|vac|zip")
-					{
-						Show(Modes.SavePreset(path), cb, null);
-						return true;
-					}
-				}
-			}
-			else if (fb == SuperController.singleton.mediaFileBrowserUI)
-			{
-				if (t == "Select File")
-				{
-					if (fb.fileFormat == "mp3|ogg|wav")
-					{
-						Show(Modes.OpenSound(), cb, null);
-						return true;
-					}
-				}
+				Show(m, cb);
+				return true;
 			}
 
 			return false;
@@ -452,36 +430,84 @@ namespace AUI.FileDialog
 				$"path={fb.defaultPath} normPath={path} " +
 				$"remove={fb.fileRemovePrefix}");
 
-			if (fb == SuperController.singleton.mediaFileBrowserUI)
+			var m = FindMode(fb, true);
+			if (m != null)
 			{
-				var t = fb.titleText?.text ?? "";
-
-				if (t == "Select File")
-				{
-					if (fb.fileFormat == "assetbundle|scene")
-					{
-						Show(Modes.OpenCUA(), cb);
-						return true;
-					}
-					else if (fb.fileFormat == "cs|cslist|dll")
-					{
-						Show(Modes.OpenPlugin(), cb);
-						return true;
-					}
-					else if (fb.fileFormat == "vap")
-					{
-						Show(Modes.OpenPreset(path, fb.fileRemovePrefix), cb, null);
-						return true;
-					}
-					else if (fb.fileFormat == "jpg|jpeg|png|tif|tiff")
-					{
-						Show(Modes.OpenTexture(path), cb, null);
-						return true;
-					}
-				}
+				Show(m, cb);
+				return true;
 			}
 
 			return false;
+		}
+
+		IFileDialogMode FindMode(FileBrowser fb, bool full)
+		{
+			string path = FS.Path.Normalize(fb.defaultPath);
+			string t = fb.titleText?.text ?? "";
+
+			if (fb == SuperController.singleton.fileBrowserUI)
+			{
+				if (!full)
+				{
+					if (t == "Select Scene For Merge")
+					{
+						return Modes.OpenScene("Merge scene");
+					}
+					else if (t == "Select Scene For Edit")
+					{
+						return Modes.OpenScene("Open scene for edit");
+					}
+					else if (t == "Select Scene To Load")
+					{
+						return Modes.OpenScene();
+					}
+					else if (t == "Select Save File")
+					{
+						return Modes.SaveScene();
+					}
+					else if (t == "Select Preset File")
+					{
+						if (fb.fileFormat == "json|vac|zip")
+							return Modes.OpenPreset(path, fb.fileRemovePrefix);
+					}
+					else if (t == "Select Save Preset File")
+					{
+						if (fb.fileFormat == "json|vac|zip")
+							return Modes.SavePreset(path);
+					}
+				}
+				else
+				{
+					if (t == "Select Save File")
+					{
+						return Modes.SaveAny(path, fb.fileFormat);
+					}
+				}
+			}
+			else if (fb == SuperController.singleton.mediaFileBrowserUI)
+			{
+				if (t == "Select File")
+				{
+					if (fb.fileFormat == "mp3|ogg|wav")
+						return Modes.OpenSound();
+					else if (fb.fileFormat == "assetbundle|scene")
+						return Modes.OpenCUA();
+					else if (fb.fileFormat == "cs|cslist|dll")
+						return Modes.OpenPlugin();
+					else if (fb.fileFormat == "vap")
+						return Modes.OpenPreset(path, fb.fileRemovePrefix);
+					else if (fb.fileFormat == "jpg|jpeg|png|tif|tiff")
+						return Modes.OpenTexture(path);
+					else
+						return Modes.OpenAny(path, fb.fileFormat);
+				}
+				else if (t == "Select Save File")
+				{
+					return Modes.SaveAny(path, fb.fileFormat);
+				}
+			}
+
+			return null;
 		}
 
 		public bool GotoDirectoryHandler(

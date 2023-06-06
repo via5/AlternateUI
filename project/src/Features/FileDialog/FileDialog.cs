@@ -683,8 +683,11 @@ namespace AUI.FileDialog
 				Log.Error($"bad initial directory (mode default dir) {mode_.DefaultDirectory}");
 			}
 
-			if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
-				return;
+			if (!string.IsNullOrEmpty(opts.CurrentDirectory))
+			{
+				if (SelectDirectory(opts.CurrentDirectory, flags, scrollTo))
+					return;
+			}
 
 			Log.Error($"can't select any initial directory");
 		}

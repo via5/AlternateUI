@@ -353,12 +353,12 @@ namespace AUI.FileDialog
 
 		string Title { get; set; }
 		string RemovePrefix { get; set; }
-		ExtensionItem[] Extensions { get; }
-		string PackageRoot { get; }
+		ExtensionItem[] Extensions { get; set; }
+		string PackageRoot { get; set; }
 		string DefaultDirectory { get; set; }
 		string ActionText { get; }
 		bool IsWritable { get; }
-		FS.Whitelist Whitelist { get; }
+		FS.Whitelist Whitelist { get; set; }
 
 		bool CanExecute(FileDialog fd);
 		void Execute(FileDialog fd, ExecuteHandler h);
@@ -372,10 +372,10 @@ namespace AUI.FileDialog
 		private readonly string name_;
 		private string title_;
 		private string removePrefix_ = "";
-		private readonly ExtensionItem[] exts_;
-		private readonly string packageRoot_;
+		private ExtensionItem[] exts_;
+		private string packageRoot_;
 		private string defaultPath_;
-		private readonly FS.Whitelist whitelist_;
+		private FS.Whitelist whitelist_;
 		private readonly Options opts_;
 
 		protected BasicMode(
@@ -431,11 +431,13 @@ namespace AUI.FileDialog
 		public ExtensionItem[] Extensions
 		{
 			get { return exts_; }
+			set { exts_ = value; }
 		}
 
 		public string PackageRoot
 		{
 			get { return packageRoot_; }
+			set { packageRoot_ = value; }
 		}
 
 		public string DefaultDirectory
@@ -447,6 +449,7 @@ namespace AUI.FileDialog
 		public FS.Whitelist Whitelist
 		{
 			get { return whitelist_; }
+			set { whitelist_ = value; }
 		}
 
 		public abstract string ActionText { get; }
@@ -871,6 +874,26 @@ namespace AUI.FileDialog
 			}
 
 			return openSound_;
+		}
+
+		public static IFileDialogMode OpenAny(string path, string ff)
+		{
+			return new OpenMode(
+				"any", "Open file", FileDialogFeature.GetAnyExtensions(ff, true),
+				path, "VaM/" + path,
+				false, true, true, false, false,
+				FS.Context.SortDateModified, FS.Context.SortDescending,
+				new FS.Whitelist(new string[] { "VaM/" + path }));
+		}
+
+		public static IFileDialogMode SaveAny(string path, string ff)
+		{
+			return new SaveMode(
+				"any", "Save file", FileDialogFeature.GetAnyExtensions(ff, true),
+				path, "VaM/" + path,
+				false, true, true, false, false,
+				FS.Context.SortDateModified, FS.Context.SortDescending,
+				new FS.Whitelist(new string[] { "VaM/" + path }));
 		}
 
 
