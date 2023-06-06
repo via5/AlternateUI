@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using uFileBrowser;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace AUI.FileDialog
 {
@@ -441,6 +442,7 @@ namespace AUI.FileDialog
 		{
 			string path = FS.Path.Normalize(fb.defaultPath);
 			string t = fb.titleText?.text ?? "";
+			var a = SuperController.singleton.GetSelectedAtom();
 
 			if (fb == SuperController.singleton.fileBrowserUI)
 			{
@@ -465,12 +467,12 @@ namespace AUI.FileDialog
 					else if (t == "Select Preset File")
 					{
 						if (fb.fileFormat == "json|vac|zip")
-							return Modes.OpenPreset(path, fb.fileRemovePrefix);
+							return Modes.OpenPreset(path, fb.fileRemovePrefix, a);
 					}
 					else if (t == "Select Save Preset File")
 					{
 						if (fb.fileFormat == "json|vac|zip")
-							return Modes.SavePreset(path);
+							return Modes.SavePreset(path, a);
 					}
 				}
 				else
@@ -486,17 +488,41 @@ namespace AUI.FileDialog
 				if (t == "Select File")
 				{
 					if (fb.fileFormat == "mp3|ogg|wav")
+					{
 						return Modes.OpenSound();
+					}
 					else if (fb.fileFormat == "assetbundle|scene")
+					{
 						return Modes.OpenCUA();
+					}
 					else if (fb.fileFormat == "cs|cslist|dll")
+					{
 						return Modes.OpenPlugin();
+					}
 					else if (fb.fileFormat == "vap")
-						return Modes.OpenPreset(path, fb.fileRemovePrefix);
+					{
+						return Modes.OpenPreset(path, fb.fileRemovePrefix, a);
+					}
 					else if (fb.fileFormat == "jpg|jpeg|png|tif|tiff")
-						return Modes.OpenTexture(path);
+					{
+						string root = null;
+
+						foreach (var sc in fb.shortCuts)
+						{
+							var nsc = FS.Path.Normalize(sc.path);
+							if (nsc.StartsWith("Custom/"))
+							{
+								root = nsc;
+								break;
+							}
+						}
+
+						return Modes.OpenTexture(path, root);
+					}
 					else
+					{
 						return Modes.OpenAny(path, fb.fileFormat);
+					}
 				}
 				else if (t == "Select Save File")
 				{
@@ -538,7 +564,7 @@ namespace AUI.FileDialog
 			if (f != null)
 			{
 				cwd = FS.Path.Parent(f);
-				Log.Verbose($"show: using filename '{f}', cwd={cwd}");
+				Log.Info($"show: using filename '{f}', cwd={cwd}");
 			}
 
 			fd_.Show(mode, (path) => cb?.Invoke(path), cwd, f);
@@ -551,27 +577,53 @@ namespace AUI.FileDialog
 			if (f != null)
 			{
 				cwd = FS.Path.Parent(f);
-				Log.Verbose($"show: using filename '{f}', cwd={cwd}");
+				Log.Info($"show: using filename '{f}', cwd={cwd}");
 			}
 
 			fd_.Show(mode, (path) => cb?.Invoke(path, true), cwd, f);
 		}
 
+		private UnityEngine.UI.Button GetClickedButton()
+		{
+			PointerEventData pointer = new PointerEventData(EventSystem.current);
+			pointer.position = Input.mousePosition;
+
+			List<RaycastResult> raycastResults = new List<RaycastResult>();
+			EventSystem.current.RaycastAll(pointer, raycastResults);
+
+			if (raycastResults.Count > 0)
+			{
+				foreach (var go in raycastResults)
+				{
+					if (go.gameObject != null)
+					{
+						var b = go.gameObject.GetComponent<UnityEngine.UI.Button>();
+						if (b != null)
+							return b;
+					}
+				}
+			}
+
+			return null;
+		}
+
 		private string GetFilename()
 		{
-			var button = UnityEngine.EventSystems.EventSystem
-				.current.currentSelectedGameObject;
+			var button = GetClickedButton();
 
-			Log.Verbose($"sel={button}");
+			Log.Info($"sel={button}");
 
-			if (button == null || button.GetComponent<UnityEngine.UI.Button>() == null)
+			if (button == null)
+			{
+				Log.Info($"no clicked button");
 				return null;
+			}
 
-			string f = GetFilenameFromSelect(button);
+			string f = GetFilenameFromSelect(button.gameObject);
 			if (f != null)
 				return f;
 
-			f = GetFilenameForPlugin(button);
+			f = GetFilenameForPlugin(button.gameObject);
 			if (f != null)
 				return f;
 
@@ -582,22 +634,40 @@ namespace AUI.FileDialog
 		{
 			var parent = button.transform.parent;
 			if (parent == null)
+			{
+				Log.Info($"button {button} has no parent");
 				return null;
+			}
+
+			Log.Info($"looking for url child");
 
 			foreach (Transform child in parent)
 			{
 				if (!child.name.Contains("Url"))
+				{
+					Log.Info($"{child} name doesn't have Url");
 					continue;
+				}
 
 				var s = child.GetComponent<UnityEngine.UI.Text>()?.text;
 				if (string.IsNullOrEmpty(s))
+				{
+					Log.Info($"{child} has no text");
 					continue;
+				}
 
 				if (s == "NULL")
+				{
+					Log.Info($"{child} is NULL");
 					return null;
+				}
+
+				Log.Info($"using {child}, text={s}");
 
 				return FS.Path.MakeFSPathFromShort(s);
 			}
+
+			Log.Info($"no url child");
 
 			return null;
 		}

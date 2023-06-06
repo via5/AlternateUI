@@ -815,13 +815,14 @@ namespace AUI.FileDialog
 			return openPlugin_;
 		}
 
-		public static IFileDialogMode OpenPreset(string path, string removePrefix)
+		public static IFileDialogMode OpenPreset(
+			string path, string removePrefix, Atom currentAtom)
 		{
-			var info = GetPresetInfo(path);
+			var info = GetPresetInfo(path, currentAtom);
 
 			IFileDialogMode m;
 
-			if (!openPreset_.TryGetValue(path, out m))
+			if (!openPreset_.TryGetValue(info.type, out m))
 			{
 				m = new OpenMode(
 					info.type, info.loadCaption, info.extensions,
@@ -830,7 +831,7 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
-				openPreset_.Add(path, m);
+				openPreset_.Add(info.type, m);
 			}
 
 			m.RemovePrefix = removePrefix;
@@ -838,13 +839,13 @@ namespace AUI.FileDialog
 			return m;
 		}
 
-		public static IFileDialogMode SavePreset(string path)
+		public static IFileDialogMode SavePreset(string path, Atom currentAtom)
 		{
-			var info = GetPresetInfo(path);
+			var info = GetPresetInfo(path, currentAtom);
 
 			IFileDialogMode m;
 
-			if (!savePreset_.TryGetValue(path, out m))
+			if (!savePreset_.TryGetValue(info.type, out m))
 			{
 				m = new SaveMode(
 					info.type, info.saveCaption, info.extensions,
@@ -853,28 +854,31 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
-				savePreset_.Add(path, m);
+				savePreset_.Add(info.type, m);
 			}
 
 			return m;
 		}
 
-		public static IFileDialogMode OpenTexture(string path)
+		public static IFileDialogMode OpenTexture(string path, string root = null)
 		{
 			var info = GetTextureInfo(path);
 
+			if (root == null)
+				root = MakePackageRoot(path);
+
 			IFileDialogMode m;
 
-			if (!openTexture_.TryGetValue(path, out m))
+			if (!openTexture_.TryGetValue(root, out m))
 			{
 				m = new OpenMode(
 					info.type, info.loadCaption, info.extensions,
-					MakePackageRoot(path), MakeDefaultPath(path),
+					root, MakeDefaultPath(root),
 					false, true, true, false, false,
 					FS.Context.SortDateModified, FS.Context.SortDescending,
-					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
+					new FS.Whitelist(new string[] { MakeWhitelist(root) }));
 
-				openTexture_.Add(path, m);
+				openTexture_.Add(root, m);
 			}
 
 			return m;
@@ -940,16 +944,25 @@ namespace AUI.FileDialog
 			return FS.Path.MakeFSPath(path);
 		}
 
-		private static ModeInfo GetPresetInfo(string path)
+		private static ModeInfo GetPresetInfo(string path, Atom currentAtom)
 		{
 			path = path.Replace("\\", "/");
+
+			string s = "";
+
+			if (currentAtom != null)
+			{
+				var c = currentAtom.GetComponentInChildren<DAZCharacter>();
+				if (c != null)
+					s = (c.isMale ? "Male" : "Female");
+			}
 
 			switch (path)
 			{
 				case "Custom/Atom/Person/Plugins":
 				{
 					return new ModeInfo(
-						"pluginPreset",
+						"pluginPreset" + s,
 						"Open plugin preset", "Save plugin preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
@@ -957,7 +970,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/General":
 				{
 					return new ModeInfo(
-						"generalPreset",
+						"generalPreset" + s,
 						"Open general preset", "Save general preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
@@ -965,7 +978,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Appearance":
 				{
 					return new ModeInfo(
-						"appearancePreset",
+						"appearancePreset" + s,
 						"Open appearance preset", "Save appearance preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
@@ -973,7 +986,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Pose":
 				{
 					return new ModeInfo(
-						"posePreset",
+						"posePreset" + s,
 						"Open pose preset", "Save pose preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
@@ -981,7 +994,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/BreastPhysics":
 				{
 					return new ModeInfo(
-						"breastPhysicsPreset",
+						"breastPhysicsPreset" + s,
 						"Open breast physics preset",
 						"Save breast physics preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -990,7 +1003,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/GlutePhysics":
 				{
 					return new ModeInfo(
-						"glutePhysicsPreset",
+						"glutePhysicsPreset" + s,
 						"Open glute physics preset",
 						"Save glute physics preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -999,7 +1012,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/AnimationPresets":
 				{
 					return new ModeInfo(
-						"animationPreset",
+						"animationPreset" + s,
 						"Open animation preset",
 						"Save animation preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -1008,7 +1021,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Clothing":
 				{
 					return new ModeInfo(
-						"clothingPreset",
+						"clothingPreset" + s,
 						"Open clothing preset",
 						"Save clothing preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -1017,7 +1030,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Hair":
 				{
 					return new ModeInfo(
-						"hairPreset",
+						"hairPreset" + s,
 						"Open hair preset",
 						"Save hair preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -1026,7 +1039,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Morphs":
 				{
 					return new ModeInfo(
-						"morphPreset",
+						"morphPreset" + s,
 						"Open morphs preset",
 						"Save morphs preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -1035,7 +1048,7 @@ namespace AUI.FileDialog
 				case "Custom/Atom/Person/Skin":
 				{
 					return new ModeInfo(
-						"skinPreset",
+						"skinPreset" + s,
 						"Open skin preset",
 						"Save skin preset",
 						FileDialogFeature.GetPresetExtensions(true));
@@ -1045,7 +1058,7 @@ namespace AUI.FileDialog
 				case "Saves/Person/full":
 				{
 					return new ModeInfo(
-						"legacyPreset",
+						"legacyPreset" + s,
 						"Open preset (legacy)", "Save preset (legacy)",
 						FileDialogFeature.GetLegacyPresetExtensions(true));
 				}
@@ -1053,7 +1066,7 @@ namespace AUI.FileDialog
 				case "Saves/Person/appearance":
 				{
 					return new ModeInfo(
-						"legacyAppearancePreset",
+						"legacyAppearancePreset" + s,
 						"Open appearance preset (legacy)",
 						"Save appearance preset (legacy)",
 						FileDialogFeature.GetLegacyPresetExtensions(true));
@@ -1062,7 +1075,7 @@ namespace AUI.FileDialog
 				case "Saves/Person/pose":
 				{
 					return new ModeInfo(
-						"legacyPosePreset",
+						"legacyPosePreset" + s,
 						"Open pose preset (legacy)",
 						"Save pose preset (legacy)",
 						FileDialogFeature.GetLegacyPresetExtensions(true));

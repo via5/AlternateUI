@@ -34,7 +34,7 @@ namespace AUI.FileDialog
 			up_ = buttons.Add(new VUI.ToolButton("\x2191", () => fd_.Up(), "Up"));
 			refresh_ = buttons.Add(new VUI.ToolButton("Refresh", () => fd_.Refresh(), "Refresh"));
 			pin_ = buttons.Add(new VUI.ToolButton("Pin", OnTogglePin));
-			gotoDir_ = buttons.Add(new VUI.ToolButton("Merged folder", GotoDir,
+			gotoDir_ = buttons.Add(new VUI.ToolButton("Merged folder", GotoRVPDir,
 				"Go to the corresponding merged folder. Available when " +
 				"'Merged packages into folders' is set and the current " +
 				"folder is in a package"));
@@ -109,7 +109,7 @@ namespace AUI.FileDialog
 				next_.Enabled = fd_.CanGoNext();
 				up_.Enabled = fd_.CanGoUp();
 				drop_.Button.Enabled = (fd_.CanGoBack() || fd_.CanGoNext());
-				gotoDir_.Enabled = CanGotoDir(dir);
+				gotoDir_.Enabled = fd_.CanGotoRVPDir(dir);
 				openInExplorer_.Enabled = CanOpenInExplorer(dir);
 
 				UpdatePin();
@@ -162,24 +162,9 @@ namespace AUI.FileDialog
 			}
 		}
 
-		private bool CanGotoDir(FS.IFilesystemContainer dir)
+		public void GotoRVPDir()
 		{
-			if (dir != null)
-			{
-				var cx = fd_.CreateTreeContext(false);
-				if (cx.MergePackages)
-					return (dir.VirtualPath != dir.RelativeVirtualPath);
-			}
-
-			return false;
-		}
-
-		public void GotoDir()
-		{
-			var dir = fd_.SelectedDirectory;
-
-			if (CanGotoDir(dir))
-				fd_.SelectDirectory(dir.RelativeVirtualPath);
+			fd_.GotoRVPDir(fd_.SelectedFile ?? fd_.SelectedDirectory);
 		}
 
 		public void OpenInExplorer()

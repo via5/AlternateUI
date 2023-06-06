@@ -241,6 +241,50 @@ namespace AUI.FileDialog
 			}
 		}
 
+		public bool CanGotoRVPDir(FS.IFilesystemObject o)
+		{
+			if (o == null)
+				return false;
+
+			FS.IFilesystemContainer dir;
+
+			if (o.IsFile)
+				dir = o.Parent;
+			else
+				dir = o as FS.IFilesystemContainer;
+
+			if (dir != null)
+			{
+				var cx = CreateTreeContext(false);
+				if (cx.MergePackages)
+					return (dir.VirtualPath != dir.RelativeVirtualPath);
+			}
+
+			return false;
+		}
+
+		public void GotoRVPDir(FS.IFilesystemObject o)
+		{
+			if (o == null)
+				return;
+
+			FS.IFilesystemContainer dir;
+
+			if (o.IsFile)
+				dir = o.Parent;
+			else
+				dir = o as FS.IFilesystemContainer;
+
+			if (dir != null)
+			{
+				if (SelectDirectory(dir.RelativeVirtualPath))
+				{
+					if (o.IsFile)
+						SelectFile(o);
+				}
+			}
+		}
+
 		public void SelectFile(FS.IFilesystemObject o, int flags = SelectFileNoFlags)
 		{
 			Log.Info($"SelectFile {o}");
@@ -696,36 +740,30 @@ namespace AUI.FileDialog
 			Log.Error($"can't select any initial directory");
 		}
 
-		private bool SelectInitialFile(string path, string initialFile = null)
+		private bool SelectInitialFile(string path, string initialPath = null)
 		{
 			if (dir_ == null)
 				return false;
 
-			if (!string.IsNullOrEmpty(initialFile))
+			FS.StringView name;
+
+			if (initialPath != null)
+				name = FS.Path.Filename(initialPath);
+			else
+				name = FS.Path.Filename(path);
+
+			if (name.Length > 0)
 			{
 				foreach (var f in GetFiles())
 				{
-					if (f.VirtualPath == initialFile)
+					if (f.Name == name)
 					{
 						SelectFile(f, SelectFileScrollTo);
 						return true;
 					}
 				}
 
-				Log.Error($"bad initial file '{initialFile}'");
-			}
-			else if (!string.IsNullOrEmpty(path))
-			{
-				foreach (var f in GetFiles())
-				{
-					if (f.VirtualPath == path)
-					{
-						SelectFile(f, SelectFileScrollTo);
-						return true;
-					}
-				}
-
-				Log.Error($"bad last file path={path}");
+				Log.Error($"bad initial file '{name}'");
 			}
 
 			buttonsPanel_.Filename = mode_.MakeNewFilename(this);
