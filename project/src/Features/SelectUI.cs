@@ -49,6 +49,7 @@ namespace AUI.SelectUI
 
 		private SuperController sc_;
 		private float elapsed_ = 0;
+		private ScrollRect sr_ = null;
 
 		private string[] lastDisplays_ = null;
 		private string[] lastValues_ = null;
@@ -79,8 +80,63 @@ namespace AUI.SelectUI
 				return;
 			}
 
+			float newPos = GetAdjustedScrollBarPosition();
+
 			SuperController.singleton.RemoveAtom(atom);
+
+			if (newPos >= 0)
+				AlternateUI.Instance.StartCoroutine(CoRestoreScroll(newPos));
+
 			RefreshCallbacks();
+		}
+
+		private float GetAdjustedScrollBarPosition()
+		{
+			var panel = SuperController.singleton.selectAtomPopup?.popupPanel;
+
+			if (sr_ == null)
+				sr_ = panel?.GetComponentInChildren<ScrollRect>(true);
+
+			if (sr_ == null)
+				return -1;
+
+			// current scrollbar position [0, 1]
+			var sb = sr_.verticalNormalizedPosition;
+
+			// any button in the list
+			var button = panel.GetComponentInChildren<UIPopupButton>();
+			if (button == null)
+				return -1;
+
+			// these pixels will disappear from the list
+			var buttonHeight = button.GetComponent<RectTransform>().rect.height;
+
+			// current height of the content that's outside the viewport
+			var currentHeight = sr_.content.rect.height - sr_.viewport.rect.height;
+
+			// new height of the content once the button is gone
+			var newHeight = currentHeight - buttonHeight;
+
+			// happens when there's not enough buttons for the scrollbar anymore
+			if (currentHeight <= 0 || newHeight <= 0)
+				return -1;
+
+			// current position in pixel of the scrollbar
+			var currentPos = sb * currentHeight;
+
+			// the new position is the old minus the button height that's gone
+			float newPos = (currentPos - buttonHeight) / newHeight;
+
+			// clamp to [0, 1], anything < 0 is considered an error
+			return Mathf.Clamp01(newPos);
+		}
+
+		private IEnumerator CoRestoreScroll(float newPos)
+		{
+			yield return new WaitForEndOfFrame();
+
+			if (sr_ != null)
+				sr_.verticalScrollbar.value = newPos;
 		}
 
 		protected override void DoInit()
