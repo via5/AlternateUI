@@ -710,13 +710,21 @@ namespace AUI.FileDialog
 	{
 		struct ModeInfo
 		{
-			public string type, loadCaption, saveCaption;
+			public string id, type, loadCaption, saveCaption;
 			public ExtensionItem[] extensions;
 
 			public ModeInfo(
 				string type, string loadCaption, string saveCaption,
 				ExtensionItem[] extensions)
+				: this(type, type, loadCaption, saveCaption, extensions)
 			{
+			}
+
+			public ModeInfo(
+				string id, string type, string loadCaption, string saveCaption,
+				ExtensionItem[] extensions)
+			{
+				this.id = id;
 				this.type = type;
 				this.loadCaption = loadCaption;
 				this.saveCaption = saveCaption;
@@ -748,7 +756,7 @@ namespace AUI.FileDialog
 			if (openScene_ == null)
 			{
 				openScene_ = new OpenMode(
-					"scene", caption,
+					"openScene", caption,
 					FileDialogFeature.GetSceneExtensions(true),
 					"Saves/scene", "VaM/Saves/scene",
 					false, true, true, false, false,
@@ -770,7 +778,7 @@ namespace AUI.FileDialog
 			if (saveScene_ == null)
 			{
 				saveScene_ = new SaveMode(
-					"scene", "Save scene",
+					"saveScene", "Save scene",
 					FileDialogFeature.GetSceneExtensions(false),
 					"Saves/scene", "VaM/Saves/scene",
 					false, false, false, false, false,
@@ -822,7 +830,7 @@ namespace AUI.FileDialog
 
 			IFileDialogMode m;
 
-			if (!openPreset_.TryGetValue(info.type, out m))
+			if (!openPreset_.TryGetValue(info.id, out m))
 			{
 				m = new OpenMode(
 					info.type, info.loadCaption, info.extensions,
@@ -831,7 +839,7 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
-				openPreset_.Add(info.type, m);
+				openPreset_.Add(info.id, m);
 			}
 
 			m.RemovePrefix = removePrefix;
@@ -845,7 +853,7 @@ namespace AUI.FileDialog
 
 			IFileDialogMode m;
 
-			if (!savePreset_.TryGetValue(info.type, out m))
+			if (!savePreset_.TryGetValue(info.id, out m))
 			{
 				m = new SaveMode(
 					info.type, info.saveCaption, info.extensions,
@@ -854,7 +862,7 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
-				savePreset_.Add(info.type, m);
+				savePreset_.Add(info.id, m);
 			}
 
 			return m;
@@ -1086,7 +1094,7 @@ namespace AUI.FileDialog
 					AlternateUI.Instance.Log.Error($"unknown preset '{path}'");
 
 					return new ModeInfo(
-						"unknownPreset", "Open preset", "Save preset",
+						path, "unknownPreset", "Open preset", "Save preset",
 						FileDialogFeature.GetPresetExtensions(true));
 				}
 			}

@@ -210,7 +210,7 @@ namespace AUI
 				}
 
 				var s = CreateSpacer();
-				s.height = 85;
+				s.height = 20;
 			}
 		}
 

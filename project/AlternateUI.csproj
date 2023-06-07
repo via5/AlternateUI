@@ -127,6 +127,7 @@
     <Compile Include="src\Features\FileDialog\FilePanel.cs" />
     <Compile Include="src\Features\FileDialog\FileTree.cs" />
     <Compile Include="src\Features\FileDialog\FileTreeItem.cs" />
+    <Compile Include="src\Features\FileDialog\Hooks.cs" />
     <Compile Include="src\Features\FileDialog\Modes.cs" />
     <Compile Include="src\Features\FileDialog\OptionsPanel.cs" />
     <Compile Include="src\Features\HairUI.cs" />

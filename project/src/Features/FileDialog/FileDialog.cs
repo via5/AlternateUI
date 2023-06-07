@@ -749,8 +749,10 @@ namespace AUI.FileDialog
 
 			if (initialPath != null)
 				name = FS.Path.Filename(initialPath);
-			else
+			else if (path != null)
 				name = FS.Path.Filename(path);
+			else
+				return false;
 
 			if (name.Length > 0)
 			{

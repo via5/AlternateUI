@@ -4,12 +4,39 @@ using UnityEngine.UI;
 
 namespace AUI
 {
+	public struct Availability
+	{
+		public bool available;
+		public string why;
+
+		static public Availability Yes()
+		{
+			var a = new Availability();
+
+			a.available = true;
+			a.why = "";
+
+			return a;
+		}
+
+		static public Availability No(string why)
+		{
+			var a = new Availability();
+
+			a.available = false;
+			a.why = why;
+
+			return a;
+		}
+	}
+
 	interface IFeature
 	{
 		string Name { get; }
 		string DisplayName { get; }
 		string Description { get; }
 
+		Availability GetAvailability();
 		void LoadOptions(JSONClass o);
 		JSONClass SaveOptions();
 		void Init();
@@ -29,6 +56,7 @@ namespace AUI
 		private readonly Logger log_;
 		private JSONStorableBool enabledParam_;
 		private bool enabled_;
+		private bool available_ = false;
 		private bool failed_ = false;
 
 		protected BasicFeature(
@@ -118,10 +146,15 @@ namespace AUI
 
 		private bool CanRun
 		{
-			get { return enabled_ && !failed_; }
+			get { return enabled_ && available_ && !failed_; }
 		}
 
 		public abstract string Description { get; }
+
+		public virtual Availability GetAvailability()
+		{
+			return Availability.Yes();
+		}
 
 		public void LoadOptions(JSONClass o)
 		{
@@ -172,7 +205,12 @@ namespace AUI
 
 			try
 			{
-				DoInit();
+				available_ = GetAvailability().available;
+
+				if (available_)
+					DoInit();
+				else
+					enabledParam_.valNoCallback = false;
 			}
 			catch (Exception e)
 			{
@@ -234,6 +272,24 @@ namespace AUI
 
 			var t = a.CreateToggle(enabledParam_);
 			t.labelText.text = $"{DisplayName}";
+			t.toggle.interactable = available_;
+
+			var ws = new JSONStorableString("warning", "");
+			var w = a.CreateTextField(ws);
+			w.GetComponent<LayoutElement>().minHeight = 50;
+			w.height = 50;
+
+			var av = GetAvailability();
+			if (!av.available)
+			{
+				ws.text.text = av.why;
+				w.backgroundColor = new UnityEngine.Color(0.7f, 0, 0);
+				w.textColor = new UnityEngine.Color(1, 1, 1);
+			}
+			else
+			{
+				w.backgroundColor = new UnityEngine.Color(0, 0, 0, 0);
+			}
 
 			var ts = new JSONStorableString("text", Description);
 			var tt = a.CreateTextField(ts, true);

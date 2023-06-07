@@ -42,6 +42,7 @@ project\src\Features\FileDialog\FileDialogFeature.cs
 project\src\Features\FileDialog\FilePanel.cs
 project\src\Features\FileDialog\FileTree.cs
 project\src\Features\FileDialog\FileTreeItem.cs
+project\src\Features\FileDialog\Hooks.cs
 project\src\Features\FileDialog\Modes.cs
 project\src\Features\FileDialog\OptionsPanel.cs
 project\src\Features\MorphUI\Categories.cs
