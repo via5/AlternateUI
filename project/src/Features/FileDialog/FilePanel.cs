@@ -279,8 +279,8 @@ namespace AUI.FileDialog
 
 				p.SetSelectedInternal(b);
 
-				if (b)
-					SetPanels(scroll_.Top * cols_);
+				//if (b)
+				//	SetPanels(scroll_.Top * cols_);
 
 				return;
 			}

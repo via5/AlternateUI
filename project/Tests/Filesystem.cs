@@ -10,7 +10,7 @@ namespace AUI.Tests
 	{
 		private void Create()
 		{
-			string data = new FileInfo("..\\..\\data").FullName;
+			string data = "c:\\tmp\\aui-tests";
 
 			new MockAlternateUIScript(data + "\\root", data + "\\packages");
 			FS.Filesystem.Init();
