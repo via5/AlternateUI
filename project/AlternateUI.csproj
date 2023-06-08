@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{8ED39FCC-7AA0-4854-B1A5-B97D97F8E4D4}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>AUI</RootNamespace>
     <AssemblyName>AlternateUI</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
@@ -38,6 +38,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -144,6 +147,7 @@
     <Compile Include="src\Features\SkinUI.cs" />
     <Compile Include="src\Features\Tweaks.cs" />
     <Compile Include="src\Main.cs" />
+    <Compile Include="src\Script.cs" />
     <Compile Include="src\Sys.cs" />
     <Compile Include="src\Utilities.cs" />
     <Compile Include="src\VamosAPI.cs" />

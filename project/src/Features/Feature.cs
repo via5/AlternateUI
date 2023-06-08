@@ -30,7 +30,7 @@ namespace AUI
 		}
 	}
 
-	interface IFeature
+	public interface IFeature
 	{
 		string Name { get; }
 		string DisplayName { get; }
@@ -270,12 +270,12 @@ namespace AUI
 		{
 			var a = AlternateUI.Instance;
 
-			var t = a.CreateToggle(enabledParam_);
+			var t = a.Sys.CreateToggle(enabledParam_);
 			t.labelText.text = $"{DisplayName}";
 			t.toggle.interactable = available_;
 
 			var ws = new JSONStorableString("warning", "");
-			var w = a.CreateTextField(ws);
+			var w = a.Sys.CreateTextField(ws);
 			w.GetComponent<LayoutElement>().minHeight = 50;
 			w.height = 50;
 
@@ -292,7 +292,7 @@ namespace AUI
 			}
 
 			var ts = new JSONStorableString("text", Description);
-			var tt = a.CreateTextField(ts, true);
+			var tt = a.Sys.CreateTextField(ts, true);
 			tt.GetComponent<LayoutElement>().minHeight = 150;
 			tt.height = 150;
 		}

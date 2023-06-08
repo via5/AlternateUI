@@ -90,7 +90,7 @@ namespace AUI.FS
 	}
 
 
-	class Listing<EntriesType>
+	public class Listing<EntriesType>
 		where EntriesType : class, IFilesystemObject
 	{
 		private List<EntriesType> raw_ = null;
@@ -250,7 +250,7 @@ namespace AUI.FS
 	}
 
 
-	interface IFilesystemObject
+	public interface IFilesystemObject
 	{
 		IFilesystemContainer Parent { get; }
 
@@ -286,7 +286,7 @@ namespace AUI.FS
 	}
 
 
-	struct ResolveDebug
+	public struct ResolveDebug
 	{
 		private int indent_;
 		private bool enabled_;
@@ -351,7 +351,7 @@ namespace AUI.FS
 	}
 
 
-	struct ResolveResult
+	public struct ResolveResult
 	{
 		public IFilesystemObject o;
 
@@ -372,7 +372,7 @@ namespace AUI.FS
 	}
 
 
-	interface IFilesystemContainer : IFilesystemObject
+	public interface IFilesystemContainer : IFilesystemObject
 	{
 		bool AlreadySorted { get; }
 		bool HasDirectories(Context cx);
@@ -391,18 +391,18 @@ namespace AUI.FS
 	}
 
 
-	interface IDirectory : IFilesystemContainer
+	public interface IDirectory : IFilesystemContainer
 	{
 	}
 
 
-	interface IPackage : IFilesystemContainer
+	public interface IPackage : IFilesystemContainer
 	{
 		string GetRelativeVirtualPath(IFilesystemObject o);
 	}
 
 
-	interface IFile : IFilesystemObject
+	public interface IFile : IFilesystemObject
 	{
 	}
 }

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace AUI
 {
-	class AlternateUI : MVRScript
+	public class AlternateUI
 	{
 		private static AlternateUI instance_ = null;
 
@@ -24,16 +24,10 @@ namespace AUI
 		private static int errorCount_ = 0;
 		private const int MaxErrors = 3;
 
-		public AlternateUI()
+		public AlternateUI(ISys sys)
 		{
 			instance_ = this;
-
-#if MOCK
-			sys_ = new FSSys("C:\\tmp\\fd\\root", "C:\\tmp\\fd\\packages");
-#else
-			sys_ = new VamSys();
-#endif
-
+			sys_ = sys;
 			log_ = new Logger("aui");
 			Sys.CreateDirectory(ConfigDir);
 			log_.Info($"starting aui {Version.String}");
@@ -42,9 +36,7 @@ namespace AUI
 		public static void Assert(bool b)
 		{
 			if (!b)
-			{
-				AlternateUI.Instance.Log.ErrorST("assertion failed");
-			}
+				Instance.Log.ErrorST("assertion failed");
 		}
 
 		public static AlternateUI Instance
@@ -73,6 +65,10 @@ namespace AUI
 			return null;
 		}
 
+		public void StartCoroutine(System.Collections.IEnumerator e)
+		{
+			Sys.StartCoroutine(e);
+		}
 
 		public void Update()
 		{
@@ -141,7 +137,7 @@ namespace AUI
 
 			VUI.Root.Init(
 				"AUI",
-				() => manager,
+				() => Sys.GetPluginManager(),
 				(s, ps) => string.Format(s, ps),
 				(s) => Log.Verbose(s),
 				(s) => Log.Info(s),
@@ -223,7 +219,7 @@ namespace AUI
 					Log.Error(e.ToString());
 				}
 
-				var s = CreateSpacer();
+				var s = Sys.CreateSpacer();
 				s.height = 20;
 			}
 		}
@@ -232,17 +228,16 @@ namespace AUI
 		{
 			CreateHeader($"AlternateUI {Version.String}");
 
-			var s = CreateSpacer();
+			var s = Sys.CreateSpacer();
 			s.height = 20;
 
-			s = CreateSpacer(true);
+			s = Sys.CreateSpacer(true);
 			s.height = 20;
 		}
 
 		private void CreateHeader(string text, bool right = false)
 		{
-#if !MOCK
-			var t = CreateButton(text, right);
+			var t = Sys.CreateButton(text, right);
 			t.buttonColor = new Color(0, 0, 0, 0);
 			t.buttonText.alignment = TextAnchor.MiddleLeft;
 			t.buttonText.fontStyle = FontStyle.Bold;
@@ -250,10 +245,9 @@ namespace AUI
 			t.height = 15;
 			t.GetComponent<LayoutElement>().minHeight = 15;
 
-			var sp = CreateSpacer(true);
+			var sp = Sys.CreateSpacer(true);
 			sp.height = 50;
 			sp.GetComponent<LayoutElement>().minHeight = 50;
-#endif
 		}
 
 		public string GetConfigFilePath(string filename)
@@ -268,9 +262,9 @@ namespace AUI
 			JSONClass j = null;
 
 			if (Sys.FileExists(OldConfigFile))
-				j = LoadJSON(OldConfigFile) as JSONClass;
+				j = Sys.LoadJSON(OldConfigFile) as JSONClass;
 			else if (Sys.FileExists(ConfigFile))
-				j = LoadJSON(ConfigFile) as JSONClass;
+				j = Sys.LoadJSON(ConfigFile) as JSONClass;
 
 			if (j == null)
 				return;
@@ -315,7 +309,7 @@ namespace AUI
 				}
 			}
 
-			SaveJSON(j, ConfigFile);
+			Sys.SaveJSON(j, ConfigFile);
 
 			if (Sys.FileExists(OldConfigFile))
 				Sys.DeleteFile(OldConfigFile);
@@ -384,12 +378,12 @@ namespace AUI
 
 		public void DisablePlugin()
 		{
-			enabledJSON.val = false;
+			Sys.SetPluginEnabled(false);
 		}
 
 		public void ReloadPlugin()
 		{
-			var pui = GetPluginUI();
+			var pui = Sys.GetPluginUI();
 			if (pui == null)
 				return;
 
@@ -399,41 +393,7 @@ namespace AUI
 
 		public string PluginPath
 		{
-			get
-			{
-				// based on MacGruber, which was based on VAMDeluxe, which was
-				// in turn based on Alazi
-
-				string id = name.Substring(0, name.IndexOf('_'));
-				string filename = manager.GetJSON()["plugins"][id].Value;
-
-				var path = filename.Substring(
-					0, filename.LastIndexOfAny(new char[] { '/', '\\' }));
-
-				path = path.Replace('/', '\\');
-				if (path.EndsWith("\\"))
-					path = path.Substring(0, path.Length - 1);
-
-				return path;
-			}
-		}
-
-		private MVRPluginUI GetPluginUI()
-		{
-#if !MOCK
-			Transform p = enabledJSON?.toggle?.transform;
-
-			while (p != null)
-			{
-				var pui = p.GetComponent<MVRPluginUI>();
-				if (pui != null)
-					return pui;
-
-				p = p.parent;
-			}
-#endif
-
-			return null;
+			get { return Sys.GetPluginPath(); }
 		}
 
 		private void OnException(Exception e)
@@ -460,29 +420,6 @@ namespace AUI
 			}
 
 			lastErrorTime_ = now;
-		}
-
-		static void Main()
-		{
-#if MOCK
-			var aui = new AlternateUI();
-			FS.Filesystem.Init();
-
-			var cx = new FS.Context(
-				null, null, "Custom/Assets",
-				FS.Context.SortFilename, FS.Context.SortAscending,
-				FS.Context.RecursiveFlag | FS.Context.MergePackagesFlag | FS.Context.LatestPackagesOnlyFlag,
-				null, null, null);
-
-			var d = FS.Filesystem.Instance.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
-
-			FS.Filesystem.Instance.ClearCaches();
-
-			foreach (var f in d.GetFiles(cx))
-			{
-				Console.WriteLine(f.VirtualPath);
-			}
-#endif
 		}
 	}
 }

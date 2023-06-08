@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	class PackageRootDirectory : BasicFilesystemContainer
+	public class PackageRootDirectory : BasicFilesystemContainer
 	{
 		class ShortCutsCache
 		{

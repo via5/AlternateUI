@@ -1,8 +1,8 @@
-﻿using MVR.FileManagement;
-using MVR.FileManagementSecure;
+﻿using MVR.FileManagementSecure;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using SimpleJSON;
 
 #if MOCK
 using System.IO;
@@ -13,7 +13,7 @@ namespace AUI
 {
 	using FMS = FileManagerSecure;
 
-	interface ISysShortCut
+	public interface ISysShortCut
 	{
 		string Package { get; }
 		string PackageFilter { get; }
@@ -109,7 +109,7 @@ namespace AUI
 
 
 
-	interface ISys
+	public interface ISys
 	{
 		void CreateDirectory(string path);
 		bool FileExists(string path);
@@ -130,6 +130,18 @@ namespace AUI
 		float GetDeltaTime();
 		float GetRealtimeSinceStartup();
 
+		MVRPluginManager GetPluginManager();
+		MVRPluginUI GetPluginUI();
+		string GetPluginPath();
+		void StartCoroutine(System.Collections.IEnumerator e);
+		void SetPluginEnabled(bool b);
+		JSONNode LoadJSON(string file);
+		void SaveJSON(JSONClass n, string file);
+		UIDynamicToggle CreateToggle(JSONStorableBool s, bool rightSide = false);
+		UIDynamicTextField CreateTextField(JSONStorableString s, bool rightSide = false);
+		UIDynamicButton CreateButton(string text, bool rightSide = false);
+		UIDynamic CreateSpacer(bool rightSide = false);
+
 		void LogMessage(string s);
 		void LogError(string s);
 	}
@@ -140,8 +152,16 @@ namespace AUI
 	}
 
 
+#if !MOCK
 	class VamSys : Sys, ISys
 	{
+		private readonly MVRScript s_;
+
+		public VamSys(MVRScript s)
+		{
+			s_ = s;
+		}
+
 		public void CreateDirectory(string path)
 		{
 			FMS.CreateDirectory(path);
@@ -235,6 +255,86 @@ namespace AUI
 		}
 
 
+		public MVRPluginManager GetPluginManager()
+		{
+			return s_.manager;
+		}
+
+		public MVRPluginUI GetPluginUI()
+		{
+			Transform p = s_.enabledJSON?.toggle?.transform;
+
+			while (p != null)
+			{
+				var pui = p.GetComponent<MVRPluginUI>();
+				if (pui != null)
+					return pui;
+
+				p = p.parent;
+			}
+
+			return null;
+		}
+
+		public string GetPluginPath()
+		{
+			// based on MacGruber, which was based on VAMDeluxe, which was
+			// in turn based on Alazi
+
+			string id = s_.name.Substring(0, s_.name.IndexOf('_'));
+			string filename = s_.manager.GetJSON()["plugins"][id].Value;
+
+			var path = filename.Substring(
+				0, filename.LastIndexOfAny(new char[] { '/', '\\' }));
+
+			path = path.Replace('/', '\\');
+			if (path.EndsWith("\\"))
+				path = path.Substring(0, path.Length - 1);
+
+			return path;
+		}
+
+		public void StartCoroutine(System.Collections.IEnumerator e)
+		{
+			s_.StartCoroutine(e);
+		}
+
+		public void SetPluginEnabled(bool b)
+		{
+			s_.enabledJSON.val = b;
+		}
+
+		public JSONNode LoadJSON(string file)
+		{
+			return s_.LoadJSON(file);
+		}
+
+		public void SaveJSON(JSONClass n, string file)
+		{
+			s_.SaveJSON(n, file);
+		}
+
+		public UIDynamicToggle CreateToggle(JSONStorableBool s, bool rightSide = false)
+		{
+			return s_.CreateToggle(s, rightSide);
+		}
+
+		public UIDynamicTextField CreateTextField(JSONStorableString s, bool rightSide = false)
+		{
+			return s_.CreateTextField(s, rightSide);
+		}
+
+		public UIDynamicButton CreateButton(string text, bool rightSide = false)
+		{
+			return s_.CreateButton(text, rightSide);
+		}
+
+		public UIDynamic CreateSpacer(bool rightSide = false)
+		{
+			return s_.CreateSpacer(rightSide);
+		}
+
+
 		public void LogMessage(string s)
 		{
 			SuperController.LogMessage(s);
@@ -246,8 +346,7 @@ namespace AUI
 		}
 	}
 
-
-#if MOCK
+#else
 	class FSSys : Sys, ISys
 	{
 		private readonly string root_, packages_;
@@ -423,6 +522,59 @@ namespace AUI
 		public float GetRealtimeSinceStartup()
 		{
 			return 0;
+		}
+
+
+		public MVRPluginManager GetPluginManager()
+		{
+			return null;
+		}
+
+		public MVRPluginUI GetPluginUI()
+		{
+			return null;
+		}
+
+		public string GetPluginPath()
+		{
+			return "";
+		}
+
+		public void StartCoroutine(System.Collections.IEnumerator e)
+		{
+		}
+
+		public void SetPluginEnabled(bool b)
+		{
+		}
+
+		public JSONNode LoadJSON(string file)
+		{
+			return new JSONClass();
+		}
+
+		public void SaveJSON(JSONClass n, string file)
+		{
+		}
+
+		public UIDynamicToggle CreateToggle(JSONStorableBool s, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamicTextField CreateTextField(JSONStorableString s, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamicButton CreateButton(string text, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamic CreateSpacer(bool rightSide = false)
+		{
+			return null;
 		}
 
 

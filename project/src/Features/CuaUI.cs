@@ -114,7 +114,7 @@ namespace AUI.CuaUI
 		{
 			RectTransform rt = CreateUI(
 				GetParent(), ListName,
-				AlternateUI.Instance.manager.configurablePopupPrefab);
+				AlternateUI.Instance.Sys.GetPluginManager().configurablePopupPrefab);
 
 			GetParent().SetAsLastSibling();
 			rt.GetComponent<UIDynamicPopup>().popup.popupPanel.transform.SetAsFirstSibling();

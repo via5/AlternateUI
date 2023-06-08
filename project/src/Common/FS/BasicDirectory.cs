@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	abstract class BasicFilesystemContainer : BasicFilesystemObject, IFilesystemContainer
+	public abstract class BasicFilesystemContainer
+		: BasicFilesystemObject, IFilesystemContainer
 	{
 		private readonly string name_;
 		private Cache cache_ = null;

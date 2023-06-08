@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace AUI.FS
 {
-	class FSDirectory : BasicFilesystemContainer, IDirectory
+	public class FSDirectory : BasicFilesystemContainer, IDirectory
 	{
 		public FSDirectory(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)

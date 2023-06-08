@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	class PinnedRoot : BasicFilesystemContainer
+	public class PinnedRoot : BasicFilesystemContainer
 	{
 		private readonly List<IFilesystemContainer> pinned_ =
 			new List<IFilesystemContainer>();

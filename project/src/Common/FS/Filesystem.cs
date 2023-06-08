@@ -363,7 +363,7 @@ namespace AUI.FS
 	}
 
 
-	class Filesystem
+	public class Filesystem
 	{
 		public delegate void ObjectHandler(IFilesystemObject o);
 		public event ObjectHandler ObjectChanged;
@@ -609,7 +609,7 @@ namespace AUI.FS
 	}
 
 
-	class RootDirectory : BasicFilesystemContainer
+	public class RootDirectory : BasicFilesystemContainer
 	{
 		private readonly AllFlatDirectory allFlat_;
 		private readonly PackagesFlatDirectory packagesFlat_;
@@ -793,7 +793,7 @@ namespace AUI.FS
 	}
 
 
-	class SavesDirectory : FSDirectory
+	public class SavesDirectory : FSDirectory
 	{
 		public SavesDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Saves")
@@ -803,7 +803,7 @@ namespace AUI.FS
 
 
 
-	class NullDirectory : IDirectory
+	public class NullDirectory : IDirectory
 	{
 		private readonly List<IFilesystemObject> emptyFiles_ = new List<IFilesystemObject>();
 		private readonly List<IFilesystemContainer> emptyDirs_ = new List<IFilesystemContainer>();

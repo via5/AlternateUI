@@ -2,7 +2,7 @@
 
 namespace AUI.FS
 {
-	class AllFlatDirectory : BasicFilesystemContainer
+	public class AllFlatDirectory : BasicFilesystemContainer
 	{
 		public AllFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "All flattened")
@@ -66,7 +66,7 @@ namespace AUI.FS
 	}
 
 
-	class PackagesFlatDirectory : BasicFilesystemContainer
+	public class PackagesFlatDirectory : BasicFilesystemContainer
 	{
 		public PackagesFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Packages flattened")
@@ -135,7 +135,7 @@ namespace AUI.FS
 	}
 
 
-	class PinnedFlatDirectory : BasicFilesystemContainer
+	public class PinnedFlatDirectory : BasicFilesystemContainer
 	{
 		public PinnedFlatDirectory(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Pinned flattened")

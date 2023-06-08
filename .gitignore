@@ -2,3 +2,6 @@
 /project/.vs
 /project/bin
 /project/*.user
+/project/Tests/bin
+/project/Tests/obj
+/project/packages

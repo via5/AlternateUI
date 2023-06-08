@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace AUI.FS
 {
-	class SearchString
+	public class SearchString
 	{
 		private string string_ = null;
 		private string lc_ = null;
@@ -72,7 +72,7 @@ namespace AUI.FS
 	}
 
 
-	class Whitelist
+	public class Whitelist
 	{
 		private readonly PathComponents[] paths_;
 
@@ -151,7 +151,7 @@ namespace AUI.FS
 	}
 
 
-	class Context
+	public class Context
 	{
 		public const int NoSort = 0;
 		public const int SortFilename = 1;

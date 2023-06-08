@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace AUI.FS
 {
-	abstract class BasicFilesystemObject : IFilesystemObject
+	public abstract class BasicFilesystemObject : IFilesystemObject
 	{
 		static private int nextIdentity_ = 1;
 
