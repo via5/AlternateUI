@@ -10,6 +10,8 @@ namespace VUI
 		IScrollHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		private Widget widget_ = null;
+		private float lastClick_ = 0;
+		private int clickCount_ = 0;
 
 		public Widget Widget
 		{
@@ -78,13 +80,29 @@ namespace VUI
 		{
 			try
 			{
+				// vr always has clickCount==0, so manually detect it
+
+				float now = Time.realtimeSinceStartup;
+
+				if (now - lastClick_ < 0.5)
+				{
+					++clickCount_;
+
+					if (clickCount_ > 2)
+						clickCount_ = 1;
+				}
+				else
+				{
+					clickCount_ = 1;
+				}
+
+				lastClick_ = now;
+
 				if (widget_ != null)
 				{
-					// note: vr has clickCount to 0
-
 					widget_.OnPointerClickInternal(d);
 
-					if (d.clickCount == 2)
+					if (clickCount_ == 2)
 						widget_.OnPointerDoubleClickInternal(d);
 				}
 			}
