@@ -113,6 +113,7 @@
     <Compile Include="src\Common\FS\Package.cs" />
     <Compile Include="src\Common\FS\Pins.cs" />
     <Compile Include="src\Common\FS\Sys.cs" />
+    <Compile Include="src\Common\FS\VirtualDirectory.cs" />
     <Compile Include="src\Common\Icons.cs" />
     <Compile Include="src\Common\MRU\MRUAtomInfo.cs" />
     <Compile Include="src\Common\MRU\MRUAtomUIModifier.cs" />
