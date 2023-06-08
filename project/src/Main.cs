@@ -27,7 +27,13 @@ namespace AUI
 		public AlternateUI()
 		{
 			instance_ = this;
+
+#if MOCK
+			sys_ = new FSSys("C:\\tmp\\fd\\root", "C:\\tmp\\fd\\packages");
+#else
 			sys_ = new VamSys();
+#endif
+
 			log_ = new Logger("aui");
 			Sys.CreateDirectory(ConfigDir);
 			log_.Info($"starting aui {Version.String}");
@@ -458,6 +464,25 @@ namespace AUI
 
 		static void Main()
 		{
+#if MOCK
+			var aui = new AlternateUI();
+			FS.Filesystem.Init();
+
+			var cx = new FS.Context(
+				null, null, "Custom/Assets",
+				FS.Context.SortFilename, FS.Context.SortAscending,
+				FS.Context.RecursiveFlag | FS.Context.MergePackagesFlag | FS.Context.LatestPackagesOnlyFlag,
+				null, null, null);
+
+			var d = FS.Filesystem.Instance.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
+
+			FS.Filesystem.Instance.ClearCaches();
+
+			foreach (var f in d.GetFiles(cx))
+			{
+				Console.WriteLine(f.VirtualPath);
+			}
+#endif
 		}
 	}
 }

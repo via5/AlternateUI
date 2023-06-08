@@ -221,9 +221,6 @@ namespace AUI.FS
 
 		public void AddRange(IEnumerable<IFilesystemContainer> c)
 		{
-			if (dirs_ == null)
-				dirs_ = new HashSet<IFilesystemContainer>();
-
 			foreach (var cc in c)
 				Add(cc);
 
@@ -360,11 +357,16 @@ namespace AUI.FS
 			}
 
 			var map = new Dictionary<string, IFilesystemContainer>();
-			Merge(list, map);
+			UntangleVDs(list, map);
 
 			var list2 = new List<IFilesystemContainer>();
 			foreach (var ss in map)
+			{
+				if (ss.Value is VirtualDirectory)
+					(ss.Value as VirtualDirectory).merged_ = true;
+
 				list2.Add(ss.Value);
+			}
 
 			return list2;
 		}
@@ -434,7 +436,7 @@ namespace AUI.FS
 			return list;
 		}
 
-		private void Merge(
+		private void UntangleVDs(
 			HashSet<IFilesystemContainer> list,
 			Dictionary<string, IFilesystemContainer> map)
 		{
@@ -447,7 +449,7 @@ namespace AUI.FS
 				{
 					var vd = d as VirtualDirectory;
 					if (vd.dirs_ != null)
-						Merge(vd.dirs_, map);
+						UntangleVDs(vd.dirs_, map);
 				}
 				else
 				{
