@@ -635,7 +635,7 @@ namespace AUI.FileDialog
 				buttonsPanel_.SelectedExtension?.Extensions,
 				mode_.PackageRoot,
 				mode_.Options.Sort, mode_.Options.SortDirection,
-				flags, "", removePrefix, null);
+				flags, "", removePrefix, mode_.Whitelist);
 		}
 
 		public FS.Context CreateTreeContext(bool recursive)

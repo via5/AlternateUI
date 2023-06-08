@@ -30,12 +30,12 @@ namespace AUI.FS
 
 		protected override DateTime GetDateCreated()
 		{
-			return Sys.FileCreationTime(this, MakeRealPath());
+			return SysWrappers.FileCreationTime(this, MakeRealPath());
 		}
 
 		protected override DateTime GetDateModified()
 		{
-			return Sys.FileLastWriteTime(this, MakeRealPath());
+			return SysWrappers.FileLastWriteTime(this, MakeRealPath());
 		}
 
 		protected override VUI.Icon GetIcon()

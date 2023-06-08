@@ -423,14 +423,8 @@ namespace AUI.FileDialog
 		private string GetFilename()
 		{
 			var button = GetClickedButton();
-
-			Log.Info($"sel={button}");
-
 			if (button == null)
-			{
-				Log.Info($"no clicked button");
 				return null;
-			}
 
 			string f = GetFilenameFromSelect(button.gameObject);
 			if (f != null)
@@ -447,40 +441,22 @@ namespace AUI.FileDialog
 		{
 			var parent = button.transform.parent;
 			if (parent == null)
-			{
-				Log.Info($"button {button} has no parent");
 				return null;
-			}
-
-			Log.Info($"looking for url child");
 
 			foreach (Transform child in parent)
 			{
 				if (!child.name.Contains("Url"))
-				{
-					Log.Info($"{child} name doesn't have Url");
 					continue;
-				}
 
 				var s = child.GetComponent<UnityEngine.UI.Text>()?.text;
 				if (string.IsNullOrEmpty(s))
-				{
-					Log.Info($"{child} has no text");
 					continue;
-				}
 
 				if (s == "NULL")
-				{
-					Log.Info($"{child} is NULL");
 					return null;
-				}
-
-				Log.Info($"using {child}, text={s}");
 
 				return FS.Path.MakeFSPathFromShort(s);
 			}
-
-			Log.Info($"no url child");
 
 			return null;
 		}
@@ -489,31 +465,19 @@ namespace AUI.FileDialog
 		{
 			var parent = button.transform.parent;
 			if (parent == null)
-			{
-				Log.Verbose($"button {button} has no parent");
 				return null;
-			}
 
 			var panel = parent.Find("Panel");
 			if (panel == null)
-			{
-				Log.Verbose($"button {button} parent {parent} has no Panel child");
 				return null;
-			}
 
 			var url = panel.Find("URL");
 			if (url == null)
-			{
-				Log.Verbose($"panel {panel} has no URL child");
 				return null;
-			}
 
 			var text = url?.GetComponent<UnityEngine.UI.Text>()?.text;
 			if (string.IsNullOrEmpty(text))
-			{
-				Log.Verbose($"url {url} has text");
 				return null;
-			}
 
 			if (text == "NULL")
 				return null;

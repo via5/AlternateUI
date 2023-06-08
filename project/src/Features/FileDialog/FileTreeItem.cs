@@ -107,9 +107,19 @@ namespace AUI.FileDialog
 				o = GetFSObject();
 
 				if (o == null)
+				{
 					Text = FS.Path.Filename(path_) + " (dead)";
+					Icon = null;
+				}
 				else
+				{
 					Text = o.GetDisplayName(cx);
+
+					if (o.Icon != null)
+						o.Icon.GetTexture(t => Icon = t);
+					else
+						Icon = null;
+				}
 			}
 
 			checkedHasChildren_ = false;

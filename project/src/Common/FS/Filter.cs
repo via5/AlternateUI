@@ -86,6 +86,11 @@ namespace AUI.FS
 			paths_ = list.ToArray();
 		}
 
+		public PathComponents[] Paths
+		{
+			get { return paths_; }
+		}
+
 		public bool Matches(string path)
 		{
 			if (paths_ == null)

@@ -1,5 +1,4 @@
-﻿using MVR.FileManagementSecure;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
@@ -10,8 +9,8 @@ namespace AUI.FS
 		{
 			private readonly PackageRootDirectory pr_;
 			private readonly string root_;
-			private List<ShortCut> list_ = null;
-			private Dictionary<string, ShortCut> map_ = null;
+			private List<ISysShortCut> list_ = null;
+			private Dictionary<string, ISysShortCut> map_ = null;
 			private bool latestOnly_ = false;
 			private int cacheToken_ = -1;
 
@@ -21,7 +20,7 @@ namespace AUI.FS
 				root_ = root;
 			}
 
-			public List<ShortCut> GetShortCuts()
+			public List<ISysShortCut> GetShortCuts()
 			{
 				return list_;
 			}
@@ -34,9 +33,9 @@ namespace AUI.FS
 				return (cacheToken_ != pr_.fs_.CacheToken);
 			}
 
-			public ShortCut GetShortcut(string name)
+			public ISysShortCut GetShortcut(string name)
 			{
-				ShortCut sc = null;
+				ISysShortCut sc = null;
 				map_?.TryGetValue(name, out sc);
 
 				return sc;
@@ -50,33 +49,33 @@ namespace AUI.FS
 				Instrumentation.Start(I.RefreshShortCuts);
 				{
 					if (list_ == null)
-						list_ = new List<ShortCut>();
+						list_ = new List<ISysShortCut>();
 					else
 						list_.Clear();
 
 					if (map_ == null)
-						map_ = new Dictionary<string, ShortCut>();
+						map_ = new Dictionary<string, ISysShortCut>();
 					else
 						map_.Clear();
 
-					var scs = Sys.GetShortCutsForDirectory(pr_, root_);
+					var scs = SysWrappers.GetShortCutsForDirectory(pr_, root_);
 
 					foreach (var sc in scs)
 					{
-						if (string.IsNullOrEmpty(sc.package))
+						if (string.IsNullOrEmpty(sc.Package))
 							continue;
 
-						if (!string.IsNullOrEmpty(sc.packageFilter))
+						if (!string.IsNullOrEmpty(sc.PackageFilter))
 							continue;
 
-						if (sc.path == "AddonPackages")
+						if (sc.Path == "AddonPackages")
 							continue;
 
-						if (cx.LatestPackagesOnly && !sc.isLatest)
+						if (cx.LatestPackagesOnly && !sc.IsLatest)
 							continue;
 
 						list_.Add(sc);
-						map_.Add(sc.package, sc);
+						map_.Add(sc.Package, sc);
 					}
 				}
 				Instrumentation.End();
@@ -285,7 +284,7 @@ namespace AUI.FS
 	class VirtualPackageDirectory : VirtualDirectory
 	{
 		private readonly Package p_;
-		private List<IFilesystemContainer> children_ = null;
+		public List<IFilesystemContainer> children_ = null;
 
 		public VirtualPackageDirectory(
 			Filesystem fs, Package p, IFilesystemContainer parent,
@@ -307,7 +306,7 @@ namespace AUI.FS
 
 		public override string DebugInfo()
 		{
-			return $"VirtualPackageDirectory({p_?.ShortCut?.package}:{Name})";
+			return $"VirtualPackageDirectory({p_?.ShortCut?.Package}:{Name})";
 		}
 
 		public void AddChild(IFilesystemContainer c)
@@ -342,7 +341,7 @@ namespace AUI.FS
 
 		public string ShortCutPath
 		{
-			get { return p_?.ShortCut?.path; }
+			get { return p_?.ShortCut?.Path; }
 		}
 
 		public override bool IsWritable
@@ -359,14 +358,14 @@ namespace AUI.FS
 
 	class Package : BasicFilesystemContainer, IPackage
 	{
-		private readonly ShortCut sc_ = null;
+		private readonly ISysShortCut sc_ = null;
 		private VirtualPackageDirectory rootDir_ = null;
-		private DateTime created_ = DateTime.MaxValue;
-		private DateTime modified_ = DateTime.MaxValue;
+		private DateTime created_ = Sys.BadDateTime;
+		private DateTime modified_ = Sys.BadDateTime;
 
 
-		public Package(Filesystem fs, IFilesystemContainer parent, ShortCut sc)
-			: base(fs, parent, sc.package)
+		public Package(Filesystem fs, IFilesystemContainer parent, ISysShortCut sc)
+			: base(fs, parent, sc.Package)
 		{
 			sc_ = sc;
 		}
@@ -374,13 +373,13 @@ namespace AUI.FS
 		public override void ClearCache()
 		{
 			base.ClearCache();
-			created_ = DateTime.MaxValue;
-			modified_ = DateTime.MaxValue;
+			created_ = Sys.BadDateTime;
+			modified_ = Sys.BadDateTime;
 		}
 
 		public override string DebugInfo()
 		{
-			return $"Package({ShortCut.package})";
+			return $"Package({ShortCut.Package})";
 		}
 
 		public override IPackage ParentPackage
@@ -388,7 +387,7 @@ namespace AUI.FS
 			get { return this; }
 		}
 
-		public ShortCut ShortCut
+		public ISysShortCut ShortCut
 		{
 			get { return sc_; }
 		}
@@ -401,11 +400,11 @@ namespace AUI.FS
 				var tt = base.Tooltip;
 
 				tt +=
-					$"\npackage={sc.package}" +
-					$"\nfilter={sc.packageFilter}" +
-					$"\nflatten={sc.flatten}" +
-					$"\nhidden={sc.isHidden}" +
-					$"\npath={sc.path}";
+					$"\npackage={sc.Package}" +
+					$"\nfilter={sc.PackageFilter}" +
+					$"\nflatten={sc.Flatten}" +
+					$"\nhidden={sc.IsHidden}" +
+					$"\npath={sc.Path}";
 
 				return tt;
 			}
@@ -413,17 +412,17 @@ namespace AUI.FS
 
 		protected override string DoGetDisplayName(Context cx)
 		{
-			return ShortCut.package;
+			return ShortCut.Package;
 		}
 
 		protected override DateTime GetDateCreated()
 		{
-			return Sys.FileCreationTime(this, GetFilePath());
+			return SysWrappers.FileCreationTime(this, GetFilePath());
 		}
 
 		protected override DateTime GetDateModified()
 		{
-			return Sys.FileLastWriteTime(this, GetFilePath());
+			return SysWrappers.FileLastWriteTime(this, GetFilePath());
 		}
 
 		public virtual string GetRelativeVirtualPath(IFilesystemObject o)
@@ -480,7 +479,7 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			var path = ShortCut.path;
+			var path = ShortCut.Path;
 
 			int col = path.IndexOf(':');
 			if (col == -1)
@@ -533,10 +532,10 @@ namespace AUI.FS
 				if (pn.EndsWith(".var"))
 					pn = pn.Substring(0, pn.Length - 4);
 
-				if (pn != sc_.package)
+				if (pn != sc_.Package)
 				{
 					if (debug.Enabled)
-						debug.Info(this, $"resolve bad, {pn}!={sc_.package}");
+						debug.Info(this, $"resolve bad, {pn}!={sc_.Package}");
 
 					return ResolveResult.NotFound();
 				}
@@ -588,7 +587,7 @@ namespace AUI.FS
 
 		private string GetFilePath()
 		{
-			string path = sc_.path;
+			string path = sc_.Path;
 			var col = path.IndexOf(":");
 
 			if (col == -1)
@@ -602,7 +601,7 @@ namespace AUI.FS
 			if (rootDir_ != null)
 				return rootDir_;
 
-			string path = sc_.path;
+			string path = sc_.Path;
 			var col = path.IndexOf(":");
 			if (col != -1)
 				path = path.Substring(col + 1);

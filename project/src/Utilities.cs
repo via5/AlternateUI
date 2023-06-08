@@ -443,15 +443,15 @@ namespace AUI
 			return enabled_;
 		}
 
-		public static void Out(int level, string s)
+		private static void Out(int level, string s)
 		{
 			var t = DateTime.Now.ToString("hh:mm:ss.fff");
 			string p = LevelToShortString(level);
 
 			if (level == ErrorLevel)
-				SuperController.LogMessage($"{t} !![{p}] {s}");
+				AlternateUI.Instance.Sys.LogError($"{t} !![{p}] {s}");
 			else
-				SuperController.LogMessage($"{t}   [{p}] {s}");
+				AlternateUI.Instance.Sys.LogMessage($"{t}   [{p}] {s}");
 		}
 	}
 }

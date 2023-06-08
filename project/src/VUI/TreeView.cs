@@ -739,7 +739,9 @@ namespace VUI
 
 				var tr = r;
 
-				tr.Left += Style.Metrics.TreeIconWidth + Style.Metrics.TreeIconSpacing;
+				if (item_.Parent != tree_.RootItem || tree_.RootToggles)
+					tr.Left += Style.Metrics.TreeToggleWidth + Style.Metrics.TreeToggleSpacing;
+
 				tr.Right = tr.Left + Style.Metrics.TreeIconWidth;
 				tr.Bottom = tr.Top + Style.Metrics.TreeIconWidth;
 

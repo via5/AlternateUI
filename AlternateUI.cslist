@@ -1,4 +1,5 @@
 project\src\Main.cs
+project\src\Sys.cs
 project\src\Utilities.cs
 project\src\VamosAPI.cs
 project\src\Version.cs

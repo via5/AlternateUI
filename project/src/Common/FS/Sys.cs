@@ -1,13 +1,10 @@
 ﻿using MVR.FileManagementSecure;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace AUI.FS
 {
-	using FMS = FileManagerSecure;
-
-	static class Sys
+	static class SysWrappers
 	{
 		public static string[] GetDirectories(IFilesystemObject from, string path)
 		{
@@ -17,11 +14,11 @@ namespace AUI.FS
 			{
 				try
 				{
-					ss = FMS.GetDirectories(path);
+					ss = AlternateUI.Instance.Sys.GetDirectories(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.GetDirectories exception for '{path}'");
+					from.Log.Error($"{from}: Sys.GetDirectories exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 					ss = new string[0];
 				}
@@ -39,11 +36,11 @@ namespace AUI.FS
 			{
 				try
 				{
-					ss = FMS.GetFiles(path);
+					ss = AlternateUI.Instance.Sys.GetFiles(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.GetFiles exception for '{path}'");
+					from.Log.Error($"{from}: Sys.GetFiles exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 					ss = new string[0];
 				}
@@ -53,21 +50,21 @@ namespace AUI.FS
 			return ss;
 		}
 
-		public static List<ShortCut> GetShortCutsForDirectory(IFilesystemObject from, string path)
+		public static List<ISysShortCut> GetShortCutsForDirectory(IFilesystemObject from, string path)
 		{
-			List<ShortCut> ss;
+			List<ISysShortCut> ss;
 
 			Instrumentation.Start(I.FMSGetShortCutsForDirectory);
 			{
 				try
 				{
-					ss = FMS.GetShortCutsForDirectory(path);
+					ss = AlternateUI.Instance.Sys.GetShortCutsForDirectory(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.GetShortCutsForDirectory exception for '{path}'");
+					from.Log.Error($"{from}: Sys.GetShortCutsForDirectory exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
-					ss = new List<ShortCut>();
+					ss = new List<ISysShortCut>();
 				}
 			}
 			Instrumentation.End();
@@ -77,17 +74,17 @@ namespace AUI.FS
 
 		public static DateTime FileCreationTime(IFilesystemObject from, string path)
 		{
-			DateTime dt = DateTime.MaxValue;
+			DateTime dt = Sys.BadDateTime;
 
 			Instrumentation.Start(I.FMSFileCreationTime);
 			{
 				try
 				{
-					dt = FMS.FileCreationTime(path);
+					dt = AlternateUI.Instance.Sys.FileCreationTime(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.FileCreationTime exception for '{path}'");
+					from.Log.Error($"{from}: Sys.FileCreationTime exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 				}
 			}
@@ -98,17 +95,17 @@ namespace AUI.FS
 
 		public static DateTime FileLastWriteTime(IFilesystemObject from, string path)
 		{
-			DateTime dt = DateTime.MaxValue;
+			DateTime dt = Sys.BadDateTime;
 
 			Instrumentation.Start(I.FMSFileLastWriteTime);
 			{
 				try
 				{
-					dt = FMS.FileLastWriteTime(path);
+					dt = AlternateUI.Instance.Sys.FileLastWriteTime(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.FileLastWriteTime exception for '{path}'");
+					from.Log.Error($"{from}: Sys.FileLastWriteTime exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 				}
 			}
@@ -119,46 +116,42 @@ namespace AUI.FS
 
 		public static DateTime DirectoryCreationTime(IFilesystemObject from, string path)
 		{
-			DateTime dt = DateTime.MaxValue;
+			DateTime dt = Sys.BadDateTime;
 
-#if VAM_GT_1_22
 			Instrumentation.Start(I.FMSDirectoryCreationTime);
 			{
 				try
 				{
-					dt = FMS.DirectoryCreationTime(path);
+					dt = AlternateUI.Instance.Sys.DirectoryCreationTime(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.DirectoryCreationTime exception for '{path}'");
+					from.Log.Error($"{from}: Sys.DirectoryCreationTime exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 				}
 			}
 			Instrumentation.End();
-#endif
 
 			return dt;
 		}
 
 		public static DateTime DirectoryLastWriteTime(IFilesystemObject from, string path)
 		{
-			DateTime dt = DateTime.MaxValue;
+			DateTime dt = Sys.BadDateTime;
 
-#if VAM_GT_1_22
 			Instrumentation.Start(I.FMSDirectoryLastWriteTime);
 			{
 				try
 				{
-					dt = FMS.DirectoryLastWriteTime(path);
+					dt = AlternateUI.Instance.Sys.DirectoryLastWriteTime(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.DirectoryLastWriteTime exception for '{path}'");
+					from.Log.Error($"{from}: Sys.DirectoryLastWriteTime exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 				}
 			}
 			Instrumentation.End();
-#endif
 
 			return dt;
 		}
@@ -171,11 +164,11 @@ namespace AUI.FS
 			{
 				try
 				{
-					b = FMS.IsDirectoryInPackage(path);
+					b = AlternateUI.Instance.Sys.IsDirectoryInPackage(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.IsDirectoryInPackage exception for '{path}'");
+					from.Log.Error($"{from}: Sys.IsDirectoryInPackage exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 					b = false;
 				}
@@ -193,11 +186,11 @@ namespace AUI.FS
 			{
 				try
 				{
-					b = FMS.FileExists(path);
+					b = AlternateUI.Instance.Sys.FileExists(path);
 				}
 				catch (Exception e)
 				{
-					from.Log.Error($"{from}: FMS.FileExists exception for '{path}'");
+					from.Log.Error($"{from}: Sys.FileExists exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
 					b = false;
 				}
@@ -209,7 +202,7 @@ namespace AUI.FS
 
 		public static string NormalizePath(string path)
 		{
-			return FMS.NormalizePath(path);
+			return AlternateUI.Instance.Sys.NormalizePath(path);
 		}
 	}
 }

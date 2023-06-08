@@ -55,10 +55,9 @@ namespace AUI.FS
 			{
 				foreach (var d in dirs_)
 					d.ClearCache();
-
-				sortedDirs_ = null;
 			}
 
+			sortedDirs_ = null;
 			merged_ = false;
 		}
 
@@ -210,7 +209,12 @@ namespace AUI.FS
 
 			if (!dirs_.Contains(c))
 			{
+				foreach (var d in dirs_)
+					AlternateUI.Assert(d.VirtualPath != c.VirtualPath);
+
 				dirs_.Add(c);
+
+				merged_ = false;
 				sortedDirs_ = null;
 			}
 		}
@@ -223,6 +227,7 @@ namespace AUI.FS
 			foreach (var cc in c)
 				Add(cc);
 
+			merged_ = false;
 			sortedDirs_ = null;
 		}
 
@@ -230,7 +235,7 @@ namespace AUI.FS
 		{
 			var c = SingleContent;
 			if (c == null)
-				return DateTime.MaxValue;
+				return Sys.BadDateTime;
 			else
 				return c.DateCreated;
 		}
@@ -239,7 +244,7 @@ namespace AUI.FS
 		{
 			var c = SingleContent;
 			if (c == null)
-				return DateTime.MaxValue;
+				return Sys.BadDateTime;
 			else
 				return c.DateModified;
 		}
@@ -591,12 +596,12 @@ namespace AUI.FS
 
 		protected override DateTime GetDateCreated()
 		{
-			return Sys.DirectoryCreationTime(this, MakeRealPath());
+			return SysWrappers.DirectoryCreationTime(this, MakeRealPath());
 		}
 
 		protected override DateTime GetDateModified()
 		{
-			return Sys.DirectoryLastWriteTime(this, MakeRealPath());
+			return SysWrappers.DirectoryLastWriteTime(this, MakeRealPath());
 		}
 
 		protected override VUI.Icon GetIcon()
@@ -654,7 +659,7 @@ namespace AUI.FS
 
 				if (!string.IsNullOrEmpty(path))
 				{
-					var dirs = Sys.GetDirectories(this, path);
+					var dirs = SysWrappers.GetDirectories(this, path);
 
 					foreach (var dirPath in dirs)
 					{

@@ -1,5 +1,4 @@
-﻿using MVR.FileManagementSecure;
-using SimpleJSON;
+﻿using SimpleJSON;
 using System;
 using System.Collections.Generic;
 
@@ -229,7 +228,7 @@ namespace AUI.FS
 
 		public static string Normalize(string originalPath)
 		{
-			string path = Sys.NormalizePath(originalPath);
+			string path = SysWrappers.NormalizePath(originalPath);
 
 			path = path.Replace("\\", "/");
 
@@ -420,7 +419,7 @@ namespace AUI.FS
 		private void LoadOptions()
 		{
 			var file = GetConfigFile();
-			if (!FileManagerSecure.FileExists(file))
+			if (!AlternateUI.Instance.Sys.FileExists(file))
 				return;
 
 			var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
@@ -540,7 +539,7 @@ namespace AUI.FS
 
 		public bool DirectoryInPackage(string path)
 		{
-			return Sys.IsDirectoryInPackage(null, path);
+			return SysWrappers.IsDirectoryInPackage(null, path);
 		}
 
 		public RootDirectory GetRoot()
@@ -762,26 +761,16 @@ namespace AUI.FS
 			// the virtual directories need to be recreated every time or
 			// they'll cache the old packages
 
-			if (cx.PackagesSearch.Empty)
+			return new List<IFilesystemContainer>()
 			{
-				return new List<IFilesystemContainer>()
-				{
-					new VirtualDirectory(fs_, this, allFlat_),
-					new VirtualDirectory(fs_, this, packagesFlat_),
-					pinnedFlat_,
-					pinned_,
-					new VirtualDirectory(fs_, this, saves_),
-					new VirtualDirectory(fs_, this, custom_),
-					fs_.GetPackagesRoot()
-				};
-			}
-			else
-			{
-				return new List<IFilesystemContainer>()
-				{
-					fs_.GetPackagesRoot()
-				};
-			}
+				new VirtualDirectory(fs_, this, allFlat_),
+				new VirtualDirectory(fs_, this, packagesFlat_),
+				pinnedFlat_,
+				pinned_,
+				new VirtualDirectory(fs_, this, saves_),
+				new VirtualDirectory(fs_, this, custom_),
+				fs_.GetPackagesRoot()
+			};
 		}
 
 		protected override List<IFilesystemObject> DoGetFiles(Context cx)
@@ -819,14 +808,15 @@ namespace AUI.FS
 		private readonly List<IFilesystemObject> emptyFiles_ = new List<IFilesystemObject>();
 		private readonly List<IFilesystemContainer> emptyDirs_ = new List<IFilesystemContainer>();
 
+		public int DebugIdentity { get { return BasicFilesystemObject.NextIdentity(); } }
 		public Logger Log { get { return AlternateUI.Instance.Log; } }
 		public string Name { get { return ""; } }
 		public string VirtualPath { get { return ""; } }
 		public string RelativeVirtualPath { get { return VirtualPath; } }
 		public string Tooltip { get { return ""; } }
 		public bool HasCustomDisplayName { get { return false; } }
-		public DateTime DateCreated { get { return DateTime.MaxValue; } }
-		public DateTime DateModified { get { return DateTime.MaxValue; } }
+		public DateTime DateCreated { get { return Sys.BadDateTime; } }
+		public DateTime DateModified { get { return Sys.BadDateTime; } }
 		public bool CanPin { get { return false; } }
 		public bool Virtual { get { return true; } }
 		public bool ChildrenVirtual { get { return true; } }

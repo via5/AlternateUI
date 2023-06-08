@@ -254,6 +254,7 @@ namespace AUI.FS
 	{
 		IFilesystemContainer Parent { get; }
 
+		int DebugIdentity { get; }
 		Logger Log { get; }
 		string Name { get; }
 		string VirtualPath { get; }

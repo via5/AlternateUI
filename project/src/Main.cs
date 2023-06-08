@@ -1,5 +1,4 @@
-﻿using MVR.FileManagementSecure;
-using SimpleJSON;
+﻿using SimpleJSON;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,6 +14,7 @@ namespace AUI
 		private const string ConfigFile = ConfigDir + "/aui.json";
 		private const string OldConfigFile = "Custom/PluginData/aui.json";
 
+		private readonly ISys sys_;
 		private Logger log_;
 		private BasicFeature[] features_ = null;
 		private bool inited_ = false;
@@ -27,8 +27,9 @@ namespace AUI
 		public AlternateUI()
 		{
 			instance_ = this;
+			sys_ = new VamSys();
 			log_ = new Logger("aui");
-			FileManagerSecure.CreateDirectory(ConfigDir);
+			Sys.CreateDirectory(ConfigDir);
 			log_.Info($"starting aui {Version.String}");
 		}
 
@@ -43,6 +44,11 @@ namespace AUI
 		public static AlternateUI Instance
 		{
 			get { return instance_; }
+		}
+
+		public ISys Sys
+		{
+			get { return sys_; }
 		}
 
 		public Logger Log
@@ -68,9 +74,9 @@ namespace AUI
 			{
 				if (U.DevMode)
 				{
-					if (Input.GetKeyUp(KeyCode.F5))
+					if (Sys.GetKeyUp(UnityEngine.KeyCode.F5))
 					{
-						if (Input.GetKey(KeyCode.LeftShift))
+						if (Sys.GetKey(UnityEngine.KeyCode.LeftShift))
 						{
 							SuperController.singleton.HardReset();
 						}
@@ -100,16 +106,18 @@ namespace AUI
 				DoInit();
 			}
 
-			tm_.TickTimers(Time.deltaTime);
+			float dt = Sys.GetDeltaTime();
+
+			tm_.TickTimers(dt);
 			tm_.CheckTimers();
 
-			Vamos.API.Instance?.DoUpdate(Time.deltaTime);
+			Vamos.API.Instance?.DoUpdate(dt);
 
 			for (int i = 0; i < features_.Length; ++i)
 			{
 				try
 				{
-					features_[i].Update(Time.deltaTime);
+					features_[i].Update(dt);
 				}
 				catch (Exception e)
 				{
@@ -227,6 +235,7 @@ namespace AUI
 
 		private void CreateHeader(string text, bool right = false)
 		{
+#if !MOCK
 			var t = CreateButton(text, right);
 			t.buttonColor = new Color(0, 0, 0, 0);
 			t.buttonText.alignment = TextAnchor.MiddleLeft;
@@ -238,6 +247,7 @@ namespace AUI
 			var sp = CreateSpacer(true);
 			sp.height = 50;
 			sp.GetComponent<LayoutElement>().minHeight = 50;
+#endif
 		}
 
 		public string GetConfigFilePath(string filename)
@@ -251,9 +261,9 @@ namespace AUI
 
 			JSONClass j = null;
 
-			if (FileManagerSecure.FileExists(OldConfigFile))
+			if (Sys.FileExists(OldConfigFile))
 				j = LoadJSON(OldConfigFile) as JSONClass;
-			else if (FileManagerSecure.FileExists(ConfigFile))
+			else if (Sys.FileExists(ConfigFile))
 				j = LoadJSON(ConfigFile) as JSONClass;
 
 			if (j == null)
@@ -301,8 +311,8 @@ namespace AUI
 
 			SaveJSON(j, ConfigFile);
 
-			if (FileManagerSecure.FileExists(OldConfigFile))
-				FileManagerSecure.DeleteFile(OldConfigFile);
+			if (Sys.FileExists(OldConfigFile))
+				Sys.DeleteFile(OldConfigFile);
 		}
 
 		public void Save()
@@ -404,6 +414,7 @@ namespace AUI
 
 		private MVRPluginUI GetPluginUI()
 		{
+#if !MOCK
 			Transform p = enabledJSON?.toggle?.transform;
 
 			while (p != null)
@@ -414,6 +425,7 @@ namespace AUI
 
 				p = p.parent;
 			}
+#endif
 
 			return null;
 		}
@@ -422,7 +434,7 @@ namespace AUI
 		{
 			Log.Error(e.ToString());
 
-			var now = Time.realtimeSinceStartup;
+			var now = Sys.GetRealtimeSinceStartup();
 
 			if (now - lastErrorTime_ < 1)
 			{

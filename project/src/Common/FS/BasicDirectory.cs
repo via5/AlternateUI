@@ -141,6 +141,7 @@ namespace AUI.FS
 			SortInternal(cx, cache_.GetLocalDirectories());
 			cache_.GetLocalDirectories().UpdateLookup();
 
+
 			return cache_.GetLocalDirectories().Last;
 		}
 
@@ -188,7 +189,7 @@ namespace AUI.FS
 				GetFilesInternal(cx, out allFiles, out filteredFiles);
 				SetLocalFilesCache(cx, allFiles, filteredFiles);
 
-				listing.AddRaw(allFiles);
+				listing.AddRaw(filteredFiles ?? allFiles);
 			}
 			else
 			{
@@ -438,7 +439,7 @@ namespace AUI.FS
 
 				if (!string.IsNullOrEmpty(path))
 				{
-					var dirs = Sys.GetDirectories(this, path);
+					var dirs = SysWrappers.GetDirectories(this, path);
 					b = (dirs != null && dirs.Length > 0);
 				}
 			}
@@ -457,7 +458,7 @@ namespace AUI.FS
 
 				if (!string.IsNullOrEmpty(path))
 				{
-					foreach (var filePath in Sys.GetFiles(this, path))
+					foreach (var filePath in SysWrappers.GetFiles(this, path))
 						list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
 				}
 			}

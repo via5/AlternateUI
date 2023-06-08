@@ -5,25 +5,39 @@ namespace AUI.FS
 {
 	abstract class BasicFilesystemObject : IFilesystemObject
 	{
+		static private int nextIdentity_ = 1;
+
+		private readonly int identity_;
 		protected readonly Filesystem fs_;
 		private readonly IFilesystemContainer parent_;
 		private string displayName_ = null;
 		private VUI.Icon icon_ = null;
-		private DateTime dateCreated_ = DateTime.MaxValue;
-		private DateTime dateModified_ = DateTime.MaxValue;
+		private DateTime dateCreated_ = Sys.BadDateTime;
+		private DateTime dateModified_ = Sys.BadDateTime;
 
 		public BasicFilesystemObject(
 			Filesystem fs, IFilesystemContainer parent,
 			string displayName = null)
 		{
+			identity_ = NextIdentity();
 			fs_ = fs;
 			parent_ = parent;
 			displayName_ = displayName;
 		}
 
+		public static int NextIdentity()
+		{
+			return nextIdentity_++;
+		}
+
 		public Logger Log
 		{
 			get { return fs_.Log; }
+		}
+
+		public int DebugIdentity
+		{
+			get { return identity_; }
 		}
 
 		public IFilesystemContainer Parent
@@ -118,7 +132,7 @@ namespace AUI.FS
 				}
 
 				{
-					if (dateCreated_ == DateTime.MaxValue)
+					if (dateCreated_ == Sys.BadDateTime)
 						dateCreated_ = GetDateCreated();
 
 					return dateCreated_;
@@ -138,7 +152,7 @@ namespace AUI.FS
 						return ParentPackage.DateModified;
 				}
 
-				if (dateModified_ == DateTime.MaxValue)
+				if (dateModified_ == Sys.BadDateTime)
 					dateModified_ = GetDateModified();
 
 				return dateModified_;
@@ -203,7 +217,7 @@ namespace AUI.FS
 
 		private string FormatDT(DateTime dt)
 		{
-			if (dt == DateTime.MaxValue)
+			if (dt == Sys.BadDateTime)
 				return "(none)";
 			else
 				return dt.ToString(CultureInfo.CurrentCulture);
@@ -241,8 +255,8 @@ namespace AUI.FS
 		public virtual void ClearCache()
 		{
 			icon_?.ClearCache();
-			dateCreated_ = DateTime.MaxValue;
-			dateModified_ = DateTime.MaxValue;
+			dateCreated_ = Sys.BadDateTime;
+			dateModified_ = Sys.BadDateTime;
 		}
 
 		protected virtual string DoGetDisplayName(Context cx)
@@ -257,12 +271,12 @@ namespace AUI.FS
 
 		protected virtual DateTime GetDateCreated()
 		{
-			return DateTime.MaxValue;
+			return Sys.BadDateTime;
 		}
 
 		protected virtual DateTime GetDateModified()
 		{
-			return DateTime.MaxValue;
+			return Sys.BadDateTime;
 		}
 
 		protected abstract VUI.Icon GetIcon();
