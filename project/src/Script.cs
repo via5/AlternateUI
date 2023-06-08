@@ -9,9 +9,9 @@ namespace AUI
 	}
 
 #if !MOCK
-	public class VamScript : MVRScript, IScript
+	public class AlternateUIScript : MVRScript, IScript
 	{
-		public VamScript()
+		public AlternateUIScript()
 		{
 			new AlternateUI(new VamSys(this));
 		}
@@ -32,9 +32,9 @@ namespace AUI
 		}
 	}
 #else
-	public class MockScript : IScript
+	public class MockAlternateUIScript : IScript
 	{
-		public MockScript(string root, string packages)
+		public MockAlternateUIScript(string root, string packages)
 		{
 			new AlternateUI(new FSSys(root, packages));
 		}

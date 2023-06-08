@@ -491,6 +491,13 @@ namespace AUI.FS
 				return true;
 
 
+			if (!cx.ShowHiddenFolders)
+			{
+				if (o.Name.StartsWith("."))
+					return false;
+			}
+
+
 			string rvp;
 
 			Instrumentation.Start(I.IncludeDirectoryGetRVP);
@@ -528,6 +535,12 @@ namespace AUI.FS
 			if (!string.IsNullOrEmpty(cx.RemovePrefix))
 			{
 				if (!o.Name.StartsWith(cx.RemovePrefix))
+					return false;
+			}
+
+			if (!cx.ShowHiddenFiles)
+			{
+				if (o.Name.StartsWith("."))
 					return false;
 			}
 
