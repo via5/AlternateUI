@@ -34,9 +34,9 @@ namespace AUI
 #else
 	public class MockAlternateUIScript : IScript
 	{
-		public MockAlternateUIScript(string root, string packages)
+		public MockAlternateUIScript(ISys sys)
 		{
-			new AlternateUI(new FSSys(root, packages));
+			new AlternateUI(sys);
 		}
 	}
 #endif

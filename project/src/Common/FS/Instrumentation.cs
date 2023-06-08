@@ -232,7 +232,11 @@ namespace AUI.FS
 					I.BasicDirectoryResolve,
 
 					I.IncludeDirectoryGetRVP,
-					I.IncludeDirectoryWhitelistMatches
+					I.IncludeDirectoryWhitelistMatches,
+
+					I.SortDirectories,
+					I.UpdateLookup,
+					I.SetLocalDirectoriesCache
 				};
 			}
 		}
@@ -302,7 +306,11 @@ namespace AUI.FS
 		public static InstrumentationType IncludeDirectoryGetRVP = new InstrumentationType("IncludeDirectoryGetRVP", 51);
 		public static InstrumentationType IncludeDirectoryWhitelistMatches = new InstrumentationType("IncludeDirectoryWhitelistMatches", 52);
 
-		public const int Count = 53;
+		public static InstrumentationType SortDirectories = new InstrumentationType("SortDirectories", 53);
+		public static InstrumentationType UpdateLookup = new InstrumentationType("UpdateLookup", 54);
+		public static InstrumentationType SetLocalDirectoriesCache = new InstrumentationType("SetDirsCache", 55);
+
+		public const int Count = 56;
 	}
 
 
@@ -322,7 +330,7 @@ namespace AUI.FS
 			1,
 				2, 2, 2,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1
+			1, 1, 1, 1, 1, 1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

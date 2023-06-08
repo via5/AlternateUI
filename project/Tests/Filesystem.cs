@@ -1,18 +1,21 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace AUI.Tests
 {
 	[TestClass]
 	public class Filesystem
 	{
-		private void Create()
+		private void Create(ISys sys = null)
 		{
-			string data = "c:\\tmp\\aui-tests";
+			if (sys == null)
+			{
+				string data = "c:\\tmp\\aui-tests";
+				sys = new FSSys(data + "\\root", data + "\\packages");
+			}
 
-			new MockAlternateUIScript(data + "\\root", data + "\\packages");
+			new MockAlternateUIScript(sys);
 			FS.Filesystem.Init();
 		}
 
@@ -129,6 +132,61 @@ namespace AUI.Tests
 				for (int i = 0; i < expectedVisible.Length; ++i)
 					Assert.AreEqual(expectedVisible[i], actual[i]);
 			}
+		}
+
+		[TestMethod]
+		public void Perf()
+		{
+			var sys = new VFSSys();
+
+			const int PackageCount = 1000;
+			const int DirCount = 10;
+			const int FileCount = 10;
+
+			for (int i = 0; i < PackageCount; ++i)
+			{
+				var p = new VFSSys.Package();
+				p.name = $"package{i}";
+
+				for (int d = 0; d < DirCount; ++d)
+				{
+					p.dirs.Add($"Custom/Assets/dir{d}/");
+
+					for (int f = 0; f < FileCount; ++f)
+						p.files.Add($"Custom/Assets/dir{d}/package{i}-file{f}");
+				}
+
+				sys.AddPackage(p);
+			}
+
+			sys.AddDir("Custom/");
+			sys.AddDir("Custom/Assets/");
+
+			for (int d = 0; d < DirCount; ++d)
+				sys.AddDir($"Custom/Assets/dir{d}/");
+
+			for (int f = 0; f < FileCount; ++f)
+				sys.AddFile($"Custom/Assets/file{f}");
+
+			Create(sys);
+
+			var cx = new FS.Context(
+				null, null, "Custom/Assets",
+				FS.Context.NoSort, FS.Context.SortAscending,
+				FS.Context.RecursiveFlag |
+				FS.Context.MergePackagesFlag |
+				FS.Context.LatestPackagesOnlyFlag,
+				null, null, null);
+
+			var o = FS.Filesystem.Instance.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
+			var fs = o.GetFiles(cx);
+
+			Console.WriteLine($"{fs.Count}");
+		}
+
+		static void Main()
+		{
+			new Filesystem().Perf();
 		}
 	}
 }

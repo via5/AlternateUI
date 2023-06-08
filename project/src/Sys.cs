@@ -105,6 +105,47 @@ namespace AUI
 			get { return false; }
 		}
 	}
+
+	class VFSSysShortCut : ISysShortCut
+	{
+		private readonly string name_, path_;
+
+		public VFSSysShortCut(string name, string path)
+		{
+			name_ = name;
+			path_ = path;
+		}
+
+		public string Package
+		{
+			get { return name_; }
+		}
+
+		public string PackageFilter
+		{
+			get { return ""; }
+		}
+
+		public string Path
+		{
+			get { return path_; }
+		}
+
+		public bool Flatten
+		{
+			get { return false; }
+		}
+
+		public bool IsLatest
+		{
+			get { return true; }
+		}
+
+		public bool IsHidden
+		{
+			get { return false; }
+		}
+	}
 #endif
 
 
@@ -146,7 +187,7 @@ namespace AUI
 		void LogError(string s);
 	}
 
-	class Sys
+	public class Sys
 	{
 		public static DateTime BadDateTime = DateTime.MaxValue;
 	}
@@ -347,7 +388,7 @@ namespace AUI
 	}
 
 #else
-	class FSSys : Sys, ISys
+	public class FSSys : Sys, ISys
 	{
 		private readonly string root_, packages_;
 
@@ -490,6 +531,313 @@ namespace AUI
 		public DateTime DirectoryLastWriteTime(string path)
 		{
 			return new DirectoryInfo(MakePath(path)).LastWriteTime;
+		}
+
+		public bool IsDirectoryInPackage(string path)
+		{
+			return false;
+		}
+
+		public string NormalizePath(string path)
+		{
+			return path;
+		}
+
+
+		public bool GetKeyUp(KeyCode c)
+		{
+			return false;
+		}
+
+		public bool GetKey(KeyCode c)
+		{
+			return false;
+		}
+
+
+		public float GetDeltaTime()
+		{
+			return 0;
+		}
+
+		public float GetRealtimeSinceStartup()
+		{
+			return 0;
+		}
+
+
+		public MVRPluginManager GetPluginManager()
+		{
+			return null;
+		}
+
+		public MVRPluginUI GetPluginUI()
+		{
+			return null;
+		}
+
+		public string GetPluginPath()
+		{
+			return "";
+		}
+
+		public void StartCoroutine(System.Collections.IEnumerator e)
+		{
+		}
+
+		public void SetPluginEnabled(bool b)
+		{
+		}
+
+		public JSONNode LoadJSON(string file)
+		{
+			return new JSONClass();
+		}
+
+		public void SaveJSON(JSONClass n, string file)
+		{
+		}
+
+		public UIDynamicToggle CreateToggle(JSONStorableBool s, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamicTextField CreateTextField(JSONStorableString s, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamicButton CreateButton(string text, bool rightSide = false)
+		{
+			return null;
+		}
+
+		public UIDynamic CreateSpacer(bool rightSide = false)
+		{
+			return null;
+		}
+
+
+		public void LogMessage(string s)
+		{
+			Console.WriteLine(s);
+		}
+
+		public void LogError(string s)
+		{
+			Console.WriteLine(s);
+		}
+	}
+
+
+	public class VFSSys : Sys, ISys
+	{
+		public class Package
+		{
+			public string name;
+			public readonly List<string> dirs = new List<string>();
+			public readonly List<string> files = new List<string>();
+		}
+
+		private readonly List<string> dirs_ = new List<string>();
+		private readonly List<string> files_ = new List<string>();
+		private readonly List<Package> packages_ = new List<Package>();
+
+		public VFSSys()
+		{
+		}
+
+		public void AddDir(string file)
+		{
+			dirs_.Add(file);
+		}
+
+		public void AddFile(string file)
+		{
+			files_.Add(file);
+		}
+
+		public void AddPackage(Package p)
+		{
+			packages_.Add(p);
+		}
+
+		public void CreateDirectory(string path)
+		{
+			Console.WriteLine($"vfssys: would create {path}");
+		}
+
+		public bool FileExists(string path)
+		{
+			return new FileInfo(path).Exists;
+		}
+
+		public void DeleteFile(string path)
+		{
+			Console.WriteLine($"vfssys: would delete {path}");
+		}
+
+		public string[] GetDirectories(string path)
+		{
+			if (path.IndexOf(":/") != -1)
+				return GetDirectoriesInPackage(path);
+
+			if (!path.EndsWith("/"))
+				path += "/";
+
+			var list = new List<string>();
+
+			foreach (var f in dirs_)
+			{
+				if (f.StartsWith(path))
+				{
+					int nextSep = f.IndexOf('/', path.Length);
+					int nextNextSep = f.IndexOf('/', nextSep + 1);
+
+					if (nextNextSep == -1)
+						list.Add(f.Substring(0, f.Length - 1));
+				}
+			}
+
+			return list.ToArray();
+		}
+
+		public string[] GetFiles(string path)
+		{
+			if (path.IndexOf(":/") != -1)
+				return GetFilesInPackage(path);
+
+			if (!path.EndsWith("/"))
+				path += "/";
+
+			var list = new List<string>();
+
+			foreach (var f in files_)
+			{
+				if (f.StartsWith(path))
+					list.Add(f);
+			}
+
+			return list.ToArray();
+		}
+
+		struct PackagePath
+		{
+			public string name, path;
+		}
+
+		private PackagePath ParsePackagePath(string path)
+		{
+			int i = path.IndexOf(":/");
+
+			var pp = new PackagePath();
+			pp.name = path.Substring(0, i);
+			pp.path = path.Substring(i + 2);//.Replace('/', '\\');
+
+			return pp;
+		}
+
+		private string[] GetDirectoriesInPackage(string path)
+		{
+			var pp = ParsePackagePath(path);
+
+			foreach (var p in packages_)
+			{
+				if (p.name == pp.name)
+				{
+					var list = new List<string>();
+					var ppath = pp.path;
+
+					if (!ppath.EndsWith("/"))
+						ppath += "/";
+
+					foreach (var f in p.dirs)
+					{
+						if (f.StartsWith(ppath))
+						{
+							int nextSep = f.IndexOf('/', ppath.Length);
+							int nextNextSep = f.IndexOf('/', nextSep + 1);
+
+							if (nextNextSep == -1)
+								list.Add(f.Substring(0, f.Length - 1));
+						}
+					}
+
+					return list.ToArray();
+				}
+			}
+
+			return new string[0];
+		}
+
+		private string[] GetFilesInPackage(string path)
+		{
+			var pp = ParsePackagePath(path);
+
+			foreach (var p in packages_)
+			{
+				if (p.name == pp.name)
+				{
+					var list = new List<string>();
+
+					var ppath = pp.path;
+					if (!ppath.EndsWith("/"))
+						ppath += "/";
+
+					foreach (var f in p.files)
+					{
+						if (f.StartsWith(ppath))
+							list.Add(f);
+					}
+
+					return list.ToArray();
+				}
+			}
+
+			return new string[0];
+		}
+
+		public List<ISysShortCut> GetShortCutsForDirectory(string path)
+		{
+			var list = new List<ISysShortCut>();
+
+			if (!path.EndsWith("/"))
+				path += "/";
+
+			foreach (var p in packages_)
+			{
+				foreach (var d in p.dirs)
+				{
+					if (d.StartsWith(path))
+					{
+						list.Add(new VFSSysShortCut(p.name, p.name + ":/" + path.Substring(0, path.Length - 1).Replace('\\', '/')));
+						break;
+					}
+				}
+			}
+
+			return list;
+		}
+
+		public DateTime FileCreationTime(string path)
+		{
+			return BadDateTime;
+		}
+
+		public DateTime FileLastWriteTime(string path)
+		{
+			return BadDateTime;
+		}
+
+		public DateTime DirectoryCreationTime(string path)
+		{
+			return BadDateTime;
+		}
+
+		public DateTime DirectoryLastWriteTime(string path)
+		{
+			return BadDateTime;
 		}
 
 		public bool IsDirectoryInPackage(string path)

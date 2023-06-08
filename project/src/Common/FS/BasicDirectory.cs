@@ -64,10 +64,14 @@ namespace AUI.FS
 			List<IFilesystemContainer> allDirs,
 			List<IFilesystemContainer> filteredDirs)
 		{
-			if (cache_ == null)
-				cache_ = new Cache();
+			Instrumentation.Start(I.SetLocalDirectoriesCache);
+			{
+				if (cache_ == null)
+					cache_ = new Cache();
 
-			cache_.SetLocalDirectoriesCache(fs_, cx, allDirs, filteredDirs);
+				cache_.SetLocalDirectoriesCache(fs_, cx, allDirs, filteredDirs);
+			}
+			Instrumentation.End();
 		}
 
 		private Listing<IFilesystemContainer> GetLocalDirectoriesCache()
@@ -139,9 +143,18 @@ namespace AUI.FS
 
 			// dirs are not filtered for now
 			//Filter(cx, cache_.GetLocalDirectories());
-			SortInternal(cx, cache_.GetLocalDirectories());
-			cache_.GetLocalDirectories().UpdateLookup();
 
+			Instrumentation.Start(I.SortDirectories);
+			{
+				SortInternal(cx, cache_.GetLocalDirectories());
+			}
+			Instrumentation.End();
+
+			Instrumentation.Start(I.UpdateLookup);
+			{
+				cache_.GetLocalDirectories().UpdateLookup();
+			}
+			Instrumentation.End();
 
 			return cache_.GetLocalDirectories().Last;
 		}

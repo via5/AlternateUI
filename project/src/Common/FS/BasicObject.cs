@@ -14,6 +14,7 @@ namespace AUI.FS
 		private VUI.Icon icon_ = null;
 		private DateTime dateCreated_ = Sys.BadDateTime;
 		private DateTime dateModified_ = Sys.BadDateTime;
+		private string vp_ = null;
 
 		public BasicFilesystemObject(
 			Filesystem fs, IFilesystemContainer parent,
@@ -68,16 +69,21 @@ namespace AUI.FS
 		{
 			get
 			{
-				string s = Name;
-
-				var parent = parent_;
-				while (parent != null)
+				if (vp_ == null)
 				{
-					s = parent.Name + "/" + s;
-					parent = parent.Parent;
+					string s = Name;
+
+					var parent = parent_;
+					while (parent != null)
+					{
+						s = parent.Name + "/" + s;
+						parent = parent.Parent;
+					}
+
+					vp_ = s;
 				}
 
-				return s;
+				return vp_;
 			}
 		}
 
