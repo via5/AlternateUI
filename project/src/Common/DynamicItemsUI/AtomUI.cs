@@ -289,11 +289,15 @@ namespace AUI.DynamicItemsUI
 			Rebuild();
 		}
 
-		private void Rebuild()
+		private void Rebuild(bool keepPage = false)
 		{
+			Log.Info($"rebuild, keepPage={keepPage}, page={page_}");
+
 			items_ = filter_.Filtered(GetItems());
 
-			page_ = 0;
+			if (!keepPage)
+				page_ = 0;
+
 			controls_.Set(page_, PageCount);
 			UpdatePage();
 		}
@@ -365,19 +369,26 @@ namespace AUI.DynamicItemsUI
 					}
 				}
 
-				if (char_ != null)
-				{
-					if (!char_.gameObject.activeInHierarchy || !char_.enabled)
-					{
-						char_ = null;
-						cs_ = null;
-						ui_ = null;
+				CheckCharChanged();
+			}
+		}
 
-						if (GetInfo())
-						{
-							Log.Verbose("sex changed, rebuilding");
-							Rebuild();
-						}
+		private void CheckCharChanged()
+		{
+			if (char_ != null)
+			{
+				if (!char_.gameObject.activeInHierarchy || !char_.enabled)
+				{
+					bool wasMale = char_.isMale;
+
+					char_ = null;
+					cs_ = null;
+					ui_ = null;
+
+					if (GetInfo())
+					{
+						Log.Info($"char changed, rebuilding, wasMale={wasMale}, isMale={char_.isMale}");
+						Rebuild((wasMale == char_.isMale));
 					}
 				}
 			}
