@@ -308,6 +308,7 @@ namespace AUI.DynamicItemsUI
 				try
 				{
 					CreateUI();
+					FileManagerSecure.RegisterRefreshHandler(OnPackagesRefreshed);
 				}
 				catch (Exception)
 				{
@@ -328,7 +329,15 @@ namespace AUI.DynamicItemsUI
 		public override void Disable()
 		{
 			if (root_ != null)
+			{
 				root_.Visible = false;
+				FileManagerSecure.UnregisterRefreshHandler(OnPackagesRefreshed);
+			}
+		}
+
+		private void OnPackagesRefreshed()
+		{
+			Rebuild();
 		}
 
 		public override void Update(float s)
@@ -377,6 +386,23 @@ namespace AUI.DynamicItemsUI
 		public void SetActive(DAZDynamicItem item, bool b)
 		{
 			DoSetActive(item, b);
+		}
+
+		public void Rescan()
+		{
+			AlternateUI.Instance.Log.Info("scanning");
+			AlternateUI.Instance.StartCoroutine(CoRescan());
+		}
+
+		private IEnumerator CoRescan()
+		{
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame();
+
+			DoRescan();
+			Rebuild();
 		}
 
 		public CurrentControls CreateCurrentControls(Controls c)
@@ -503,5 +529,6 @@ namespace AUI.DynamicItemsUI
 		protected abstract CurrentControls.ItemPanel DoCreateCurrentItemPanel(Controls c);
 		protected abstract void DoSetActive(DAZDynamicItem item, bool b);
 		protected abstract DAZDynamicItem[] DoGetItems();
+		protected abstract void DoRescan();
 	}
 }

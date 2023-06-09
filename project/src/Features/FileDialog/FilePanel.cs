@@ -11,10 +11,8 @@ namespace AUI.FileDialog
 		private FS.IFilesystemObject o_ = null;
 
 		private readonly VUI.Panel panel_;
-		private readonly VUI.Image thumbnail_;
-		private readonly VUI.Image packageIndicator_;
 		private readonly VUI.Label name_;
-		private VUI.Timer thumbnailTimer_ = null;
+		private readonly ThumbnailPanel thumb_;
 		private bool hovered_ = false;
 		private bool selected_ = false;
 
@@ -23,8 +21,7 @@ namespace AUI.FileDialog
 			fd_ = fd;
 
 			panel_ = new VUI.Panel(new VUI.BorderLayout());
-			thumbnail_ = new VUI.Image();
-			packageIndicator_ = new VUI.Image();
+			thumb_ = new ThumbnailPanel(10, 5);
 			name_ = new VUI.Label();
 
 			name_.FontSize = fontSize;
@@ -32,18 +29,12 @@ namespace AUI.FileDialog
 			name_.Alignment = VUI.Align.TopCenter;
 			name_.MinimumSize = new VUI.Size(VUI.Widget.DontCare, 60);
 
-			packageIndicator_.Alignment = VUI.Align.BottomLeft;
-			packageIndicator_.Margins = new VUI.Insets(10, 0, 0, 5);
 
 			panel_.Borders = new VUI.Insets(1);
 			panel_.BorderColor = new Color(0, 0, 0, 0);
 			panel_.Clickthrough = false;
 
-			var thumbnailPanel = new VUI.Panel(new VUI.BorderLayout());
-			thumbnailPanel.Add(thumbnail_, VUI.BorderLayout.Center);
-			thumbnailPanel.Add(packageIndicator_, VUI.BorderLayout.Center);
-
-			panel_.Add(thumbnailPanel, VUI.BorderLayout.Center);
+			panel_.Add(thumb_, VUI.BorderLayout.Center);
 			panel_.Add(name_, VUI.BorderLayout.Bottom);
 
 			panel_.Padding = new VUI.Insets(8);
@@ -143,70 +134,13 @@ namespace AUI.FileDialog
 
 		private void SetIcon()
 		{
-			var i = o_.Icon;
-
-			if (i.CachedTexture != null)
-			{
-				SetTexture(i.CachedTexture);
-			}
-			else
-			{
-				if (thumbnailTimer_ != null)
-				{
-					thumbnailTimer_.Destroy();
-					thumbnailTimer_ = null;
-				}
-
-				SetTexture(null);
-				var forObject = o_;
-
-				thumbnailTimer_ = VUI.TimerManager.Instance.CreateTimer(0.2f, () =>
-				{
-					i.GetTexture(t =>
-					{
-						if (o_ == forObject)
-							SetTexture(t);
-					});
-				});
-			}
-
-			if (o_.ParentPackage == null)
-			{
-				packageIndicator_.Render = false;
-			}
-			else
-			{
-				packageIndicator_.Render = true;
-
-				Icons.GetIcon(Icons.Package).GetTexture((t) =>
-				{
-					packageIndicator_.Texture = t;
-				});
-			}
-		}
-
-		private void SetTexture(Texture t)
-		{
-			if (t != null)
-			{
-				// some thumbnails are set to repeat, which adds spurious lines
-				// on top when resizing
-				t.wrapMode = TextureWrapMode.Clamp;
-			}
-
-			thumbnail_.Texture = t;
+			thumb_.Set(o_.Icon, (o_.ParentPackage != null));
 		}
 
 		public void Clear()
 		{
-			if (thumbnailTimer_ != null)
-			{
-				thumbnailTimer_.Destroy();
-				thumbnailTimer_ = null;
-			}
-
 			name_.Text = "";
-			thumbnail_.Texture = null;
+			thumb_.Clear();
 			panel_.Render = false;
 			selected_ = false;
 			hovered_ = false;

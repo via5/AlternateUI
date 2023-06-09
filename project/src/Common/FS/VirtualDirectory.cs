@@ -209,11 +209,7 @@ namespace AUI.FS
 
 			if (!dirs_.Contains(c))
 			{
-				foreach (var d in dirs_)
-					AlternateUI.Assert(d.VirtualPath != c.VirtualPath);
-
 				dirs_.Add(c);
-
 				merged_ = false;
 				sortedDirs_ = null;
 			}
@@ -458,7 +454,8 @@ namespace AUI.FS
 					{
 						if (c is VirtualDirectory && !(c is VirtualPackageDirectory))
 						{
-							(c as VirtualDirectory).Add(d);
+							var vd = (c as VirtualDirectory);
+							vd.Add(d);
 						}
 						else
 						{

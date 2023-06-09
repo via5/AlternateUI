@@ -220,6 +220,11 @@ namespace AUI.ClothingUI
 		{
 			return CharacterSelector.clothingItems;
 		}
+
+		protected override void DoRescan()
+		{
+			CharacterSelector.RefreshDynamicClothes();
+		}
 	}
 
 

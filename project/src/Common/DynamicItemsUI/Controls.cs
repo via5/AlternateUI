@@ -368,23 +368,31 @@ namespace AUI.DynamicItemsUI
 			controls_ = c;
 			panel_ = new VUI.ToggledPanel("...", true, true);
 
-			var p = new VUI.Panel(new VUI.GridLayout(3, 10));
+			var gridPanel = new VUI.Panel(new VUI.GridLayout(3, 10));
 
-			p.Add(new VUI.Label("Columns"));
-			cols_ = p.Add(new VUI.IntTextSlider(
+			gridPanel.Add(new VUI.Label("Columns"));
+			cols_ = gridPanel.Add(new VUI.IntTextSlider(
 				controls_.AtomUI.Columns,
 				AtomUI.MinColumns,
 				AtomUI.MaxColumns,
 				OnColumns));
-			p.Add(new VUI.ToolButton("R", () => OnColumns(AtomUI.DefaultColumns)));
+			gridPanel.Add(new VUI.ToolButton("R", () => OnColumns(AtomUI.DefaultColumns)));
 
-			p.Add(new VUI.Label("Rows"));
-			rows_ = p.Add(new VUI.IntTextSlider(
+			gridPanel.Add(new VUI.Label("Rows"));
+			rows_ = gridPanel.Add(new VUI.IntTextSlider(
 				controls_.AtomUI.Rows,
 				AtomUI.MinRows,
 				AtomUI.MaxRows,
 				OnRows));
-			p.Add(new VUI.ToolButton("R", () => OnRows(AtomUI.DefaultRows)));
+			gridPanel.Add(new VUI.ToolButton("R", () => OnRows(AtomUI.DefaultRows)));
+
+
+			var p = new VUI.Panel(new VUI.VerticalFlow(10));
+
+			p.Add(new VUI.Button("Rescan loose files", OnRescan));
+
+			p.Add(gridPanel);
+
 
 			panel_.Panel.Add(p, VUI.BorderLayout.Top);
 			panel_.Panel.Padding = new VUI.Insets(20);
@@ -446,6 +454,12 @@ namespace AUI.DynamicItemsUI
 					ignore_ = false;
 				}
 			}
+		}
+
+		private void OnRescan()
+		{
+			panel_.Hide();
+			controls_.AtomUI.Rescan();
 		}
 	}
 

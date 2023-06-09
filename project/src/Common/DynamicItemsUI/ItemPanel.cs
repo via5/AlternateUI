@@ -11,7 +11,7 @@ namespace AUI.DynamicItemsUI
 		private readonly VUI.Label name_;
 		private readonly VUI.Panel buttons_;
 		private readonly VUI.Button customize_ = null;
-		private readonly VUI.Image thumbnail_;
+		private readonly ThumbnailPanel thumb_;
 
 		private DAZDynamicItem item_ = null;
 		private bool ignore_ = false;
@@ -44,9 +44,11 @@ namespace AUI.DynamicItemsUI
 			center.Add(buttons_);
 
 			var right = new VUI.Panel(new VUI.HorizontalFlow(5, VUI.FlowLayout.AlignDefault, true));
-			thumbnail_ = right.Add(new VUI.Image());
-			thumbnail_.Tooltip.TextFunc = () => parent.MakeTooltip(item_);
-			thumbnail_.Tooltip.FontSize = parent.FontSize;
+			thumb_ = new ThumbnailPanel(0, 0);
+			thumb_.Tooltip.TextFunc = () => parent.MakeTooltip(item_); ;
+			thumb_.Tooltip.FontSize = parent.FontSize;
+			right.Add(thumb_);
+
 
 			Add(center, VUI.BorderLayout.Center);
 			Add(right, VUI.BorderLayout.Right);
@@ -98,7 +100,7 @@ namespace AUI.DynamicItemsUI
 					active_.Checked = false;
 					author_.Text = "";
 					name_.Text = "";
-					thumbnail_.Texture = null;
+					thumb_.Clear();
 					Borders = new VUI.Insets(0);
 				}
 				else
@@ -109,16 +111,7 @@ namespace AUI.DynamicItemsUI
 					Borders = new VUI.Insets(1);
 
 					if (updateThumbnail)
-					{
-						thumbnail_.Texture = null;
-
-						DAZDynamicItem forItem = item_;
-
-						item_.GetThumbnail((Texture2D t) =>
-						{
-							AlternateUI.Instance.StartCoroutine(CoSetTexture(forItem, t));
-						});
-					}
+						thumb_.Set(item_);
 				}
 
 				Render = (item_ != null);
@@ -128,14 +121,6 @@ namespace AUI.DynamicItemsUI
 			{
 				ignore_ = false;
 			}
-		}
-
-		private IEnumerator CoSetTexture(DAZDynamicItem forItem, Texture2D t)
-		{
-			yield return new WaitForEndOfFrame();
-
-			if (item_ == forItem)
-				thumbnail_.Texture = t;
 		}
 
 		public void ToggleActive()

@@ -140,6 +140,11 @@
 		{
 			return CharacterSelector.hairItems;
 		}
+
+		protected override void DoRescan()
+		{
+			CharacterSelector.RefreshDynamicHair();
+		}
 	}
 
 

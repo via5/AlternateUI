@@ -139,9 +139,9 @@ namespace AUI.Tests
 		{
 			var sys = new VFSSys();
 
-			const int PackageCount = 1000;
-			const int DirCount = 10;
-			const int FileCount = 10;
+			const int PackageCount = 7000;
+			const int DirCount = 2;
+			const int FileCount = 2;
 
 			for (int i = 0; i < PackageCount; ++i)
 			{
@@ -172,7 +172,7 @@ namespace AUI.Tests
 
 			var cx = new FS.Context(
 				null, null, "Custom/Assets",
-				FS.Context.NoSort, FS.Context.SortAscending,
+				FS.Context.SortFilename, FS.Context.SortAscending,
 				FS.Context.RecursiveFlag |
 				FS.Context.MergePackagesFlag |
 				FS.Context.LatestPackagesOnlyFlag,
