@@ -148,7 +148,18 @@ namespace VUI
 			Popup.popup.alwaysOpen = true;
 			Popup.popup.topButton.gameObject.SetActive(false);
 			Popup.popup.backgroundImage.gameObject.SetActive(false);
-			Popup.popup.onValueChangeHandlers += (string s) => { Focus(); };
+			Popup.popup.onValueChangeHandlers += (string s) =>
+			{
+				try
+				{
+					Focus();
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in onValueChangeHandlers:");
+					Log.Error(e.ToString());
+				}
+			};
 			Popup.popup.topBottomBuffer = 3;
 
 			AddItemComponents();

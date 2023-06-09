@@ -197,24 +197,20 @@ namespace AUI.FileDialog
 
 		public void SetFiles(List<FS.IFilesystemObject> files)
 		{
-			Log.Info($"SetFiles count={files.Count}");
+			Log.Verbose($"SetFiles count={files.Count}");
 			files_ = files;
 		}
 
 		public void SetSelected(FS.IFilesystemObject o, bool b, bool scroll)
 		{
-			Log.Info($"SetSelected {b} {o} scroll={scroll}");
+			Log.Verbose($"SetSelected {b} {o} scroll={scroll}");
 
 			var p = FindPanel(o);
 
 			if (p != null)
 			{
-				Log.Info($"  - found in visible panels, sel={b}");
-
+				Log.Verbose($"  - found in visible panels, sel={b}");
 				p.SetSelectedInternal(b);
-
-				//if (b)
-				//	SetPanels(scroll_.Top * cols_);
 
 				return;
 			}
@@ -227,7 +223,7 @@ namespace AUI.FileDialog
 					{
 						int newTop = MakeTop(i);
 
-						Log.Info($"  - scrolling, i={i} newtop={newTop} currenttop={scroll_.Top}");
+						Log.Verbose($"  - scrolling, i={i} newtop={newTop} currenttop={scroll_.Top}");
 						SetScrollPanel("selection", newTop);
 
 						break;
@@ -236,7 +232,7 @@ namespace AUI.FileDialog
 			}
 			else
 			{
-				Log.Info($"  - can't select {b} {o}, scroll is false and panel is not visible");
+				Log.Verbose($"  - can't select {b} {o}, scroll is false and panel is not visible");
 			}
 		}
 
@@ -259,7 +255,7 @@ namespace AUI.FileDialog
 				return;
 			}
 
-			Log.Info("scroll to top");
+			Log.Verbose("scroll to top");
 
 			SetPanels(0);
 			SetScrollPanel("scroll to top", -1);
@@ -267,7 +263,7 @@ namespace AUI.FileDialog
 
 		public void Clear()
 		{
-			Log.Info("clearing panels");
+			Log.Verbose("clearing panels");
 
 			for (int i = 0; i < panels_.Length; ++i)
 				panels_[i]?.Clear();
@@ -275,7 +271,7 @@ namespace AUI.FileDialog
 
 		private void SetPanels(int from)
 		{
-			Log.Info($"SetPanels from {from}");
+			Log.Verbose($"SetPanels from {from}");
 
 			int count = files_?.Count ?? 0;
 			var cx = fd_.CreateFileContext(false);
@@ -322,7 +318,7 @@ namespace AUI.FileDialog
 			yield return new WaitForEndOfFrame();
 			yield return new WaitForEndOfFrame();
 
-			Log.Info($"CoSetScrollPanel why={why}");
+			Log.Verbose($"CoSetScrollPanel why={why}");
 
 			int totalRows = (int)Math.Ceiling((float)files_.Count / cols_);
 			int offscreenRows = totalRows - rows_;
@@ -334,7 +330,7 @@ namespace AUI.FileDialog
 
 			try
 			{
-				Log.Info($"CoSetScrollPanel scroll_.Set offscreenRows={offscreenRows} pos={pos}");
+				Log.Verbose($"CoSetScrollPanel scroll_.Set offscreenRows={offscreenRows} pos={pos}");
 
 				ignoreScroll_ = true;
 				scroll_.Set(offscreenRows, scrollbarSize, pos);
@@ -344,7 +340,7 @@ namespace AUI.FileDialog
 				ignoreScroll_ = false;
 			}
 
-			Log.Info($"CoSetScrollPanel, calling OnScroll() with setTop={setTop} top={scroll_.Top}");
+			Log.Verbose($"CoSetScrollPanel, calling OnScroll() with setTop={setTop} top={scroll_.Top}");
 			OnScroll(scroll_.Top);
 		}
 
@@ -352,7 +348,7 @@ namespace AUI.FileDialog
 		{
 			if (ignoreScroll_) return;
 
-			Log.Info($"OnScroll top={top}");
+			Log.Verbose($"OnScroll top={top}");
 			SetPanels(top * cols_);
 		}
 

@@ -10,9 +10,9 @@ namespace AUI.FS
 		{
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"FSDirectory({VirtualPath})";
+			return "FSDirectory";
 		}
 
 		protected override DateTime GetDateCreated()

@@ -282,7 +282,8 @@ namespace AUI.FS
 		string DeVirtualize();
 		bool IsSameObject(IFilesystemObject o);
 		void ClearCache();
-		string DebugInfo();
+
+		string GetDebugString();
 	}
 
 

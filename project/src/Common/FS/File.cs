@@ -18,9 +18,9 @@ namespace AUI.FS
 			Icon?.ClearCache();
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"File({VirtualPath})";
+			return "File";
 		}
 
 		public override string Name

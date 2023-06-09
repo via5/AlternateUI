@@ -156,20 +156,28 @@ namespace VUI
 
 			Popup.popup.onOpenPopupHandlers += () =>
 			{
-				var rt2 = borders_.gameObject.GetComponent<RectTransform>();
-
-				Utilities.SetRectTransform(rt2, new Rectangle(
-					0, 0, new Size(
-					Popup.popup.popupPanel.rect.width,
-					Popup.popup.popupPanel.rect.height)));
-
-				if (popupWidth_ >= 0)
+				try
 				{
-					//var sd = Popup.popup.popupPanel.sizeDelta;
-					//sd.x = popupWidth_;
-					//Popup.popup.popupPanel.sizeDelta = sd;
+					var rt2 = borders_.gameObject.GetComponent<RectTransform>();
 
-					SuperController.singleton.StartCoroutine(CoSetPosition());
+					Utilities.SetRectTransform(rt2, new Rectangle(
+						0, 0, new Size(
+						Popup.popup.popupPanel.rect.width,
+						Popup.popup.popupPanel.rect.height)));
+
+					if (popupWidth_ >= 0)
+					{
+						//var sd = Popup.popup.popupPanel.sizeDelta;
+						//sd.x = popupWidth_;
+						//Popup.popup.popupPanel.sizeDelta = sd;
+
+						SuperController.singleton.StartCoroutine(CoSetPosition());
+				}
+				}
+				catch (Exception e)
+				{
+					Log.Error($"exception in onOpenPopupHandlers:");
+					Log.Error(e.ToString());
 				}
 			};
 

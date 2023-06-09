@@ -31,29 +31,34 @@ namespace AUI.FS
 			lastContext_ = lastContext;
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"VirtualDirectory({VirtualPath})";
+			return "VirtualDirectory";
 		}
 
 		private IFilesystemContainer SingleContent
 		{
 			get
 			{
-				if (dirs_ == null || dirs_.Count != 1)
+				if (ContainedDirectories == null || ContainedDirectories.Count != 1)
 					return null;
 				else
-					return dirs_.First();
+					return ContainedDirectories.First();
 			}
+		}
+
+		public HashSet<IFilesystemContainer> ContainedDirectories
+		{
+			get { return dirs_; }
 		}
 
 		public override void ClearCache()
 		{
 			base.ClearCache();
 
-			if (dirs_ != null)
+			if (ContainedDirectories != null)
 			{
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 					d.ClearCache();
 			}
 
@@ -95,9 +100,9 @@ namespace AUI.FS
 		{
 			RequireAllDirectories(cx);
 
-			if (sortedDirs_ == null && dirs_ != null)
+			if (sortedDirs_ == null && ContainedDirectories != null)
 			{
-				sortedDirs_ = new List<IFilesystemContainer>(dirs_);
+				sortedDirs_ = new List<IFilesystemContainer>(ContainedDirectories);
 				sortedDirs_.Sort((a, b) =>
 				{
 					var ap = a.ParentPackage;
@@ -127,7 +132,7 @@ namespace AUI.FS
 
 			var s = base.Tooltip;
 
-			if (dirs_ != null && dirs_.Count > 0)
+			if (ContainedDirectories != null && ContainedDirectories.Count > 0)
 			{
 				if (tooltip_ == null)
 					tooltip_ = new List<string>();
@@ -154,7 +159,7 @@ namespace AUI.FS
 		private int MakeTooltipInternal(
 			Context cx, List<string> outList, int max, bool devMode)
 		{
-			if (dirs_ == null)
+			if (ContainedDirectories == null)
 				return 0;
 
 			int count = 0;
@@ -190,7 +195,7 @@ namespace AUI.FS
 			}
 			else
 			{
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 				{
 					++count;
 
@@ -244,7 +249,7 @@ namespace AUI.FS
 
 		protected override VUI.Icon GetIcon()
 		{
-			if (HasRealDir())
+			if (ContainsWritableDirectory())
 				return Icons.GetIcon(Icons.Directory);
 			else
 				return Icons.GetIcon(Icons.PackageDark);
@@ -279,9 +284,9 @@ namespace AUI.FS
 		{
 			get
 			{
-				if (dirs_ != null)
+				if (ContainedDirectories != null)
 				{
-					foreach (var d in dirs_)
+					foreach (var d in ContainedDirectories)
 					{
 						if (!d.IsInternal)
 							return false;
@@ -294,7 +299,7 @@ namespace AUI.FS
 
 		public override bool IsWritable
 		{
-			get { return HasRealDir(); }
+			get { return ContainsWritableDirectory(); }
 		}
 
 
@@ -305,9 +310,9 @@ namespace AUI.FS
 
 		public override string DeVirtualize()
 		{
-			if (dirs_ != null)
+			if (ContainedDirectories != null)
 			{
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 				{
 					if (!d.Virtual && d.ParentPackage == null)
 					{
@@ -336,7 +341,7 @@ namespace AUI.FS
 
 			var list = new HashSet<IFilesystemContainer>();
 
-			if (dirs_ != null)
+			if (ContainedDirectories != null)
 			{
 				// see DoGetFiles() below
 				var cx2 = new Context(
@@ -344,7 +349,7 @@ namespace AUI.FS
 					Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 					cx.Whitelist);
 
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 				{
 					var ds = d.GetDirectories(cx2);
 					if (ds != null)
@@ -387,7 +392,7 @@ namespace AUI.FS
 
 		private bool HasDirectoriesInternal(Context cx)
 		{
-			if (dirs_ == null)
+			if (ContainedDirectories == null)
 				return false;
 
 			// see DoGetFiles() below
@@ -396,7 +401,7 @@ namespace AUI.FS
 				Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 				cx.Whitelist);
 
-			foreach (var d in dirs_)
+			foreach (var d in ContainedDirectories)
 			{
 				if (d.HasDirectories(cx2))
 					return true;
@@ -412,7 +417,7 @@ namespace AUI.FS
 
 			var list = new List<IFilesystemObject>();
 
-			if (dirs_ != null)
+			if (ContainedDirectories != null)
 			{
 				// this needs to get the raw files, not filtered, so get a new
 				// context with the same flags only
@@ -421,7 +426,7 @@ namespace AUI.FS
 					Context.NoSort, Context.NoSortDirection, cx.Flags, "", "",
 					cx.Whitelist);
 
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 				{
 					var fs = d.GetFiles(cx2);
 					if (fs != null)
@@ -444,8 +449,8 @@ namespace AUI.FS
 				if (d is VirtualDirectory && !(d is VirtualPackageDirectory))
 				{
 					var vd = d as VirtualDirectory;
-					if (vd.dirs_ != null)
-						UntangleVDs(vd.dirs_, map);
+					if (vd.ContainedDirectories != null)
+						UntangleVDs(vd.ContainedDirectories, map);
 				}
 				else
 				{
@@ -532,6 +537,7 @@ namespace AUI.FS
 			Instrumentation.End();
 
 			changed = MergeAdd(list);
+
 			merged_ = true;
 
 			return changed;
@@ -549,9 +555,9 @@ namespace AUI.FS
 				if (c is VirtualDirectory && !(c is VirtualPackageDirectory))
 				{
 					var vd = c as VirtualDirectory;
-					if (vd.dirs_ != null)
+					if (vd.ContainedDirectories != null)
 					{
-						if (MergeAdd(vd.dirs_))
+						if (MergeAdd(vd.ContainedDirectories))
 							changed = true;
 					}
 				}
@@ -565,13 +571,13 @@ namespace AUI.FS
 			return changed;
 		}
 
-		private bool HasRealDir()
+		public bool ContainsWritableDirectory()
 		{
-			if (dirs_ != null)
+			if (ContainedDirectories != null)
 			{
-				foreach (var d in dirs_)
+				foreach (var d in ContainedDirectories)
 				{
-					if (d.ParentPackage == null)
+					if (d.IsWritable)
 						return true;
 				}
 			}

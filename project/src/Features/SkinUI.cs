@@ -90,17 +90,41 @@ namespace AUI.SkinUI
 
 		private void AtomAdded(Atom a)
 		{
-			AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo(a));
+			try
+			{
+				AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo(a));
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in AtomAdded:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void AtomRemoved(Atom a)
 		{
-			RemoveCallbacks(a);
+			try
+			{
+				RemoveCallbacks(a);
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in AtomRemoved:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void OnSceneLoaded()
 		{
-			AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo());
+			try
+			{
+				AlternateUI.Instance.StartCoroutine(RefreshCallbacksCo());
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnSceneLoaded:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private IEnumerator RefreshCallbacksCo()

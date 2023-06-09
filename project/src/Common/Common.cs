@@ -25,6 +25,12 @@ namespace AUI
 
 		public void Set(DAZDynamicItem di)
 		{
+			if (di == null)
+			{
+				Clear();
+				return;
+			}
+
 			++token_;
 
 			SetDeferred((forToken) =>
@@ -41,6 +47,12 @@ namespace AUI
 
 		public void Set(VUI.Icon i, bool inPackage)
 		{
+			if (i == null)
+			{
+				Clear();
+				return;
+			}
+
 			++token_;
 
 			if (i.CachedTexture != null)

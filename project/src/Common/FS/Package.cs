@@ -176,9 +176,9 @@ namespace AUI.FS
 			packages_.Clear();
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"PackageRootDirectory";
+			return "PackageRootDirectory";
 		}
 
 		protected override VUI.Icon GetIcon()
@@ -304,9 +304,14 @@ namespace AUI.FS
 			return s;
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"VirtualPackageDirectory({p_?.ShortCut?.Package}:{Name})";
+			return "VirtualPackageDirectory";
+		}
+
+		protected override string DoGetDebugInfo()
+		{
+			return $"{p_?.ShortCut?.Package}:{Name}";
 		}
 
 		public void AddChild(IFilesystemContainer c)
@@ -349,9 +354,14 @@ namespace AUI.FS
 			get { return false; }
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"RealPackageDirectory({ShortCutPath}, p={p_})";
+			return "RealPackageDirectory";
+		}
+
+		protected override string DoGetDebugInfo()
+		{
+			return $"{ShortCutPath}, p={p_}";
 		}
 	}
 
@@ -377,9 +387,9 @@ namespace AUI.FS
 			modified_ = Sys.BadDateTime;
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"Package({ShortCut.Package})";
+			return "Package({ShortCut.Package})";
 		}
 
 		public override IPackage ParentPackage

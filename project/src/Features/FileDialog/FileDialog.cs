@@ -362,9 +362,9 @@ namespace AUI.FileDialog
 				}
 				else
 				{
-					if (o.IsWritable)
+					if (!o.IsWritable)
 					{
-						Log.Error($"SelectDirectoryInPinned: needs writable dir, but is virtual: '{vpath}'");
+						Log.Error($"SelectDirectoryInPinned: needs writable dir, but is not: {o}");
 						return false;
 					}
 				}
@@ -694,6 +694,19 @@ namespace AUI.FileDialog
 			if (!string.IsNullOrEmpty(opts.CurrentFile))
 			{
 				var dir = FS.Path.Parent(opts.CurrentFile);
+
+				if (!string.IsNullOrEmpty(opts.CurrentDirectoryInPinned))
+				{
+					Log.Info($"trying current file parent in pinned initial directory '{dir}' '{opts.CurrentDirectoryInPinned}'");
+
+					if (SelectDirectoryInPinned(
+							dir, opts.CurrentDirectoryInPinned,
+							flags, scrollTo))
+					{
+						return;
+					}
+				}
+
 
 				Log.Info($"trying current file parent initial directory '{dir}'");
 

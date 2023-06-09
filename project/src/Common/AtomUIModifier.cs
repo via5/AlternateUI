@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace AUI
 {
@@ -169,26 +170,50 @@ namespace AUI
 
 		private void OnAtomAdded(Atom a)
 		{
-			if (ValidAtom(a))
-				TryAddAtom(a);
+			try
+			{
+				if (ValidAtom(a))
+					TryAddAtom(a);
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomAdded for {a}:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void OnAtomRemoved(Atom a)
 		{
-			for (int i = 0; i < atoms_.Count; ++i)
+			try
 			{
-				if (atoms_[i].Atom == a)
+				for (int i = 0; i < atoms_.Count; ++i)
 				{
-					atoms_[i].Disable();
-					atoms_.RemoveAt(i);
-					break;
+					if (atoms_[i].Atom == a)
+					{
+						atoms_[i].Disable();
+						atoms_.RemoveAt(i);
+						break;
+					}
 				}
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomRemoved for {a}:");
+				Log.Error(e.ToString());
 			}
 		}
 
 		private void OnSceneLoaded()
 		{
-			CheckScene();
+			try
+			{
+				CheckScene();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnSceneLoaded:");
+				Log.Error(e.ToString());
+			}
 		}
 	}
 }

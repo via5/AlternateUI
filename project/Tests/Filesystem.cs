@@ -184,9 +184,85 @@ namespace AUI.Tests
 			Console.WriteLine($"{fs.Count}");
 		}
 
+		[TestMethod]
+		public void Pins()
+		{
+			var sys = new VFSSys();
+
+			sys.AddDir("Custom/");
+			sys.AddDir("Custom/Assets/");
+			sys.AddFile("Custom/Assets/oldFile");
+
+			Create(sys);
+			var fs = FS.Filesystem.Instance;
+
+			fs.Pin("VaM/Custom/Assets");
+
+			var cx = new FS.Context(
+				null, null, "Custom/Assets",
+				FS.Context.SortFilename, FS.Context.SortAscending,
+				FS.Context.NoFlags,
+				null, null, null);
+
+			var p = fs.Resolve(cx, "VaM/Pinned/Assets") as FS.IFilesystemContainer;
+			var o = fs.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
+
+
+			string[] expectedBefore =
+			{
+				"VaM/Custom/Assets/oldFile"
+			};
+
+			string[] expectedAfter =
+			{
+				"VaM/Custom/Assets/oldFile",
+				"VaM/Custom/Assets/newFile",
+			};
+
+
+			var files = new List<string>();
+
+			files.Clear();
+			foreach (var f in p.GetFiles(cx))
+				files.Add(f.VirtualPath);
+			var actual = files.ToArray();
+			Assert.AreEqual(expectedBefore.Length, actual.Length);
+			for (int i = 0; i < expectedBefore.Length; ++i)
+				Assert.AreEqual(expectedBefore[i], actual[i]);
+
+			files.Clear();
+			foreach (var f in o.GetFiles(cx))
+				files.Add(f.VirtualPath);
+			actual = files.ToArray();
+			Assert.AreEqual(expectedBefore.Length, actual.Length);
+			for (int i = 0; i < expectedBefore.Length; ++i)
+				Assert.AreEqual(expectedBefore[i], actual[i]);
+
+
+			sys.AddFile("Custom/Assets/newFile");
+			o.ClearCache();
+
+
+			files.Clear();
+			foreach (var f in p.GetFiles(cx))
+				files.Add(f.VirtualPath);
+			actual = files.ToArray();
+			Assert.AreEqual(expectedAfter.Length, actual.Length);
+			for (int i = 0; i < expectedAfter.Length; ++i)
+				Assert.AreEqual(expectedAfter[i], actual[i]);
+
+			files.Clear();
+			foreach (var f in o.GetFiles(cx))
+				files.Add(f.VirtualPath);
+			actual = files.ToArray();
+			Assert.AreEqual(expectedAfter.Length, actual.Length);
+			for (int i = 0; i < expectedAfter.Length; ++i)
+				Assert.AreEqual(expectedAfter[i], actual[i]);
+		}
+
 		static void Main()
 		{
-			new Filesystem().Perf();
+			new Filesystem().Pins();
 		}
 	}
 }

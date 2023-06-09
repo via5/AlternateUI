@@ -341,7 +341,15 @@ namespace AUI.DynamicItemsUI
 
 		private void OnPackagesRefreshed()
 		{
-			Rebuild();
+			try
+			{
+				Rebuild();
+			}
+			catch (Exception e)
+			{
+				Log.Error("exception in OnPackagesRefreshed:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		public override void Update(float s)

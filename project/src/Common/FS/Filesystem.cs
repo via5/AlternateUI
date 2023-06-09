@@ -378,6 +378,7 @@ namespace AUI.FS
 		public const int ResolveDirsOnly = 0x01;
 		public const int ResolveDebug = 0x02;
 		public const int ResolveNoCache = 0x04;
+		public const int ResolveCacheOnly = 0x08;
 
 		private static Filesystem instance_;
 
@@ -422,7 +423,7 @@ namespace AUI.FS
 			if (!AlternateUI.Instance.Sys.FileExists(file))
 				return;
 
-			var j = SuperController.singleton.LoadJSON(GetConfigFile())?.AsObject;
+			var j = AlternateUI.Instance.Sys.LoadJSON(GetConfigFile())?.AsObject;
 			if (j == null)
 				return;
 
@@ -477,7 +478,7 @@ namespace AUI.FS
 			}
 			Instrumentation.End();
 
-			SuperController.singleton.SaveJSON(j, GetConfigFile());
+			AlternateUI.Instance.Sys.SaveJSON(j, GetConfigFile());
 		}
 
 		public static Filesystem Instance
@@ -517,9 +518,14 @@ namespace AUI.FS
 			++cacheToken_;
 		}
 
-		public void Pin(IFilesystemContainer o)
+		public void Pin(string path, string display = null)
 		{
-			root_.PinnedRoot.Pin(o);
+			root_.PinnedRoot.Pin(path, display);
+		}
+
+		public void Pin(IFilesystemContainer o, string display = null)
+		{
+			root_.PinnedRoot.Pin(o, display);
 		}
 
 		public void Unpin(IFilesystemContainer o)
@@ -629,7 +635,7 @@ namespace AUI.FS
 			pinned_ = new PinnedRoot(fs_, this);
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
 			return "RootDirectory";
 		}
@@ -829,9 +835,15 @@ namespace AUI.FS
 		public bool IsFile { get { return false; } }
 		public bool IsWritable { get { return false; } }
 
-		public string DebugInfo()
+
+		public string GetDebugString()
 		{
-			return $"NullDirectory";
+			return "NullDirectory";
+		}
+
+		public override string ToString()
+		{
+			return GetDebugString();
 		}
 
 		public IFilesystemContainer Parent

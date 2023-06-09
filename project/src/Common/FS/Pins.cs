@@ -9,14 +9,16 @@ namespace AUI.FS
 		private readonly List<IFilesystemContainer> pinned_ =
 			new List<IFilesystemContainer>();
 
+		private bool clearingCache_ = false;
+
 		public PinnedRoot(Filesystem fs, IFilesystemContainer parent)
 			: base(fs, parent, "Pinned")
 		{
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"PinnedRoot";
+			return "PinnedRoot";
 		}
 
 		public List<IFilesystemContainer> Pinned
@@ -27,6 +29,45 @@ namespace AUI.FS
 		public override bool AlreadySorted
 		{
 			get { return true; }
+		}
+
+		public void ClearCacheInPins(IFilesystemObject from)
+		{
+			// prevent recursion
+			if (clearingCache_)
+				return;
+
+			try
+			{
+				clearingCache_ = true;
+
+				// todo: the problem is that pins can refer to objects that are
+				// gone from the root because the cache was cleared, so clearing
+				// the folder's cache in the real tree won't clear it in pins
+				//
+				// the real fix would be to make sure pins always refer to the
+				// same objects that are in the real tree so clearing the cache
+				// of the underlying object automatically clears the pin too
+				//
+				// in the meantime, this should walk the pins and look up
+				// objects that have the same virtual path as `from` (using
+				// ResolveCacheOnly so they don't load) and clear their cache,
+				// but it's a pain because Resolve() can't just be called since
+				// `from`'s virtual path includes the parent folders
+				//
+				// can't just walk the parents to the root and resolve from
+				// there because the underlying object's parents might not
+				// actually contains the children
+				//
+				// so it needs to be a text match instead, which would duplicate
+				// a lot of code that's in Resolve()
+				//
+				// leave it like this for now
+			}
+			finally
+			{
+				clearingCache_ = false;
+			}
 		}
 
 		public void Pin(string s, string display = null)
@@ -181,9 +222,14 @@ namespace AUI.FS
 			c_ = c;
 		}
 
-		public override string DebugInfo()
+		protected override string DoGetDebugName()
 		{
-			return $"PinnedObject({c_})";
+			return "PinnedObject";
+		}
+
+		protected override string DoGetDebugInfo()
+		{
+			return c_.GetDebugString();
 		}
 
 		public override string Tooltip
@@ -221,6 +267,11 @@ namespace AUI.FS
 		public override bool IsInternal { get { return c_.IsInternal; } }
 		public override bool IsFile { get { return c_.IsFile; } }
 		public override bool IsWritable { get { return c_.IsWritable; } }
+
+		public IFilesystemContainer Object
+		{
+			get { return c_; }
+		}
 
 		protected override VUI.Icon GetIcon()
 		{

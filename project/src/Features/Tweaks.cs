@@ -119,8 +119,16 @@ namespace AUI.Tweaks
 
 		private void OnSceneLoaded()
 		{
-			SuperController.singleton.gameMode = SuperController.GameMode.Edit;
-			SuperController.singleton.ShowMainHUD();
+			try
+			{
+				SuperController.singleton.gameMode = SuperController.GameMode.Edit;
+				SuperController.singleton.ShowMainHUD();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnSceneLoaded:");
+				Log.Error(e.ToString());
+			}
 		}
 	}
 
@@ -318,15 +326,23 @@ namespace AUI.Tweaks
 
 		private void UpdateAtoms()
 		{
-			UnsetAll();
+			try
+			{
+				UnsetAll();
 
-			var list = new List<AtomInfo>();
-			var atoms = SuperController.singleton.GetAtoms();
+				var list = new List<AtomInfo>();
+				var atoms = SuperController.singleton.GetAtoms();
 
-			for (int i = 0; i < atoms.Count; ++i)
-				list.Add(new AtomInfo(atoms[i]));
+				for (int i = 0; i < atoms.Count; ++i)
+					list.Add(new AtomInfo(atoms[i]));
 
-			atoms_ = list.ToArray();
+				atoms_ = list.ToArray();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in UpdateAtoms:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void UnsetAll()
@@ -395,21 +411,29 @@ namespace AUI.Tweaks
 
 		private void OnSceneLoaded()
 		{
-			var atoms = SuperController.singleton.GetAtoms();
-
-			foreach (var a in atoms)
+			try
 			{
-				if (a.type != "Person")
-					continue;
+				var atoms = SuperController.singleton.GetAtoms();
 
-				foreach (var fc in a.freeControllers)
+				foreach (var a in atoms)
 				{
-					if (fc.name == "headControl")
+					if (a.type != "Person")
+						continue;
+
+					foreach (var fc in a.freeControllers)
 					{
-						SuperController.singleton.FocusOnController(fc);
-						return;
+						if (fc.name == "headControl")
+						{
+							SuperController.singleton.FocusOnController(fc);
+							return;
+						}
 					}
 				}
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnSceneLoaded:");
+				Log.Error(e.ToString());
 			}
 		}
 	}
@@ -445,7 +469,15 @@ namespace AUI.Tweaks
 
 		private void OnSceneLoaded()
 		{
-			SuperController.singleton.useSceneLoadPosition = false;
+			try
+			{
+				SuperController.singleton.useSceneLoadPosition = false;
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnSceneLoaded:");
+				Log.Error(e.ToString());
+			}
 		}
 	}
 
@@ -479,12 +511,20 @@ namespace AUI.Tweaks
 
 		private void OnAtomAdded(Atom a)
 		{
-			if (a.type == "InvisibleLight")
+			try
 			{
-				a.mainController.MoveControl(new Vector3(
-					a.mainController.transform.position.x,
-					a.mainController.transform.position.y,
-					0.6f));
+				if (a.type == "InvisibleLight")
+				{
+					a.mainController.MoveControl(new Vector3(
+						a.mainController.transform.position.x,
+						a.mainController.transform.position.y,
+						0.6f));
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomAdded for {a}:");
+				Log.Error(e.ToString());
 			}
 		}
 	}
@@ -518,8 +558,16 @@ namespace AUI.Tweaks
 
 		private void OnAtomAdded(Atom a)
 		{
-			if (a.type == "CustomUnityAsset")
-				a.collisionEnabled = false;
+			try
+			{
+				if (a.type == "CustomUnityAsset")
+					a.collisionEnabled = false;
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomAdded for {a}:");
+				Log.Error(e.ToString());
+			}
 		}
 	}
 

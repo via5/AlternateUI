@@ -197,22 +197,54 @@ namespace AUI.SelectUI
 
 		private void OnAtomAdded(Atom a)
 		{
-			RefreshCallbacks();
+			try
+			{
+				RefreshCallbacks();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomAdded:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void OnAtomRemoved(Atom a)
 		{
-			RefreshCallbacks();
+			try
+			{
+				RefreshCallbacks();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomRemoved:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void OnAtomRenamed(string a, string b)
 		{
-			RefreshCallbacks();
+			try
+			{
+				RefreshCallbacks();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomRemoved:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private void RefreshCallbacks()
 		{
-			sc_.StartCoroutine(RefreshCallbacksCo());
+			try
+			{
+				sc_.StartCoroutine(RefreshCallbacksCo());
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in RefreshCallbacks:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		private IEnumerator RefreshCallbacksCo()

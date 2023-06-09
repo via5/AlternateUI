@@ -244,7 +244,6 @@ namespace AUI.FS
 		}
 
 		public abstract string MakeRealPath();
-		public abstract string DebugInfo();
 
 		public virtual string DeVirtualize()
 		{
@@ -252,9 +251,21 @@ namespace AUI.FS
 		}
 
 
+		public string GetDebugString()
+		{
+			return $"{DoGetDebugName()}({DoGetDebugInfo()}#{DebugIdentity})";
+		}
+
+		protected abstract string DoGetDebugName();
+
+		protected virtual string DoGetDebugInfo()
+		{
+			return VirtualPath;
+		}
+
 		public override string ToString()
 		{
-			return DebugInfo();
+			return GetDebugString();
 		}
 
 

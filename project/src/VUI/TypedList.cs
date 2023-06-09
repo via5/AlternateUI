@@ -365,11 +365,11 @@ namespace VUI
 
 		private void OnSelectionChanged(string s)
 		{
-			if (updatingChoices_)
-				return;
-
 			try
 			{
+				if (updatingChoices_)
+					return;
+
 				int sel = -1;
 
 				for (int i = 0; i < items_.Count; ++i)
@@ -388,7 +388,8 @@ namespace VUI
 			}
 			catch (Exception e)
 			{
-				Log.ErrorST(e.ToString());
+				Log.Error("exception in OnSelectionChanged");
+				Log.Error(e.ToString());
 			}
 		}
 	}

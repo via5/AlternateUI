@@ -29,6 +29,8 @@ namespace AUI.FS
 		{
 			base.ClearCache();
 			cache_?.Clear(false);
+
+			fs_.GetPinnedRoot().ClearCacheInPins(this);
 		}
 
 		public void ClearCacheKeepResolve()
@@ -259,6 +261,12 @@ namespace AUI.FS
 				if (path == "")
 					return this;
 
+				if (Bits.IsSet(flags, Filesystem.ResolveCacheOnly))
+				{
+					if (cache_ == null)
+						return null;
+				}
+
 				if (!Bits.IsSet(flags, Filesystem.ResolveNoCache))
 				{
 					if (cache_ != null)
@@ -366,7 +374,9 @@ namespace AUI.FS
 		private ResolveResult ResolveInternalInDirectories(
 			Context cx, PathComponents cs, int flags, ResolveDebug debug)
 		{
-			GetDirectories(cx);
+			if (!Bits.IsSet(flags, Filesystem.ResolveCacheOnly))
+				GetDirectories(cx);
+
 			var dirs = cache_.GetLocalDirectories().Lookup;
 
 			if (dirs.Count == 0)
@@ -421,7 +431,14 @@ namespace AUI.FS
 
 				cs.Next();
 
-				foreach (var f in GetFiles(cx))
+				List<IFilesystemObject> files;
+
+				if (Bits.IsSet(flags, Filesystem.ResolveCacheOnly))
+					files = GetLocalFilesCache().Last;
+				else
+					files = GetFiles(cx);
+
+				foreach (var f in files)
 				{
 					if (f.Name == cs.Current)
 					{
