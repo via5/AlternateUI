@@ -13,143 +13,6 @@ namespace AUI
 {
 	using FMS = FileManagerSecure;
 
-	public interface ISysShortCut
-	{
-		string Package { get; }
-		string PackageFilter { get; }
-		string Path { get; }
-		bool Flatten { get; }
-		bool IsLatest { get; }
-		bool IsHidden { get; }
-	}
-
-	class VamSysShortCut : ISysShortCut
-	{
-		private readonly ShortCut sc_;
-
-		public VamSysShortCut(ShortCut sc)
-		{
-			sc_ = sc;
-		}
-
-		public string Package
-		{
-			get { return sc_.package; }
-		}
-
-		public string PackageFilter
-		{
-			get { return sc_.packageFilter; }
-		}
-
-		public string Path
-		{
-			get { return sc_.path; }
-		}
-
-		public bool Flatten
-		{
-			get { return sc_.flatten; }
-		}
-
-		public bool IsLatest
-		{
-			get { return sc_.isLatest; }
-		}
-
-		public bool IsHidden
-		{
-			get { return sc_.isHidden; }
-		}
-	}
-
-
-#if MOCK
-	class FSSysShortCut : ISysShortCut
-	{
-		private readonly string dir_, path_;
-
-		public FSSysShortCut(string dir, string path)
-		{
-			dir_ = dir;
-			path_ = path;
-		}
-
-		public string Package
-		{
-			get { return new DirectoryInfo(dir_).Name; }
-		}
-
-		public string PackageFilter
-		{
-			get { return ""; }
-		}
-
-		public string Path
-		{
-			get { return path_; }
-		}
-
-		public bool Flatten
-		{
-			get { return false; }
-		}
-
-		public bool IsLatest
-		{
-			get { return true; }
-		}
-
-		public bool IsHidden
-		{
-			get { return false; }
-		}
-	}
-
-	class VFSSysShortCut : ISysShortCut
-	{
-		private readonly string name_, path_;
-
-		public VFSSysShortCut(string name, string path)
-		{
-			name_ = name;
-			path_ = path;
-		}
-
-		public string Package
-		{
-			get { return name_; }
-		}
-
-		public string PackageFilter
-		{
-			get { return ""; }
-		}
-
-		public string Path
-		{
-			get { return path_; }
-		}
-
-		public bool Flatten
-		{
-			get { return false; }
-		}
-
-		public bool IsLatest
-		{
-			get { return true; }
-		}
-
-		public bool IsHidden
-		{
-			get { return false; }
-		}
-	}
-#endif
-
-
-
 	public interface ISys
 	{
 		void CreateDirectory(string path);
@@ -157,7 +20,7 @@ namespace AUI
 		void DeleteFile(string path);
 		string[] GetDirectories(string path);
 		string[] GetFiles(string path);
-		List<ISysShortCut> GetShortCutsForDirectory(string path);
+		List<ShortCut> GetShortCutsForDirectory(string path);
 		DateTime FileCreationTime(string path);
 		DateTime FileLastWriteTime(string path);
 		DateTime DirectoryCreationTime(string path);
@@ -228,14 +91,9 @@ namespace AUI
 			return FMS.GetFiles(path);
 		}
 
-		public List<ISysShortCut> GetShortCutsForDirectory(string path)
+		public List<ShortCut> GetShortCutsForDirectory(string path)
 		{
-			var list = new List<ISysShortCut>();
-
-			foreach (var sc in FMS.GetShortCutsForDirectory(path))
-				list.Add(new VamSysShortCut(sc));
-
-			return list;
+			return FMS.GetShortCutsForDirectory(path);
 		}
 
 		public DateTime FileCreationTime(string path)
@@ -500,14 +358,23 @@ namespace AUI
 			return new string[0];
 		}
 
-		public List<ISysShortCut> GetShortCutsForDirectory(string path)
+		public List<ShortCut> GetShortCutsForDirectory(string path)
 		{
-			var list = new List<ISysShortCut>();
+			var list = new List<ShortCut>();
 
 			foreach (var d in new DirectoryInfo(packages_).GetDirectories())
 			{
 				if (new DirectoryInfo(d.FullName + "\\" + path).Exists)
-					list.Add(new FSSysShortCut(d.FullName, d.Name + ":/" + path));
+				{
+					var sc = new ShortCut();
+					sc.package = new DirectoryInfo(d.FullName).Name;
+					sc.path = d.Name + ":/" + path;
+					sc.packageFilter = "";
+					sc.flatten = false;
+					sc.isLatest = true;
+
+					list.Add(sc);
+				}
 			}
 
 			return list;
@@ -642,7 +509,7 @@ namespace AUI
 
 		private readonly List<string> dirs_ = new List<string>();
 		private readonly List<string> files_ = new List<string>();
-		private readonly List<Package> packages_ = new List<Package>();
+		private readonly Dictionary<string, Package> packages_ = new Dictionary<string, Package>();
 
 		public VFSSys()
 		{
@@ -660,19 +527,12 @@ namespace AUI
 
 		public void AddPackage(Package p)
 		{
-			packages_.Add(p);
+			packages_.Add(p.name, p);
 		}
 
 		public void RemovePackage(string name)
 		{
-			for (int i = 0; i < packages_.Count; ++i)
-			{
-				if (packages_[i].name == name)
-				{
-					packages_.RemoveAt(i);
-					break;
-				}
-			}
+			packages_.Remove(name);
 		}
 
 		public void CreateDirectory(string path)
@@ -754,76 +614,76 @@ namespace AUI
 		{
 			var pp = ParsePackagePath(path);
 
-			foreach (var p in packages_)
+			Package p;
+			if (!packages_.TryGetValue(pp.name, out p))
+				throw new Exception($"GetDirectoriesInPackage for non-existent package '{pp.name}'");
+
+			var list = new List<string>();
+			var ppath = pp.path;
+
+			if (!ppath.EndsWith("/"))
+				ppath += "/";
+
+			foreach (var f in p.dirs)
 			{
-				if (p.name == pp.name)
+				if (f.StartsWith(ppath))
 				{
-					var list = new List<string>();
-					var ppath = pp.path;
+					int nextSep = f.IndexOf('/', ppath.Length);
+					int nextNextSep = f.IndexOf('/', nextSep + 1);
 
-					if (!ppath.EndsWith("/"))
-						ppath += "/";
-
-					foreach (var f in p.dirs)
-					{
-						if (f.StartsWith(ppath))
-						{
-							int nextSep = f.IndexOf('/', ppath.Length);
-							int nextNextSep = f.IndexOf('/', nextSep + 1);
-
-							if (nextNextSep == -1)
-								list.Add(f.Substring(0, f.Length - 1));
-						}
-					}
-
-					return list.ToArray();
+					if (nextNextSep == -1)
+						list.Add(f.Substring(0, f.Length - 1));
 				}
 			}
 
-			throw new Exception($"GetDirectoriesInPackage for non-existent package '{pp.name}'");
+			return list.ToArray();
 		}
 
 		private string[] GetFilesInPackage(string path)
 		{
 			var pp = ParsePackagePath(path);
 
-			foreach (var p in packages_)
+			Package p;
+			if (!packages_.TryGetValue(pp.name, out p))
+				throw new Exception($"GetFilesInPackage for non-existent package '{pp.name}'");
+
+			var list = new List<string>();
+
+			var ppath = pp.path;
+			if (!ppath.EndsWith("/"))
+				ppath += "/";
+
+			foreach (var f in p.files)
 			{
-				if (p.name == pp.name)
-				{
-					var list = new List<string>();
-
-					var ppath = pp.path;
-					if (!ppath.EndsWith("/"))
-						ppath += "/";
-
-					foreach (var f in p.files)
-					{
-						if (f.StartsWith(ppath))
-							list.Add(f);
-					}
-
-					return list.ToArray();
-				}
+				if (f.StartsWith(ppath))
+					list.Add(f);
 			}
 
-			throw new Exception($"GetFilesInPackage for non-existent package '{pp.name}'");
+			return list.ToArray();
 		}
 
-		public List<ISysShortCut> GetShortCutsForDirectory(string path)
+		public List<ShortCut> GetShortCutsForDirectory(string path)
 		{
-			var list = new List<ISysShortCut>();
+			var list = new List<ShortCut>();
 
 			if (!path.EndsWith("/"))
 				path += "/";
 
 			foreach (var p in packages_)
 			{
-				foreach (var d in p.dirs)
+				foreach (var d in p.Value.dirs)
 				{
 					if (d.StartsWith(path))
 					{
-						list.Add(new VFSSysShortCut(p.name, p.name + ":/" + path.Substring(0, path.Length - 1).Replace('\\', '/')));
+						var sc = new ShortCut();
+						sc.package = p.Value.name;
+						sc.path = p.Value.name + ":/" + path.Substring(0, path.Length - 1).Replace('\\', '/');
+						sc.packageFilter = "";
+						sc.flatten = false;
+						sc.isLatest = true;
+
+						list.Add(sc);
+
 						break;
 					}
 				}

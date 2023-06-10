@@ -91,7 +91,7 @@ namespace AUI.FS
 			get { return paths_; }
 		}
 
-		public bool Matches(string path)
+		public bool Matches(StringView path)
 		{
 			if (paths_ == null)
 				return true;
@@ -105,7 +105,7 @@ namespace AUI.FS
 			return false;
 		}
 
-		private bool Matches(PathComponents cs, string vp)
+		private bool Matches(PathComponents cs, StringView vp)
 		{
 			int start = 0;
 
@@ -115,7 +115,7 @@ namespace AUI.FS
 				if (sep != -1 && sep == vp.Length - 1)
 					break;
 
-				string vpc;
+				StringView vpc;
 				if (sep == -1)
 					vpc = vp.Substring(start);
 				else
@@ -403,7 +403,7 @@ namespace AUI.FS
 			if (whitelist_ == null)
 				return true;
 
-			return whitelist_.Matches(path);
+			return whitelist_.Matches(new StringView(path));
 		}
 
 

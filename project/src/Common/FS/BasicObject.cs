@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Globalization;
 
 namespace AUI.FS
@@ -15,6 +16,7 @@ namespace AUI.FS
 		private DateTime dateCreated_ = Sys.BadDateTime;
 		private DateTime dateModified_ = Sys.BadDateTime;
 		private string vp_ = null;
+		private string rvp_ = null;
 
 		public BasicFilesystemObject(
 			Filesystem fs, IFilesystemContainer parent,
@@ -71,16 +73,18 @@ namespace AUI.FS
 			{
 				if (vp_ == null)
 				{
-					string s = Name;
+					var sb = new StringBuilder(Name, 100);
 
 					var parent = parent_;
 					while (parent != null)
 					{
-						s = parent.Name + "/" + s;
+						sb.Insert(0, '/');
+						sb.Insert(0, parent.Name);
+
 						parent = parent.Parent;
 					}
 
-					vp_ = s;
+					vp_ = sb.ToString();
 				}
 
 				return vp_;
@@ -91,12 +95,17 @@ namespace AUI.FS
 		{
 			get
 			{
-				var pp = ParentPackage;
+				if (rvp_ == null)
+				{
+					var pp = ParentPackage;
 
-				if (pp == null)
-					return VirtualPath;
-				else
-					return pp.GetRelativeVirtualPath(this);
+					if (pp == null)
+						rvp_ = VirtualPath;
+					else
+						rvp_ = pp.GetRelativeVirtualPath(this);
+				}
+
+				return rvp_;
 			}
 		}
 

@@ -4,16 +4,34 @@ using System.Collections.Generic;
 
 namespace AUI.FS
 {
-	struct StringView
+	public struct StringView
 	{
 		private string s_;
 		private int begin_, end_;
+
+		public StringView(StringView sv)
+		{
+			s_ = sv.s_;
+			begin_ = sv.begin_;
+			end_ = sv.end_;
+		}
 
 		public StringView(string s)
 		{
 			s_ = s;
 			begin_ = 0;
 			end_ = s_.Length;
+		}
+
+		public StringView(StringView s, int start, int count = -1)
+		{
+			s_ = s.s_;
+			begin_ = s.begin_ + start;
+
+			if (count < 0)
+				end_ = s.end_;
+			else
+				end_ = Math.Min(begin_ + count, s.Length);
 		}
 
 		public StringView(string s, int start, int count = -1)
@@ -58,6 +76,15 @@ namespace AUI.FS
 			return (r == 0);
 		}
 
+		public int IndexOf(char c, int start)
+		{
+			int i = s_.IndexOf(c, begin_ + start);
+			if (i == -1)
+				return -1;
+
+			return i - begin_;
+		}
+
 		public int LastIndexOf(char c)
 		{
 			if (Length == 0)
@@ -94,7 +121,10 @@ namespace AUI.FS
 
 		public override string ToString()
 		{
-			return s_.Substring(begin_, end_ - begin_);
+			if (begin_ == 0 && end_ == s_.Length)
+				return s_;
+			else
+				return s_.Substring(begin_, end_ - begin_);
 		}
 
 		public int Compare(string other, bool ignoreCase = false)
@@ -117,6 +147,9 @@ namespace AUI.FS
 
 		public static bool operator ==(StringView a, StringView b)
 		{
+			if (a.s_ == b.s_ && a.begin_ == b.begin_ && a.end_ == b.end_)
+				return true;
+
 			if (a.Length != b.Length)
 				return false;
 
@@ -135,6 +168,9 @@ namespace AUI.FS
 
 		public static bool operator ==(StringView a, string b)
 		{
+			if (a.s_ == b && a.begin_ == 0 && a.end_ == b.Length)
+				return true;
+
 			if (a.Length != b.Length)
 				return false;
 
@@ -149,6 +185,16 @@ namespace AUI.FS
 		public static bool operator !=(StringView a, string b)
 		{
 			return !(a == b);
+		}
+
+		public static bool operator ==(string a, StringView b)
+		{
+			return (b == a);
+		}
+
+		public static bool operator !=(string a, StringView b)
+		{
+			return (b != a);
 		}
 
 		public override int GetHashCode()
@@ -168,6 +214,8 @@ namespace AUI.FS
 
 	static class Path
 	{
+		private static char[] separators = new char[] { '/', '\\' };
+
 		public static StringView Filename(string f)
 		{
 			return Filename(new StringView(f));
@@ -175,7 +223,7 @@ namespace AUI.FS
 
 		public static StringView Filename(StringView f)
 		{
-			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			var slash = f.LastIndexOfAny(separators);
 			if (slash == -1)
 				return new StringView(f);
 
@@ -189,7 +237,7 @@ namespace AUI.FS
 
 		public static StringView Parent(StringView f)
 		{
-			var slash = f.LastIndexOfAny(new char[] { '/', '\\' });
+			var slash = f.LastIndexOfAny(separators);
 			if (slash == -1)
 				return new StringView("");
 

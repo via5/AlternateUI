@@ -187,7 +187,11 @@ namespace AUI.FS
 				listing = GetLocalFilesCache();
 			}
 
-			Filter(cx, listing);
+			Instrumentation.Start(I.GetFilesFilter);
+			{
+				Filter(cx, listing);
+			}
+			Instrumentation.End();
 
 			return listing.Last;
 		}
@@ -479,7 +483,7 @@ namespace AUI.FS
 
 		protected virtual List<IFilesystemObject> DoGetFiles(Context cx)
 		{
-			var list = new List<IFilesystemObject>();
+			List<IFilesystemObject> list = null;
 
 			Instrumentation.Start(I.BasicDoGetFiles);
 			{
@@ -487,7 +491,10 @@ namespace AUI.FS
 
 				if (!string.IsNullOrEmpty(path))
 				{
-					foreach (var filePath in SysWrappers.GetFiles(this, path))
+					var files = SysWrappers.GetFiles(this, path);
+					list = new List<IFilesystemObject>(files.Length);
+
+					foreach (var filePath in files)
 						list.Add(new FSFile(fs_, this, Path.Filename(filePath)));
 				}
 			}
@@ -526,11 +533,12 @@ namespace AUI.FS
 			}
 
 
-			string rvp;
+			string rvp = null;
 
 			Instrumentation.Start(I.IncludeDirectoryGetRVP);
 			{
-				rvp = o.RelativeVirtualPath;
+				if (cx.Whitelist != null)
+					rvp = o.RelativeVirtualPath;
 			}
 			Instrumentation.End();
 
@@ -687,6 +695,28 @@ namespace AUI.FS
 		private void Filter<EntryType>(Context cx, Listing<EntryType> listing)
 			where EntryType : class, IFilesystemObject
 		{
+			Instrumentation.Start(I.GetFilesFilterExtensions);
+			{
+				FilterExtensions(cx, listing);
+			}
+			Instrumentation.End();
+
+			Instrumentation.Start(I.GetFilesFilterSearch);
+			{
+				FilterSearch(cx, listing);
+			}
+			Instrumentation.End();
+
+			Instrumentation.Start(I.GetFilesFilterSort);
+			{
+				SortInternal(cx, listing);
+			}
+			Instrumentation.End();
+		}
+
+		private void FilterExtensions<EntryType>(Context cx, Listing<EntryType> listing)
+			where EntryType : class, IFilesystemObject
+		{
 			if (listing.ExtensionsStale(cx))
 			{
 				if (cx.ExtensionsString == "" || cx.ExtensionsString == "*.*")
@@ -711,7 +741,11 @@ namespace AUI.FS
 					listing.SetExtensions(cx, perExtension);
 				}
 			}
+		}
 
+		private void FilterSearch<EntryType>(Context cx, Listing<EntryType> listing)
+			where EntryType : class, IFilesystemObject
+		{
 			if (listing.SearchStale(cx))
 			{
 				if (cx.Search.Empty)
@@ -737,7 +771,6 @@ namespace AUI.FS
 				}
 			}
 
-			SortInternal(cx, listing);
 		}
 
 		private void SortInternal<EntryType>(Context cx, Listing<EntryType> listing)
@@ -759,8 +792,18 @@ namespace AUI.FS
 						{
 							var parentList = listing.Searched ?? listing.PerExtension ?? listing.Raw;
 
-							sorted = new List<EntryType>(parentList);
-							cx.SortList(sorted);
+							Instrumentation.Start(I.GetFilesFilterSortCopy);
+							{
+								sorted = new List<EntryType>(parentList);
+							}
+							Instrumentation.End();
+
+
+							Instrumentation.Start(I.GetFilesFilterSortSort);
+							{
+								cx.SortList(sorted);
+							}
+							Instrumentation.End();
 						}
 
 						listing.SetSorted(cx, sorted);

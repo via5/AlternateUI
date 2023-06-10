@@ -236,7 +236,14 @@ namespace AUI.FS
 
 					I.SortDirectories,
 					I.UpdateLookup,
-					I.SetLocalDirectoriesCache
+					I.SetLocalDirectoriesCache,
+
+					I.GetFilesFilter,
+					I.GetFilesFilterExtensions,
+					I.GetFilesFilterSearch,
+					I.GetFilesFilterSort,
+					I.GetFilesFilterSortCopy,
+					I.GetFilesFilterSortSort,
 				};
 			}
 		}
@@ -310,7 +317,14 @@ namespace AUI.FS
 		public static InstrumentationType UpdateLookup = new InstrumentationType("UpdateLookup", 54);
 		public static InstrumentationType SetLocalDirectoriesCache = new InstrumentationType("SetDirsCache", 55);
 
-		public const int Count = 56;
+		public static InstrumentationType GetFilesFilter = new InstrumentationType("GetFilesFilter", 56);
+		public static InstrumentationType GetFilesFilterExtensions = new InstrumentationType("GetFilesFilterExtensions", 57);
+		public static InstrumentationType GetFilesFilterSearch = new InstrumentationType("GetFilesFilterSearch", 58);
+		public static InstrumentationType GetFilesFilterSort = new InstrumentationType("GetFilesFilterSort", 59);
+		public static InstrumentationType GetFilesFilterSortCopy = new InstrumentationType("GetFilesFilterSortCopy", 60);
+		public static InstrumentationType GetFilesFilterSortSort = new InstrumentationType("GetFilesFilterSortSort", 61);
+
+		public const int Count = 62;
 	}
 
 
@@ -330,7 +344,7 @@ namespace AUI.FS
 			1,
 				2, 2, 2,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 		};
 
 		private int[] stack_ = new int[30];

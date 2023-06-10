@@ -19,6 +19,26 @@ namespace AUI.Tests
 			FS.Filesystem.Init();
 		}
 
+		[TestMethod]
+		public void StringView()
+		{
+			string s = "test string stuff";
+
+			var sv = new FS.StringView(s);
+			Assert.AreEqual("test string stuff", sv.ToString());
+
+			var sv2 = new FS.StringView(sv);
+			Assert.AreEqual("test string stuff", sv2.ToString());
+
+			sv2 = sv2.Substring(3, 11);
+			Assert.AreEqual("t string st", sv2.ToString());
+
+			var sv3 = new FS.StringView(sv2);
+			Assert.AreEqual("t string st", sv3.ToString());
+
+			sv3 = new FS.StringView(sv2, 2, 4);
+			Assert.AreEqual("stri", sv3.ToString());
+		}
 
 		[TestMethod]
 		public void Merged()
@@ -170,6 +190,15 @@ namespace AUI.Tests
 
 			Create(sys);
 
+			RunPerf();
+		}
+
+		private void RunPerf()
+		{
+			var fs = FS.Filesystem.Instance;
+
+			//fs.Pin("VaM/Custom/Assets");
+
 			var cx = new FS.Context(
 				null, null, "Custom/Assets",
 				FS.Context.SortFilename, FS.Context.SortAscending,
@@ -179,9 +208,9 @@ namespace AUI.Tests
 				null, null, null);
 
 			var o = FS.Filesystem.Instance.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
-			var fs = o.GetFiles(cx);
+			var files = o.GetDirectories(cx);
 
-			Console.WriteLine($"{fs.Count}");
+			Console.WriteLine($"{files.Count}");
 		}
 
 		[TestMethod]
@@ -301,7 +330,7 @@ namespace AUI.Tests
 
 		static void Main()
 		{
-			new Filesystem().Pins();
+			new Filesystem().Perf();
 		}
 	}
 }

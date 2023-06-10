@@ -5,6 +5,8 @@ namespace AUI.FS
 	class FSFile : BasicFilesystemObject, IFile
 	{
 		private readonly string name_;
+		private string displayName_ = null;
+		private string displayNamePrefix_ = null;
 
 		public FSFile(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent)
@@ -90,25 +92,26 @@ namespace AUI.FS
 
 		protected override string DoGetDisplayName(Context cx)
 		{
-			var name = new StringView(Name);
-
-			if (cx != null && !string.IsNullOrEmpty(cx.RemovePrefix))
+			if (displayName_ == null || displayNamePrefix_ != cx.RemovePrefix)
 			{
-				if (name.StartsWith(cx.RemovePrefix))
-				{
-					name = name.Substring(cx.RemovePrefix.Length);
+				var name = new StringView(name_);
 
-					Log.Info($"'{name}'");
-					if (name.EndsWith(".vap"))
+				if (cx != null && !string.IsNullOrEmpty(cx.RemovePrefix))
+				{
+					if (name.StartsWith(cx.RemovePrefix))
 					{
-						Log.Info($"{name}, has vap");
-						name = name.Substring(0, name.Length - 4);
-						Log.Info($"after: {name}");
+						name = name.Substring(cx.RemovePrefix.Length);
+
+						if (name.EndsWith(".vap"))
+							name = name.Substring(0, name.Length - 4);
 					}
 				}
+
+				displayName_ = name;
+				displayNamePrefix_ = cx.RemovePrefix;
 			}
 
-			return name;
+			return displayName_;
 		}
 	}
 }

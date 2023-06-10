@@ -5,6 +5,8 @@ namespace AUI.FS
 {
 	public class FSDirectory : BasicFilesystemContainer, IDirectory
 	{
+		private string rp_ = null;
+
 		public FSDirectory(Filesystem fs, IFilesystemContainer parent, string name)
 			: base(fs, parent, name)
 		{
@@ -62,12 +64,17 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			string s = Name + "/";
+			if (rp_ == null)
+			{
+				string s = Name + "/";
 
-			if (Parent != null)
-				s = Parent.MakeRealPath() + s;
+				if (Parent != null)
+					s = Parent.MakeRealPath() + s;
 
-			return s;
+				rp_ = s;
+			}
+
+			return rp_;
 		}
 
 		protected override List<IFilesystemContainer> DoGetDirectories(Context cx)

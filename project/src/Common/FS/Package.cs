@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using System;
 using System.Collections.Generic;
 
 namespace AUI.FS
@@ -9,8 +10,8 @@ namespace AUI.FS
 		{
 			private readonly PackageRootDirectory pr_;
 			private readonly string root_;
-			private List<ISysShortCut> list_ = null;
-			private Dictionary<string, ISysShortCut> map_ = null;
+			private List<ShortCut> list_ = null;
+			private Dictionary<string, ShortCut> map_ = null;
 			private bool latestOnly_ = false;
 			private int cacheToken_ = -1;
 
@@ -20,7 +21,7 @@ namespace AUI.FS
 				root_ = root;
 			}
 
-			public List<ISysShortCut> GetShortCuts()
+			public List<ShortCut> GetShortCuts()
 			{
 				return list_;
 			}
@@ -33,9 +34,9 @@ namespace AUI.FS
 				return (cacheToken_ != pr_.fs_.CacheToken);
 			}
 
-			public ISysShortCut GetShortcut(string name)
+			public ShortCut GetShortcut(string name)
 			{
-				ISysShortCut sc = null;
+				ShortCut sc = null;
 				map_?.TryGetValue(name, out sc);
 
 				return sc;
@@ -49,12 +50,12 @@ namespace AUI.FS
 				Instrumentation.Start(I.RefreshShortCuts);
 				{
 					if (list_ == null)
-						list_ = new List<ISysShortCut>();
+						list_ = new List<ShortCut>();
 					else
 						list_.Clear();
 
 					if (map_ == null)
-						map_ = new Dictionary<string, ISysShortCut>();
+						map_ = new Dictionary<string, ShortCut>();
 					else
 						map_.Clear();
 
@@ -62,20 +63,20 @@ namespace AUI.FS
 
 					foreach (var sc in scs)
 					{
-						if (string.IsNullOrEmpty(sc.Package))
+						if (string.IsNullOrEmpty(sc.package))
 							continue;
 
-						if (!string.IsNullOrEmpty(sc.PackageFilter))
+						if (!string.IsNullOrEmpty(sc.packageFilter))
 							continue;
 
-						if (sc.Path == "AddonPackages")
+						if (sc.path == "AddonPackages")
 							continue;
 
-						if (cx.LatestPackagesOnly && !sc.IsLatest)
+						if (cx.LatestPackagesOnly && !sc.isLatest)
 							continue;
 
 						list_.Add(sc);
-						map_.Add(sc.Package, sc);
+						map_.Add(sc.package, sc);
 					}
 				}
 				Instrumentation.End();
@@ -311,7 +312,7 @@ namespace AUI.FS
 
 		protected override string DoGetDebugInfo()
 		{
-			return $"{p_?.ShortCut?.Package}:{Name}";
+			return $"{p_?.ShortCut?.package}:{Name}";
 		}
 
 		public void AddChild(IFilesystemContainer c)
@@ -346,7 +347,7 @@ namespace AUI.FS
 
 		public string ShortCutPath
 		{
-			get { return p_?.ShortCut?.Path; }
+			get { return p_?.ShortCut?.path; }
 		}
 
 		public override bool IsWritable
@@ -368,12 +369,12 @@ namespace AUI.FS
 
 	class Package : BasicFilesystemContainer, IPackage
 	{
-		private readonly ISysShortCut sc_ = null;
+		private readonly ShortCut sc_ = null;
 		private VirtualPackageDirectory rootDir_ = null;
 
 
-		public Package(Filesystem fs, IFilesystemContainer parent, ISysShortCut sc)
-			: base(fs, parent, sc.Package)
+		public Package(Filesystem fs, IFilesystemContainer parent, ShortCut sc)
+			: base(fs, parent, sc.package)
 		{
 			sc_ = sc;
 		}
@@ -393,7 +394,7 @@ namespace AUI.FS
 			get { return this; }
 		}
 
-		public ISysShortCut ShortCut
+		public ShortCut ShortCut
 		{
 			get { return sc_; }
 		}
@@ -406,11 +407,11 @@ namespace AUI.FS
 				var tt = base.Tooltip;
 
 				tt +=
-					$"\npackage={sc.Package}" +
-					$"\nfilter={sc.PackageFilter}" +
-					$"\nflatten={sc.Flatten}" +
-					$"\nhidden={sc.IsHidden}" +
-					$"\npath={sc.Path}";
+					$"\npackage={sc.package}" +
+					$"\nfilter={sc.packageFilter}" +
+					$"\nflatten={sc.flatten}" +
+					$"\nhidden={sc.isHidden}" +
+					$"\npath={sc.path}";
 
 				return tt;
 			}
@@ -418,7 +419,7 @@ namespace AUI.FS
 
 		protected override string DoGetDisplayName(Context cx)
 		{
-			return ShortCut.Package;
+			return ShortCut.package;
 		}
 
 		protected override DateTime GetDateCreated()
@@ -485,7 +486,7 @@ namespace AUI.FS
 
 		public override string MakeRealPath()
 		{
-			var path = ShortCut.Path;
+			var path = ShortCut.path;
 
 			int col = path.IndexOf(':');
 			if (col == -1)
@@ -538,10 +539,10 @@ namespace AUI.FS
 				if (pn.EndsWith(".var"))
 					pn = pn.Substring(0, pn.Length - 4);
 
-				if (pn != sc_.Package)
+				if (pn != sc_.package)
 				{
 					if (debug.Enabled)
-						debug.Info(this, $"resolve bad, {pn}!={sc_.Package}");
+						debug.Info(this, $"resolve bad, {pn}!={sc_.package}");
 
 					return ResolveResult.NotFound();
 				}
@@ -593,7 +594,7 @@ namespace AUI.FS
 
 		private string GetFilePath()
 		{
-			string path = sc_.Path;
+			string path = sc_.path;
 			var col = path.IndexOf(":");
 
 			if (col == -1)
@@ -607,7 +608,7 @@ namespace AUI.FS
 			if (rootDir_ != null)
 				return rootDir_;
 
-			string path = sc_.Path;
+			string path = sc_.path;
 			var col = path.IndexOf(":");
 			if (col != -1)
 				path = path.Substring(col + 1);

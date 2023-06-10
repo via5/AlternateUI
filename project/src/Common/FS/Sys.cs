@@ -50,9 +50,9 @@ namespace AUI.FS
 			return ss;
 		}
 
-		public static List<ISysShortCut> GetShortCutsForDirectory(IFilesystemObject from, string path)
+		public static List<ShortCut> GetShortCutsForDirectory(IFilesystemObject from, string path)
 		{
-			List<ISysShortCut> ss;
+			List<ShortCut> ss;
 
 			Instrumentation.Start(I.FMSGetShortCutsForDirectory);
 			{
@@ -64,7 +64,7 @@ namespace AUI.FS
 				{
 					from.Log.Error($"{from}: Sys.GetShortCutsForDirectory exception for '{path}'");
 					from.Log.ErrorST($"{e.Message}");
-					ss = new List<ISysShortCut>();
+					ss = new List<ShortCut>();
 				}
 			}
 			Instrumentation.End();

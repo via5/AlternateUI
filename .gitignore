@@ -6,3 +6,5 @@
 /project/Tests/obj
 /project/packages
 /project/TestResults
+/project/Perf/obj
+/project/Perf/bin
