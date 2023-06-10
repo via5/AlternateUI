@@ -29,8 +29,6 @@ namespace AUI.FS
 		{
 			base.ClearCache();
 			cache_?.Clear(false);
-
-			fs_.GetPinnedRoot().ClearCacheInPins(this);
 		}
 
 		public void ClearCacheKeepResolve()

@@ -215,8 +215,8 @@ namespace AUI.Tests
 
 			string[] expectedAfter =
 			{
-				"VaM/Custom/Assets/oldFile",
 				"VaM/Custom/Assets/newFile",
+				"VaM/Custom/Assets/oldFile",
 			};
 
 
