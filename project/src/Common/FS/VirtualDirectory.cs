@@ -9,10 +9,12 @@ namespace AUI.FS
 		private const int MaxTooltip = 20;
 
 		private HashSet<IFilesystemContainer> dirs_ = null;
+		private HashSet<IFilesystemContainer> mergedDirs_ = null;
 		private List<IFilesystemContainer> sortedDirs_ = null;
 		private List<string> tooltip_ = null;
 		private Context lastContext_ = null;
 		private bool merged_ = false;
+		private int mergedToken_ = -1;
 
 		public VirtualDirectory(
 			Filesystem fs, IFilesystemContainer parent,
@@ -49,7 +51,7 @@ namespace AUI.FS
 
 		public HashSet<IFilesystemContainer> ContainedDirectories
 		{
-			get { return dirs_; }
+			get { return mergedDirs_ ?? dirs_; }
 		}
 
 		public override void ClearCache()
@@ -63,7 +65,20 @@ namespace AUI.FS
 			}
 
 			sortedDirs_ = null;
+			SetStaleMerged();
+		}
+
+		private void SetStaleMerged()
+		{
 			merged_ = false;
+			mergedDirs_ = null;
+			mergedToken_ = -1;
+		}
+
+		private void SetMerged()
+		{
+			merged_ = true;
+			mergedToken_ = fs_.CacheToken;
 		}
 
 		protected override string DoGetDisplayName(Context cx)
@@ -78,7 +93,7 @@ namespace AUI.FS
 
 		private bool RequireAllDirectories(Context cx)
 		{
-			if (merged_)
+			if (merged_ && mergedToken_ == fs_.CacheToken)
 				return false;
 
 			if (cx == null)
@@ -215,7 +230,7 @@ namespace AUI.FS
 			if (!dirs_.Contains(c))
 			{
 				dirs_.Add(c);
-				merged_ = false;
+				SetStaleMerged();
 				sortedDirs_ = null;
 			}
 		}
@@ -225,7 +240,7 @@ namespace AUI.FS
 			foreach (var cc in c)
 				Add(cc);
 
-			merged_ = false;
+			SetStaleMerged();
 			sortedDirs_ = null;
 		}
 
@@ -364,7 +379,10 @@ namespace AUI.FS
 			foreach (var ss in map)
 			{
 				if (ss.Value is VirtualDirectory)
-					(ss.Value as VirtualDirectory).merged_ = true;
+				{
+					var ssvd = ss.Value as VirtualDirectory;
+					ssvd.SetMerged();
+				}
 
 				list2.Add(ss.Value);
 			}
@@ -449,8 +467,8 @@ namespace AUI.FS
 				if (d is VirtualDirectory && !(d is VirtualPackageDirectory))
 				{
 					var vd = d as VirtualDirectory;
-					if (vd.ContainedDirectories != null)
-						UntangleVDs(vd.ContainedDirectories, map);
+					if (vd.dirs_ != null)
+						UntangleVDs(vd.dirs_, map);
 				}
 				else
 				{
@@ -460,14 +478,14 @@ namespace AUI.FS
 						if (c is VirtualDirectory && !(c is VirtualPackageDirectory))
 						{
 							var vd = (c as VirtualDirectory);
-							vd.Add(d);
+							AddUntangled(vd, d);
 						}
 						else
 						{
 							var vd = new VirtualDirectory(fs_, this, d.Name);
 
-							vd.Add(d);
-							vd.Add(c);
+							AddUntangled(vd, d);
+							AddUntangled(vd, c);
 
 							map.Remove(d.Name);
 							map.Add(d.Name, vd);
@@ -480,15 +498,37 @@ namespace AUI.FS
 					else
 					{
 						var vd = new VirtualDirectory(fs_, this, d.Name);
-						vd.Add(d);
+						AddUntangled(vd, d);
 						map.Add(d.Name, vd);
 					}
 				}
 			}
 		}
 
+		private void AddUntangled(VirtualDirectory vd, IFilesystemContainer d)
+		{
+			if (d.ParentPackage == null)
+			{
+				if (vd.dirs_ == null)
+					vd.dirs_ = new HashSet<IFilesystemContainer>();
+
+				if (!vd.dirs_.Contains(d))
+					vd.dirs_.Add(d);
+
+			}
+
+			if (vd.mergedDirs_ == null)
+				vd.mergedDirs_ = new HashSet<IFilesystemContainer>();
+
+			if (!vd.mergedDirs_.Contains(d))
+				vd.mergedDirs_.Add(d);
+		}
+
 		private bool MergePackages(Context cx)
 		{
+			if (mergedDirs_ != null)
+				mergedDirs_.Clear();
+
 			bool changed = false;
 			var list = new HashSet<IFilesystemContainer>();
 
@@ -538,7 +578,16 @@ namespace AUI.FS
 
 			changed = MergeAdd(list);
 
-			merged_ = true;
+			if (dirs_ != null && dirs_.Count > 0)
+			{
+				if (mergedDirs_ == null)
+					mergedDirs_ = new HashSet<IFilesystemContainer>();
+
+				foreach (var d in dirs_)
+					mergedDirs_.Add(d);
+			}
+
+			SetMerged();
 
 			return changed;
 		}
@@ -563,7 +612,10 @@ namespace AUI.FS
 				}
 				else
 				{
-					Add(c);
+					if (mergedDirs_ == null)
+						mergedDirs_ = new HashSet<IFilesystemContainer>();
+
+					mergedDirs_.Add(c);
 					changed = true;
 				}
 			}

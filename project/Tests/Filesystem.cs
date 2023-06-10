@@ -260,6 +260,45 @@ namespace AUI.Tests
 				Assert.AreEqual(expectedAfter[i], actual[i]);
 		}
 
+		[TestMethod]
+		public void RemovingPackages()
+		{
+			var sys = new VFSSys();
+
+			sys.AddDir("Custom/");
+			sys.AddDir("Custom/Assets/");
+			sys.AddFile("Custom/Assets/file");
+
+			var p = new VFSSys.Package();
+			p.name = "package";
+			p.dirs.Add("Custom/");
+			p.dirs.Add("Custom/Assets/");
+			p.files.Add("Custom/Assets/packagefile");
+
+			sys.AddPackage(p);
+
+			Create(sys);
+			var fs = FS.Filesystem.Instance;
+
+
+			var cx = new FS.Context(
+				"", null, "Custom/Assets", FS.Context.SortFilename, FS.Context.SortAscending,
+				FS.Context.MergePackagesFlag, "", "", null);
+
+			Console.WriteLine("before:");
+			var o = fs.Resolve<FS.IFilesystemContainer>(cx, "VaM/Custom/Assets");
+			foreach (var f in o.GetFiles(cx))
+				Console.WriteLine($"  - {f}");
+
+			sys.RemovePackage("package");
+			fs.ClearCaches();
+
+			Console.WriteLine("after:");
+			o = fs.Resolve<FS.IFilesystemContainer>(cx, "VaM/Custom/Assets");
+			foreach (var f in o.GetFiles(cx))
+				Console.WriteLine($"  - {f}");
+		}
+
 		static void Main()
 		{
 			new Filesystem().Pins();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -67,12 +68,28 @@ namespace AUI.FileDialog
 
 		public void Enable()
 		{
+			FileManagerSecure.RegisterRefreshHandler(OnPackagesRefreshed);
 		}
 
 		public void Disable()
 		{
 			if (root_ != null)
 				root_.Visible = false;
+
+			FileManagerSecure.UnregisterRefreshHandler(OnPackagesRefreshed);
+		}
+
+		private void OnPackagesRefreshed()
+		{
+			try
+			{
+				Refresh();
+			}
+			catch (Exception e)
+			{
+				Log.Error("exception in OnPackagesRefreshed:");
+				Log.Error(e.ToString());
+			}
 		}
 
 		public bool Visible

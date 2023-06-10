@@ -370,8 +370,6 @@ namespace AUI.FS
 	{
 		private readonly ISysShortCut sc_ = null;
 		private VirtualPackageDirectory rootDir_ = null;
-		private DateTime created_ = Sys.BadDateTime;
-		private DateTime modified_ = Sys.BadDateTime;
 
 
 		public Package(Filesystem fs, IFilesystemContainer parent, ISysShortCut sc)
@@ -383,8 +381,6 @@ namespace AUI.FS
 		public override void ClearCache()
 		{
 			base.ClearCache();
-			created_ = Sys.BadDateTime;
-			modified_ = Sys.BadDateTime;
 		}
 
 		protected override string DoGetDebugName()

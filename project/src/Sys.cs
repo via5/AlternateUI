@@ -663,6 +663,18 @@ namespace AUI
 			packages_.Add(p);
 		}
 
+		public void RemovePackage(string name)
+		{
+			for (int i = 0; i < packages_.Count; ++i)
+			{
+				if (packages_[i].name == name)
+				{
+					packages_.RemoveAt(i);
+					break;
+				}
+			}
+		}
+
 		public void CreateDirectory(string path)
 		{
 			Console.WriteLine($"vfssys: would create {path}");
@@ -768,7 +780,7 @@ namespace AUI
 				}
 			}
 
-			return new string[0];
+			throw new Exception($"GetDirectoriesInPackage for non-existent package '{pp.name}'");
 		}
 
 		private string[] GetFilesInPackage(string path)
@@ -795,7 +807,7 @@ namespace AUI
 				}
 			}
 
-			return new string[0];
+			throw new Exception($"GetFilesInPackage for non-existent package '{pp.name}'");
 		}
 
 		public List<ISysShortCut> GetShortCutsForDirectory(string path)
