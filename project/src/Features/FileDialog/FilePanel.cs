@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SimpleJSON;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -126,10 +127,73 @@ namespace AUI.FileDialog
 			o_ = o;
 
 			name_.Text = o_.GetDisplayName(cx);
-			panel_.Tooltip.Text = o_.Tooltip;
+			panel_.Tooltip.TextFunc = GetTooltip;
 			panel_.Tooltip.FontSize = name_.FontSize;
 			panel_.Render = true;
 			SetIcon();
+		}
+
+		private string GetTooltip()
+		{
+			if (o_ == null)
+				return "";
+
+			string tt = o_.Tooltip;
+
+			if (o_.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase))
+			{
+				try
+				{
+					string path = o_.MakeRealPath();
+
+					List<string> names = null;
+
+					var json = AlternateUI.Instance.Sys.LoadJSON(path);
+					if (json != null)
+					{
+						var atoms = json["atoms"]?.AsArray;
+						if (atoms != null)
+						{
+							foreach (JSONNode a in atoms)
+							{
+								if (a["type"]?.Value == "Person")
+								{
+									var name = a["id"]?.Value;
+
+									if (name != null)
+									{
+										if (names == null)
+											names = new List<string>();
+
+										names.Add(name);
+									}
+								}
+							}
+						}
+					}
+
+					string ns = "";
+					for (int i = 0; i < Math.Min(6, names.Count); ++i)
+					{
+						if (i > 0)
+							ns += ", ";
+
+						ns += names[i];
+					}
+
+					if (names.Count > 6)
+						ns += "...";
+
+					tt += $"\n\n{ns}";
+				}
+				catch (Exception e)
+				{
+					Log.Error("exception while trying to get atoms in json");
+					Log.Error(e.ToString());
+				}
+			}
+
+			return tt;
 		}
 
 		private void SetIcon()
@@ -141,6 +205,7 @@ namespace AUI.FileDialog
 		{
 			name_.Text = "";
 			thumb_.Clear();
+			panel_.Tooltip.TextFunc = null;
 			panel_.Render = false;
 			selected_ = false;
 			hovered_ = false;

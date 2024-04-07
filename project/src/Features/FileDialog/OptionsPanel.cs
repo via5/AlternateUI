@@ -45,6 +45,7 @@ namespace AUI.FileDialog
 				AddSortDirItem(sortMenu, sortOrderGroup, FS.Context.SortDescending);
 
 				sortPanel_ = new VUI.MenuButton("Sort", sortMenu);
+				sortPanel_.CloseOnMenuActivated = true;
 			}
 
 			{

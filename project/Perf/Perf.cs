@@ -47,7 +47,7 @@ class PerfTest
 		RunPerf();
 	}
 
-	private void Create(ISys sys = null)
+	private void Create(ISys? sys = null)
 	{
 		if (sys == null)
 		{
@@ -75,6 +75,8 @@ class PerfTest
 			null, null, new FS.Whitelist(new string[] { "VaM/Custom/Assets" }));
 
 		var o = FS.Filesystem.Instance.Resolve(cx, "VaM/Custom/Assets") as FS.IFilesystemContainer;
+		if (o == null)
+			return;
 
 		var files = o.GetFiles(cx);
 

@@ -83,7 +83,8 @@ namespace AUI.FileDialog
 		{
 			try
 			{
-				Refresh();
+				if (root_ != null)
+					Refresh();
 			}
 			catch (Exception e)
 			{

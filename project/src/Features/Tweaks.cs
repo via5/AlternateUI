@@ -227,7 +227,7 @@ namespace AUI.Tweaks
 	}
 
 
-	class HideTargetsInVR : TweakFeature
+	class HideTargets : TweakFeature
 	{
 		private class AtomInfo
 		{
@@ -247,7 +247,7 @@ namespace AUI.Tweaks
 		private AtomInfo[] atoms_ = new AtomInfo[0];
 		private float elapsed_ = 0;
 
-		public HideTargetsInVR()
+		public HideTargets()
 			: base("hideInVR", "Disable selecting hidden targets", false)
 		{
 		}
@@ -377,6 +377,266 @@ namespace AUI.Tweaks
 
 			if (a.collider != null)
 				a.collider.enabled = !b;
+		}
+	}
+
+
+	class HideControllers : TweakFeature
+	{
+		private class ControllerInfo
+		{
+			public readonly FreeControllerV3 controller;
+			public bool hidden = false;
+			public bool ignore = false;
+			public Collider collider = null;
+
+			public ControllerInfo(FreeControllerV3 c)
+			{
+				controller = c;
+			}
+
+			public override string ToString()
+			{
+				return $"{controller?.containingAtom?.uid}.{controller.name}";
+			}
+		}
+
+		private class ControllerLinkInfo
+		{
+			public readonly FreeControllerV3Link link;
+			public bool hidden = false;
+			public bool ignore = false;
+			public Collider collider = null;
+
+			public ControllerLinkInfo(FreeControllerV3Link ln)
+			{
+				link = ln;
+			}
+
+			public override string ToString()
+			{
+				return $"{link?.linkedController?.containingAtom?.uid}.{link?.linkedController.name}.{link.name}";
+			}
+		}
+
+
+		private class AtomInfo
+		{
+			public readonly Atom atom;
+			public ControllerInfo[] controllers;
+			public ControllerLinkInfo[] links;
+
+			public AtomInfo(Atom a)
+			{
+				atom = a;
+
+				var list = new List<ControllerInfo>();
+				foreach (var fc in a.freeControllers)
+					list.Add(new ControllerInfo(fc));
+
+				var list2 = new List<ControllerLinkInfo>();
+				foreach (var ln in a.GetComponentsInChildren<FreeControllerV3Link>())
+					list2.Add(new ControllerLinkInfo(ln));
+
+				controllers = list.ToArray();
+				links = list2.ToArray();
+			}
+		}
+
+		private const float UpdateInterval = 2;
+
+		private AtomInfo[] atoms_ = new AtomInfo[0];
+		private float elapsed_ = 0;
+
+		public HideControllers()
+			: base("hideControllers", "Disable selecting off controllers", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Controllers of Person atoms that are off for both " +
+					"position and rotation will never be targetable.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			SuperController.singleton.onSceneLoadedHandlers += UpdateAtoms;
+			SuperController.singleton.onAtomAddedHandlers += (a) => UpdateAtoms();
+			SuperController.singleton.onAtomRemovedHandlers += (a) => UpdateAtoms();
+
+			UpdateAtoms();
+			CheckAll();
+		}
+
+		protected override void DoDisable()
+		{
+			UnsetAll();
+
+			SuperController.singleton.onSceneLoadedHandlers -= UpdateAtoms;
+			SuperController.singleton.onAtomAddedHandlers -= (a) => UpdateAtoms();
+			SuperController.singleton.onAtomRemovedHandlers -= (a) => UpdateAtoms();
+		}
+
+		protected override void DoUpdate(float s)
+		{
+			elapsed_ += s;
+			if (elapsed_ >= UpdateInterval)
+			{
+				elapsed_ = 0;
+				CheckAll();
+			}
+		}
+
+		private void CheckAll()
+		{
+			for (int i = 0; i < atoms_.Length; ++i)
+			{
+				var a = atoms_[i];
+
+				for (int j = 0; j < a.controllers.Length; ++j)
+				{
+					var c = a.controllers[j];
+
+					if (ShouldHide(c.controller))
+					{
+						if (!c.hidden)
+						{
+							c.hidden = true;
+							SetHidden(c, true);
+						}
+					}
+					else
+					{
+						if (c.hidden)
+						{
+							c.hidden = false;
+							SetHidden(c, false);
+						}
+					}
+				}
+
+				for (int j = 0; j < a.links.Length; ++j)
+				{
+					var ln = a.links[j];
+
+					if (ShouldHide(ln.link.linkedController))
+					{
+						if (!ln.hidden)
+						{
+							ln.hidden = true;
+							SetHidden(ln, true);
+						}
+					}
+					else
+					{
+						if (ln.hidden)
+						{
+							ln.hidden = false;
+							SetHidden(ln, false);
+						}
+					}
+				}
+			}
+		}
+
+		private bool ShouldHide(FreeControllerV3 a)
+		{
+			if (a.name.Contains("lHand"))
+				return false;
+
+			if (a.name.Contains("rHand"))
+				return false;
+
+			return
+				a.currentPositionState == FreeControllerV3.PositionState.Off &&
+				a.currentRotationState == FreeControllerV3.RotationState.Off;
+		}
+
+		private void UpdateAtoms()
+		{
+			try
+			{
+				UnsetAll();
+
+				var list = new List<AtomInfo>();
+				var atoms = SuperController.singleton.GetAtoms();
+
+				for (int i = 0; i < atoms.Count; ++i)
+					list.Add(new AtomInfo(atoms[i]));
+
+				atoms_ = list.ToArray();
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in UpdateAtoms:");
+				Log.Error(e.ToString());
+			}
+		}
+
+		private void UnsetAll()
+		{
+			for (int i = 0; i < atoms_.Length; ++i)
+			{
+				for (int j = 0; j < atoms_[i].controllers.Length; ++j)
+				{
+					var c = atoms_[i].controllers[j];
+
+					if (c.hidden)
+					{
+						c.hidden = false;
+						SetHidden(c, false);
+					}
+				}
+			}
+		}
+
+		private void SetHidden(ControllerInfo c, bool b)
+		{
+			if (c.ignore)
+				return;
+
+			Log.Verbose($"set hidden {c} {b}");
+
+			if (c.collider == null)
+			{
+				c.collider = c.controller?.control?.GetComponent<Collider>();
+
+				if (c.collider == null)
+				{
+					Log.Error($"no collider in {c}");
+					c.ignore = true;
+				}
+			}
+
+			if (c.collider != null)
+				c.collider.enabled = !b;
+		}
+
+		private void SetHidden(ControllerLinkInfo ln, bool b)
+		{
+			if (ln.ignore)
+				return;
+
+			Log.Verbose($"set hidden {ln} {b}");
+
+			if (ln.collider == null)
+			{
+				ln.collider = ln.link.GetComponent<Collider>();
+
+				if (ln.collider == null)
+				{
+					Log.Error($"no collider in {ln}");
+					ln.ignore = true;
+				}
+			}
+
+			if (ln.collider != null)
+				ln.collider.enabled = !b;
 		}
 	}
 

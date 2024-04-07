@@ -167,6 +167,12 @@ namespace AUI.DynamicItemsUI
 				if (a == this)
 					continue;
 
+				GetInfo();
+				a.GetInfo();
+
+				if (a.char_ == null || char_ == null)
+					continue;
+
 				if (a.char_.isMale == char_.isMale)
 					a.controls_.UpdateAutoComplete();
 			}
@@ -286,7 +292,8 @@ namespace AUI.DynamicItemsUI
 
 		public void CriteriaChangedInternal()
 		{
-			Rebuild();
+			if (cs_ != null)
+				Rebuild();
 		}
 
 		private void Rebuild(bool keepPage = false)

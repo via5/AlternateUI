@@ -56,7 +56,10 @@ namespace AUI.FS
 
 		private bool StaleLocalDirectoriesCache(Context cx)
 		{
-			return (cache_?.StaleLocalDirectoriesCache(fs_, cx) ?? true);
+			if (cache_ == null)
+				return true;
+
+			return cache_.StaleLocalDirectoriesCache(fs_, cx);
 		}
 
 		private void SetLocalDirectoriesCache(
@@ -85,7 +88,10 @@ namespace AUI.FS
 
 		private bool StaleLocalFilesCache(Context cx)
 		{
-			return (cache_?.StaleLocalFilesCache(fs_, cx) ?? true);
+			if (cache_ == null)
+				return true;
+
+			return cache_.StaleLocalFilesCache(fs_, cx);
 		}
 
 		private void SetLocalFilesCache(

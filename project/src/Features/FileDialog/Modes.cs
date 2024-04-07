@@ -123,6 +123,7 @@ namespace AUI.FileDialog
 		private int sort_, sortDir_;
 		private string search_ = "";
 		private bool updateCurrent_ = true;
+		private bool saveable_ = true;
 		private readonly History history_ = new History();
 
 		private static readonly Dictionary<string, Options> map_ =
@@ -160,6 +161,12 @@ namespace AUI.FileDialog
 		{
 			if (!string.IsNullOrEmpty(name))
 				map_.Add(name, o);
+		}
+
+		public bool Saveable
+		{
+			get { return saveable_; }
+			set { saveable_ = value; }
 		}
 
 		public History History
@@ -712,23 +719,25 @@ namespace AUI.FileDialog
 		{
 			public string id, type, loadCaption, saveCaption;
 			public ExtensionItem[] extensions;
+			public bool saveable;
 
 			public ModeInfo(
 				string type, string loadCaption, string saveCaption,
-				ExtensionItem[] extensions)
+				ExtensionItem[] extensions, bool saveable = true)
 				: this(type, type, loadCaption, saveCaption, extensions)
 			{
 			}
 
 			public ModeInfo(
 				string id, string type, string loadCaption, string saveCaption,
-				ExtensionItem[] extensions)
+				ExtensionItem[] extensions, bool saveable = true)
 			{
 				this.id = id;
 				this.type = type;
 				this.loadCaption = loadCaption;
 				this.saveCaption = saveCaption;
 				this.extensions = extensions;
+				this.saveable = saveable;
 			}
 		}
 
@@ -839,6 +848,8 @@ namespace AUI.FileDialog
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
 
+				m.Options.Saveable = info.saveable;
+
 				openPreset_.Add(info.id, m);
 			}
 
@@ -861,6 +872,8 @@ namespace AUI.FileDialog
 					false, true, true, false, false,
 					FS.Context.SortDateModified, FS.Context.SortDescending,
 					new FS.Whitelist(new string[] { MakeWhitelist(path) }));
+
+				m.Options.Saveable = info.saveable;
 
 				savePreset_.Add(info.id, m);
 			}
@@ -954,7 +967,7 @@ namespace AUI.FileDialog
 
 		private static ModeInfo GetPresetInfo(string path, Atom currentAtom)
 		{
-			path = path.Replace("\\", "/");
+			path = MakePackageRoot(path.Replace("\\", "/"));
 
 			string s = "";
 
@@ -1095,7 +1108,7 @@ namespace AUI.FileDialog
 
 					return new ModeInfo(
 						path, "unknownPreset", "Open preset", "Save preset",
-						FileDialogFeature.GetPresetExtensions(true));
+						FileDialogFeature.GetPresetExtensions(true), false);
 				}
 			}
 		}

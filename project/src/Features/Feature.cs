@@ -113,7 +113,8 @@ namespace AUI
 				new Tweaks.RightClickPackagesReload(),
 				new Tweaks.QuickSaveScreenshot(),
 				new Tweaks.QuickSave(),
-				new Tweaks.HideTargetsInVR(),
+				new Tweaks.HideTargets(),
+				new Tweaks.HideControllers(),
 				new Tweaks.EditMode(),
 				new Tweaks.FocusHead(),
 				new Tweaks.DisableLoadPosition(),
@@ -164,8 +165,8 @@ namespace AUI
 				enabledParam_.valNoCallback = enabled_;
 			}
 
-			if (U.DevMode)
-				enabled_ = true;
+			//if (U.DevMode)
+			//	enabled_ = true;
 
 			try
 			{
