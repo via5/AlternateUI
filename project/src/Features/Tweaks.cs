@@ -793,7 +793,7 @@ namespace AUI.Tweaks
 	class DisableCuaCollision : TweakFeature
 	{
 		public DisableCuaCollision()
-			: base("disableCuaCollision", "Disable collison on new CUAs", false)
+			: base("disableCuaCollision", "Disable collision on new CUAs", false)
 		{
 		}
 
@@ -821,7 +821,62 @@ namespace AUI.Tweaks
 			try
 			{
 				if (a.type == "CustomUnityAsset")
+				{
+					Log.Verbose($"disabling collisions on {a}");
 					a.collisionEnabled = false;
+				}
+			}
+			catch (Exception e)
+			{
+				Log.Error($"exception in OnAtomAdded for {a}:");
+				Log.Error(e.ToString());
+			}
+		}
+	}
+
+
+	class DisableShapesCollision : TweakFeature
+	{
+		public DisableShapesCollision()
+			: base("disableShapesCollision", "Disable collision and physics on new shapes", false)
+		{
+		}
+
+		public override string Description
+		{
+			get
+			{
+				return
+					"Disable collision and physics on new shapes, such as Capsue or Cube.";
+			}
+		}
+
+		protected override void DoEnable()
+		{
+			SuperController.singleton.onAtomAddedHandlers += OnAtomAdded;
+		}
+
+		protected override void DoDisable()
+		{
+			SuperController.singleton.onAtomAddedHandlers -= OnAtomAdded;
+		}
+
+		private void OnAtomAdded(Atom a)
+		{
+			try
+			{
+				if (a.category == "Shapes")
+				{
+					Log.Verbose($"disabling collisions on {a}");
+					a.collisionEnabled = false;
+
+					var p = a.GetStorableByID("control")?.GetBoolJSONParam("physicsEnabled");
+					if (p != null)
+					{
+						p.val = false;
+						Log.Verbose($"disabling physics on {a}");
+					}
+				}
 			}
 			catch (Exception e)
 			{
@@ -1113,6 +1168,30 @@ namespace AUI.Tweaks
 			yield return new WaitForEndOfFrame();
 
 			Log.Verbose($"focusing on {fc}");
+
+			if (fc.name == "eyeTargetControl")
+			{
+				Log.Verbose("using head instead");
+				FreeControllerV3 head = null;
+
+				if (fc.containingAtom != null)
+				{
+					foreach (var f in fc.containingAtom.freeControllers)
+					{
+						if (f.name == "headControl")
+						{
+							head = f;
+							break;
+						}
+					}
+				}
+
+				if (head == null)
+					Log.Verbose($"but head not found in atom {fc.containingAtom}");
+				else
+					fc = head;
+			}
+
 			SuperController.singleton.FocusOnController(fc);
 		}
 

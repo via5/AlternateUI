@@ -109,6 +109,7 @@ namespace AUI
 				new Tweaks.EscapeDialogs(),
 				new Tweaks.DoubleClickFocus(),
 				new Tweaks.DisableCuaCollision(),
+				new Tweaks.DisableShapesCollision(),
 				new Tweaks.SpaceBarFreeze(),
 				new Tweaks.RightClickPackagesReload(),
 				new Tweaks.QuickSaveScreenshot(),

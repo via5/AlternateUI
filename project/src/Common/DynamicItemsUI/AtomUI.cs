@@ -319,7 +319,9 @@ namespace AUI.DynamicItemsUI
 				try
 				{
 					CreateUI();
-					FileManagerSecure.RegisterRefreshHandler(OnPackagesRefreshed);
+
+					AlternateUI.Instance
+						.Sys.RegisterRefreshHandler(OnPackagesRefreshed);
 				}
 				catch (Exception)
 				{
@@ -342,7 +344,9 @@ namespace AUI.DynamicItemsUI
 			if (root_ != null)
 			{
 				root_.Visible = false;
-				FileManagerSecure.UnregisterRefreshHandler(OnPackagesRefreshed);
+
+				AlternateUI.Instance
+						.Sys.UnregisterRefreshHandler(OnPackagesRefreshed);
 			}
 		}
 

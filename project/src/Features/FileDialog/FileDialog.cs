@@ -68,7 +68,8 @@ namespace AUI.FileDialog
 
 		public void Enable()
 		{
-			FileManagerSecure.RegisterRefreshHandler(OnPackagesRefreshed);
+			AlternateUI.Instance.Sys
+				.RegisterRefreshHandler(OnPackagesRefreshed);
 		}
 
 		public void Disable()
@@ -76,7 +77,8 @@ namespace AUI.FileDialog
 			if (root_ != null)
 				root_.Visible = false;
 
-			FileManagerSecure.UnregisterRefreshHandler(OnPackagesRefreshed);
+			AlternateUI.Instance.Sys
+				.UnregisterRefreshHandler(OnPackagesRefreshed);
 		}
 
 		private void OnPackagesRefreshed()

@@ -13,6 +13,12 @@ namespace AUI
 {
 	using FMS = FileManagerSecure;
 
+#if VAM_GT_1_22
+	using RefreshHandler = MVR.FileManagementSecure.OnRefresh;
+#else
+	public delegate void RefreshHandler();
+#endif
+
 	public interface ISys
 	{
 		void CreateDirectory(string path);
@@ -25,6 +31,8 @@ namespace AUI
 		DateTime FileLastWriteTime(string path);
 		DateTime DirectoryCreationTime(string path);
 		DateTime DirectoryLastWriteTime(string path);
+		void RegisterRefreshHandler(RefreshHandler f);
+		void UnregisterRefreshHandler(RefreshHandler f);
 		bool IsDirectoryInPackage(string path);
 		string NormalizePath(string path);
 
@@ -117,7 +125,25 @@ namespace AUI
 
 		public DateTime DirectoryLastWriteTime(string path)
 		{
+#if VAM_GT_1_22
 			return FMS.DirectoryLastWriteTime(path);
+#else
+			return BadDateTime;
+#endif
+		}
+
+		public void RegisterRefreshHandler(RefreshHandler f)
+		{
+#if VAM_GT_1_22
+			FileManagerSecure.RegisterRefreshHandler(f);
+#endif
+		}
+
+		public void UnregisterRefreshHandler(RefreshHandler f)
+		{
+#if VAM_GT_1_22
+			FileManagerSecure.UnregisterRefreshHandler(f);
+#endif
 		}
 
 		public bool IsDirectoryInPackage(string path)
@@ -398,6 +424,14 @@ namespace AUI
 		public DateTime DirectoryLastWriteTime(string path)
 		{
 			return new DirectoryInfo(MakePath(path)).LastWriteTime;
+		}
+
+		public void RegisterRefreshHandler(RefreshHandler f)
+		{
+		}
+
+		public void UnregisterRefreshHandler(RefreshHandler f)
+		{
 		}
 
 		public bool IsDirectoryInPackage(string path)
@@ -710,6 +744,14 @@ namespace AUI
 		public DateTime DirectoryLastWriteTime(string path)
 		{
 			return BadDateTime;
+		}
+
+		public void RegisterRefreshHandler(RefreshHandler f)
+		{
+		}
+
+		public void UnregisterRefreshHandler(RefreshHandler f)
+		{
 		}
 
 		public bool IsDirectoryInPackage(string path)
